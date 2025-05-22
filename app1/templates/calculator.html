@@ -4,18 +4,23 @@
     <title>Sustainability App – Input</title>
 </head>
 <body>
-    <h2>Set Priorities and Global Budget</h2>
-    <form method="post" action="{% url 'calculator_results' %}">
-
+    <h2>Set Target Impact Ratings and Global Budget</h2>
+    <form action="/calculator/" method="post">
+        {% csrf_token %}
         <label for="global_budget"><strong>Total Budget (AUD):</strong></label>
         <input type="number" name="global_budget" value="1000000" min="0" step="10000"><br><br>
+        
 
-        {% for entry in class_targets %}
-            <label>{{ entry.Class }}</label>
-            <input type="number" name="class_{{ entry.Class }}" value="3" min="1" max="5">
-            <br><br>
-        {% endfor %}
-        <input type="submit" value="Generate Recommendations">
+
+
+    {% for entry in class_targets %}
+        <label>{{ entry.class }}</label>
+        <input type="number" name="class_{{ entry.class }}" value="{{ entry.target_rating|floatformat:0 }}" min="0" step="1">
+        <br><br>
+    {% endfor %}
+
+
+        <input type="submit" value="Generate Interventions">
     </form>
 </body>
 </html>

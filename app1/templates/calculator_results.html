@@ -1,38 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sustainability App – Results</title>
+    <title>Recommendations</title>
 </head>
 <body>
-    <h2>Recommended Interventions by Class</h2>
+    <h2>Recommended Interventions</h2>
+    <p><strong>Total Budget:</strong> ${{ global_budget|floatformat:2 }}</p>
 
-    {% for cls, rows in grouped_results.items() %}
+    {% for cls, rows in grouped_results.items %}
+
+
         <h3>{{ cls }}</h3>
-        {% if rows %}
-        <table border="1">
-            <tr>
-                <th>Theme</th>
-                <th>Intervention</th>
-                <th>Description</th>
-                <th>Impact Rating</th>
-                <th>Cost Range (AUD)</th>
-            </tr>
+        <ul>
             {% for row in rows %}
-            <tr>
-                <td>{{ row.Theme }}</td>
-                <td>{{ row.Intervention }}</td>
-                <td>{{ row.Description }}</td>
-                <td>{{ row['Impact Rating'] }}</td>
-                <td>${{ row['Low Cost']|default('0') }} – ${{ row['High Cost']|default('0') }}</td>
-            </tr>
+                <li>
+                    <strong>{{ row.intervention }}</strong> – 
+                    {{ row.description }} <br>
+                    Impact: {{ row.impact_rating }},
+                    Cost Range: ${{ row.low_cost }} – ${{ row.high_cost }}
+                </li>
             {% endfor %}
-        </table>
-        {% else %}
-            <p><em>No interventions found for this class based on your target.</em></p>
-        {% endif %}
-        <br>
+        </ul>
     {% endfor %}
-
-    <a href="/">← Back to Input</a>
 </body>
 </html>
