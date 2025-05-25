@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="h-screen bg-gray-100 font-sans">
+  <div class="flex h-full">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r shadow flex flex-col items-center py-6">
+      <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-6" />
+      <ul class="w-full px-4 space-y-2">
+        <li><a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">dashboard</span>Dashboard</a></li>
+        <li><a href="{% url 'projects' %}" class="flex items-center bg-cyan-500 text-white px-4 py-3 rounded-lg shadow"><span class="material-icons mr-3">folder</span>Projects</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">build</span>Interventions</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">calculate</span>Cost Matrix</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">description</span>Reports</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">settings</span>Settings</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 p-8">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-semibold">Projects</h1>
+        <p class="text-sm text-gray-500">First Name, Last Name</p>
+      </div>
+
+      <div class="flex justify-end space-x-4 mb-4">
+        <button class="bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-full">
+          <img src="{% static 'images/img5.jpg' %}" alt="Edit" class="h-6 w-6" />
+        </button>
+        <a href="{% url 'create_project' %}">
+            <button class="bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-full">
+                <img src="{% static 'images/img6.png' %}" alt="Add" class="h-6 w-6" />
+            </button>
+        </a>
+
+      </div>
+
+      <div class="relative mb-4">
+        <input type="text" id="search" onkeyup="filterTable()" placeholder="Search" class="w-full px-4 py-2 border rounded-lg shadow pl-10">
+        <span class="material-icons absolute left-3 top-2.5 text-gray-400">search</span>
+      </div>
+
+      <div class="overflow-auto">
+        <table class="min-w-full bg-white shadow rounded">
+          <thead class="bg-gray-200 text-sm text-gray-600">
+            <tr>
+              <th class="px-4 py-2">Project Name</th>
+              <th class="px-4 py-2">Year</th>
+              <th class="px-4 py-2">Region</th>
+              <th class="px-4 py-2">Carbon Total</th>
+              <th class="px-4 py-2">Cost</th>
+              <th class="px-4 py-2">Last Edited</th>
+              <th class="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="projectTable" class="text-sm text-gray-700">
+            <tr><td class="px-4 py-2">Pinecrest Logistics</td><td>2025</td><td>AU</td><td>248</td><td>$21,080</td><td>01/05/2025</td><td>Edit</td></tr>
+            <tr><td>Aurora Data Center</td><td>2025</td><td>UK</td><td>176</td><td>$21,120</td><td>29/04/2025</td><td>Edit</td></tr>
+            <tr><td>Cascade Elementry</td><td>2025</td><td>PNG</td><td>512</td><td>$33,280</td><td>29/04/2025</td><td>Edit</td></tr>
+            <tr><td>MetroCore Sustainable</td><td>2025</td><td>UK</td><td>89</td><td>$13,350</td><td>13/04/2025</td><td>Edit</td></tr>
+            <tr><td>Suncrest Senior</td><td>2025</td><td>PNG</td><td>321</td><td>$14,445</td><td>14/04/2025</td><td>Edit</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function filterTable() {
+      const input = document.getElementById("search");
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById("projectTable");
+      const tr = table.getElementsByTagName("tr");
+      for (let i = 0; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+          const txtValue = td.textContent || td.innerText;
+          tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
