@@ -1,59 +1,74 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-    <title>Django Tailwind</title>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta http-equiv="X-UA-Compatible" content="ie=edge">
-		{% tailwind_css %}
-		<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<head>
+  <title>Django Tailwind</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  {% tailwind_css %}
+  
+  <!-- Add Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  
+  <style>
+    /* Apply Inter globally */
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+    }
+  </style>
+</head>
 
-	</head>
-	
-	<body class="bg-gray-50 font-serif leading-normal tracking-normal">
-		    <!-- Navigation Bar -->
-		<nav class="bg-black px-4 py-2">
-			<div class="flex items-center max-w-7xl mx-auto">
-				<!-- BBC Logo (replace src with your static image if needed) -->
-				<!-- Sign in -->
-				<a href="{% url 'login' %}" class="flex items-center px-6 h-10 border-l border-r border-gray-600 text-black font-semibold hover:bg-gray-900">
-				<span class="material-icons mr-2">account_circle</span>Sign in
-				</a>
+<body class="bg-gray-50 text-gray-900">
 
-				<!-- Menu Links -->
-				<div class="flex space-x-0">
-				<a href="{% url 'register' %}" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Sign Up</a>
-				<a href="{% url 'dashboard' %}" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Dashboard</a>
-				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Reel</a>
-				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Worklife</a>
-				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Travel</a>
-				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Future</a>
-				<!-- More with dropdown -->
-				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">
-					More <span class="ml-2 material-icons text-base">expand_more</span>
-				</a>
-				</div>
+  <!-- Navigation Bar -->
+  <nav class="bg-[black] px-4 py-2">
+    <div class="flex items-center max-w-7xl mx-auto">
 
-				<!-- Search -->
-				<form class="flex items-center ml-auto bg-black rounded border border-black overflow-hidden h-10 w-64">
-				<input type="text" class="flex-1 px-4 py-1 focus:outline-none bg-black text-black" placeholder="Search" />
-				<button type="submit" class="px-3">
-					<span class="material-icons text-red-900">search</span>
-				</button>
-				</form>
-			</div>
-	    </nav>
+      <!-- Auth Links -->
+      <a href="{% url 'login' %}" 
+         class="flex items-center px-6 h-10 border-l border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">
+        <span class="material-icons mr-2">account_circle</span>Sign In
+      </a>
 
-<!-- Import Material Icons -->
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!-- Menu Links -->
+      <div class="flex space-x-0">
+        <a href="{% url 'register' %}" 
+           class="px-6 h-10 flex items-center border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">Sign Up</a>
+        <a href="{% url 'dashboard' %}" 
+           class="px-6 h-10 flex items-center border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">Dashboard</a>
+      </div>
 
+      <!-- Search -->
+      <form class="flex items-center ml-auto bg-[black] rounded border border-[black] overflow-hidden h-10 w-64">
+        <input type="text" class="flex-1 px-4 py-1 focus:outline-none bg-[black] text-[white]" placeholder="Search" />
+        <button type="submit" class="px-3">
+          <span class="material-icons text-red-600">search</span>
+        </button>
+      </form>
 
-    <!-- Page Content -->
-    <div class="container mx-auto mt-6">
-      {% block content %}
-      <!-- Child template content will be injected here -->
-      {% endblock %}
     </div>
-  </body>
+  </nav>
+
+  <!-- Page Content -->
+  <div class="container mx-auto mt-6 px-4">
+    {% block content %}
+    <h1 class="text-3xl font-extrabold mb-4 text-gray-900">Welcome to the Dashboard</h1>
+    <p class="text-lg leading-relaxed text-gray-700 max-w-prose">
+      This is a test paragraph with readable text. The font is now cleaner and more modern.
+    </p>
+    <a href="/calculator/" 
+       class="inline-block px-6 py-3 bg-[black] text-[white] text-lg font-semibold rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-white transition">
+      Go to Calculator
+    </a>
+    {% endblock %}
+  </div>
+
+</body>
 </html>

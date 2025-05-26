@@ -6,6 +6,8 @@ from django.conf import settings
 from django.shortcuts import render
 from .models import ClassTargets, DetailedMatrix
 
+from .models import ClassTargets
+
 
 # Step 1: Home page with "Get Started" button
 def create_project(request):
