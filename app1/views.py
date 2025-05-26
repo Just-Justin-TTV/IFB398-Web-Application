@@ -5,10 +5,31 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.shortcuts import render
 
+# Step 1: Home page with "Get Started" button
+def create_project(request):
+    return render(request, 'create_project.html')
+
+def home(request):
+    return render(request, 'home.html')
+
+def projects_view(request):
+    return render(request, 'projects.html', {}, content_type='text/html')
+
+def dashboard_view(request):
+    return render(request, 'dashboard.html')
+
+
+def register_view(request):
+    return render(request, 'register.html')
+
+def login_view(request):
+    return render(request, 'login.html')
+
 # Step 1: Home page
 def home(request):
     return render(request, 'home.html')
 
+# Unused placeholder (can be removed if not needed)
 def calculator_results(request):
     return render(request, 'calculator_results.html')
 
