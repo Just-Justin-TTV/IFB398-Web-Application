@@ -55,6 +55,7 @@ def calculator(request):
             if key.startswith('class_')
         }
 
+
         # Get all interventions grouped by class and sorted by impact
         interventions = (
             DetailedMatrix.objects
