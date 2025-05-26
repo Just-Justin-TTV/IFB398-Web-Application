@@ -2,36 +2,56 @@
 {% load static %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-100">
-  <div class="bg-white rounded-lg shadow-md px-10 py-10 max-w-md w-full text-center">
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-100 px-4 py-12">
+  <div class="bg-white rounded-2xl shadow-xl p-8 sm:p-10 w-full max-w-md">
     
     <!-- Logo -->
-    <img src="{% static 'images/img1.jpg' %}" alt="Logo" class="w-32 h-32 mx-auto mb-4 rounded-full object-cover">
-    
+    <div class="flex justify-center mb-6">
+      <img src="{% static 'images/img1.jpg' %}" alt="Logo" class="w-24 h-24 rounded-full object-cover shadow-md">
+    </div>
+
     <!-- Welcome Text -->
-    <h2 class="text-3xl font-bold text-gray-900 mb-1">Welcome,</h2>
-    <p class="text-xl text-gray-700 mb-6">Login Here</p>
+    <h2 class="text-3xl font-extrabold text-gray-800 text-center">Welcome Back</h2>
+    <p class="mt-1 text-sm text-gray-600 text-center">Please sign in to your account</p>
 
     <!-- Form -->
-    <form method="post">
+    <form method="post" class="mt-6">
       {% csrf_token %}
       
-      <div class="mb-4 text-left">
-        <label class="block mb-1 text-sm text-gray-700">Email</label>
-        <input type="email" name="email" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          required
+        >
       </div>
 
-      <div class="mb-6 text-left">
-        <label class="block mb-1 text-sm text-gray-700">Password</label>
-        <input type="password" name="password" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="••••••••"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          required
+        >
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-black py-2 rounded hover:bg-blue-700 transition">Login</button>
+      <button
+        type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition duration-200 shadow-sm"
+      >
+        Sign In
+      </button>
     </form>
 
     <!-- Sign Up Link -->
-    <p class="mt-4 text-sm text-gray-600">
-     No Account? <a href="{% url 'register' %}" class="text-blue-600 hover:underline">Sign Up</a>
+    <p class="mt-5 text-sm text-center text-gray-600">
+      Don't have an account?
+      <a href="{% url 'register' %}" class="text-blue-600 hover:text-blue-700 font-medium transition">Sign Up</a>
     </p>
 
   </div>
