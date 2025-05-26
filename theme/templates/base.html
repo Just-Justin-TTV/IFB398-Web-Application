@@ -7,12 +7,53 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta http-equiv="X-UA-Compatible" content="ie=edge">
 		{% tailwind_css %}
+		<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
 	</head>
+	
 	<body class="bg-gray-50 font-serif leading-normal tracking-normal">
-		<div class="container mx-auto">
-			{% block content %}
-			<!-- Child template content will be injected here -->
-			{% endblock %}
-		</div>
-	</body>
+		    <!-- Navigation Bar -->
+		<nav class="bg-black px-4 py-2">
+			<div class="flex items-center max-w-7xl mx-auto">
+				<!-- BBC Logo (replace src with your static image if needed) -->
+				<!-- Sign in -->
+				<a href="{% url 'login' %}" class="flex items-center px-6 h-10 border-l border-r border-gray-600 text-black font-semibold hover:bg-gray-900">
+				<span class="material-icons mr-2">account_circle</span>Sign in
+				</a>
+
+				<!-- Menu Links -->
+				<div class="flex space-x-0">
+				<a href="{% url 'register' %}" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Sign Up</a>
+				<a href="{% url 'dashboard' %}" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Dashboard</a>
+				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Reel</a>
+				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Worklife</a>
+				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Travel</a>
+				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">Future</a>
+				<!-- More with dropdown -->
+				<a href="#" class="px-6 h-10 flex items-center border-r border-gray-600 text-black font-semibold hover:bg-gray-900">
+					More <span class="ml-2 material-icons text-base">expand_more</span>
+				</a>
+				</div>
+
+				<!-- Search -->
+				<form class="flex items-center ml-auto bg-black rounded border border-black overflow-hidden h-10 w-64">
+				<input type="text" class="flex-1 px-4 py-1 focus:outline-none bg-black text-black" placeholder="Search" />
+				<button type="submit" class="px-3">
+					<span class="material-icons text-red-900">search</span>
+				</button>
+				</form>
+			</div>
+	    </nav>
+
+<!-- Import Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+
+    <!-- Page Content -->
+    <div class="container mx-auto mt-6">
+      {% block content %}
+      <!-- Child template content will be injected here -->
+      {% endblock %}
+    </div>
+  </body>
 </html>
