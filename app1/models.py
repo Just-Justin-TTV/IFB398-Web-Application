@@ -24,6 +24,17 @@ class Interventions(models.Model):
     class Meta:
         db_table = 'Interventions'
 
+class User(models.Model):
+    id = models.AutoField(primary_key=True)
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+
+
+
+    class Meta:
+        db_table = 'User'
+
     def __str__(self):
         return f"{self.class_name} - {self.intervention}"
 
