@@ -4,7 +4,8 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.shortcuts import render
-from .models import ClassTargets, DetailedMatrix
+from .models import ClassTargets, Interventions
+
 
 from .models import ClassTargets
 
@@ -62,10 +63,10 @@ def calculator(request):
 
         # Get all interventions grouped by class and sorted by impact
         interventions = (
-            DetailedMatrix.objects
+            Interventions.objects
             .exclude(class_name__isnull=True)
-            .exclude(intervention__isnull=True)
-            .order_by('class_name', '-impact_rating')
+            .exclude(name__isnull=True)
+            .order_by('class_name')
         )
 
         # Organize into groups by class
