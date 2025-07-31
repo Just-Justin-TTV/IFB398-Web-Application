@@ -86,9 +86,12 @@ WSGI_APPLICATION = 'app1.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'sdt_app.db',
+        'NAME': BASE_DIR / 'carbonbalance.db',
     }
 }
+import os
+print("DB PATH:", os.path.abspath(DATABASES['default']['NAME']))
+
 
 
 # Password validation

@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Select Interventions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r shadow-lg flex flex-col items-center py-6">
+      <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-8" />
+
+      <ul class="w-full px-6 space-y-2">
+        <li>
+          <a href="{% url 'dashboard' %}" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-100">
+            <span class="material-icons mr-3 text-gray-600">dashboard</span>
+            <span class="text-gray-800 font-medium">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'projects' %}" class="flex items-center px-4 py-2 rounded-lg bg-cyan-500 text-white font-medium shadow">
+            <span class="material-icons mr-3">folder</span>
+            Projects
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-100">
+            <span class="material-icons mr-3 text-gray-600">build</span>
+            <span class="text-gray-800 font-medium">Interventions</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-100">
+            <span class="material-icons mr-3 text-gray-600">calculate</span>
+            <span class="text-gray-800 font-medium">Cost Matrix</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-100">
+            <span class="material-icons mr-3 text-gray-600">description</span>
+            <span class="text-gray-800 font-medium">Reports</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-100">
+            <span class="material-icons mr-3 text-gray-600">settings</span>
+            <span class="text-gray-800 font-medium">Settings</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-10 overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-semibold">Projects</h1>
+        <span class="text-sm text-gray-500">First Name, Last Name</span>
+      </div>
+
+      <h2 class="text-2xl font-semibold mb-4">Select Interventions</h2>
+
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button class="bg-yellow-400 text-white px-3 py-1 rounded">Carbon Emissions</button>
+        <button class="bg-gray-700 text-white px-3 py-1 rounded">Health & Wellbeing</button>
+        <button class="bg-gray-700 text-white px-3 py-1 rounded">Water Use</button>
+        <button class="bg-gray-700 text-white px-3 py-1 rounded">Circular Economy</button>
+        <button class="bg-gray-700 text-white px-3 py-1 rounded">Resilience</button>
+        <button class="bg-gray-700 text-white px-3 py-1 rounded">Value & Cost</button>
+        <button class="bg-gray-700 text-white px-3 py-1 rounded">Biodiversity</button>
+      </div>
+
+      <div class="space-y-3">
+        <details class="border border-gray-300 rounded p-3">
+          <summary class="font-medium">Operating Carbon</summary>
+          <p class="mt-2 text-sm text-gray-600">Details about Operating Carbon intervention.</p>
+        </details>
+        <details class="border border-gray-300 rounded p-3">
+          <summary class="font-medium">Embodied Carbon</summary>
+          <p class="mt-2 text-sm text-gray-600">Details about Embodied Carbon intervention.</p>
+        </details>
+        <details class="border border-gray-300 rounded p-3">
+          <summary class="font-medium">Renewable Energy</summary>
+          <p class="mt-2 text-sm text-gray-600">Details about Renewable Energy intervention.</p>
+        </details>
+        <details class="border border-gray-300 rounded p-3">
+          <summary class="font-medium">Smart Energy</summary>
+          <p class="mt-2 text-sm text-gray-600">Details about Smart Energy intervention.</p>
+        </details>
+        <details class="border border-gray-300 rounded p-3">
+          <summary class="font-medium">Energy Monitoring</summary>
+          <p class="mt-2 text-sm text-gray-600">Details about Energy Monitoring intervention.</p>
+        </details>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
