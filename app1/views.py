@@ -18,7 +18,16 @@ def create_project_step2(request):
     return render(request, 'create_project_2.html')
 
 def create_project(request):
-    return render(request, 'create_project.html')
+    sidebar_items = [
+        {'url': 'dashboard', 'icon': 'dashboard', 'label': 'Dashboard'},
+        {'url': 'projects', 'icon': 'folder', 'label': 'Projects'},
+        {'url': '#', 'icon': 'build', 'label': 'Interventions'},
+        {'url': '#', 'icon': 'calculate', 'label': 'Cost Matrix'},
+        {'url': '#', 'icon': 'description', 'label': 'Reports'},
+        {'url': '#', 'icon': 'settings', 'label': 'Settings'},
+    ]
+    return render(request, 'create_project.html', {'sidebar_items': sidebar_items})
+
 
 def home(request):
     return render(request, 'home.html')
