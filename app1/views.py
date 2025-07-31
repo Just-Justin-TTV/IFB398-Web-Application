@@ -7,6 +7,11 @@ from django.shortcuts import render, redirect
 from django.db import connection
 import hashlib
 import sqlite3
+from django.shortcuts import render
+from .models import ClassTargets, DetailedMatrix
+
+from .models import ClassTargets
+
 
 # Step 1: Home page with "Get Started" button
 def create_project_step2(request):
@@ -77,13 +82,18 @@ def login_view(request):
             return render(request, 'login.html', {'error': 'Invalid credentials.'})
     return render(request, 'login.html')
 
+# Step 1: Home page
+def home(request):
+    return render(request, 'home.html')
+
+# Unused placeholder (can be removed if not needed)
 def calculator_results(request):
     return render(request, 'calculator_results.html')
 
-# Step 2: Show the form for budget + target ratings
+# Step 2: Calculator form and processing
 def calculator(request):
     if request.method == 'GET':
-        # Use ClassTargets for class names and target ratings in the form
+        # Fetch all class targets for the form
         class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
         class_targets = [
             {'class': ct['class_name'], 'target_rating': ct['target_rating']}
@@ -92,16 +102,18 @@ def calculator(request):
         return render(request, 'calculator.html', {'class_targets': class_targets})
 
     elif request.method == 'POST':
+        # Get total budget
         global_budget = float(request.POST.get('global_budget', 1e6))
 
-        # Extract per-class targets from POST data
+        # Extract per-class targets
         targets = {
             key[6:]: float(value)
             for key, value in request.POST.items()
             if key.startswith('class_')
         }
 
-        # Fetch interventions grouped by class from DetailedMatrix
+
+        # Get all interventions grouped by class and sorted by impact
         interventions = (
             DetailedMatrix.objects
             .exclude(class_name__isnull=True)
@@ -109,6 +121,7 @@ def calculator(request):
             .order_by('class_name', '-impact_rating')
         )
 
+        # Organize into groups by class
         grouped_results = {}
         for row in interventions:
             cls = row.class_name
@@ -121,6 +134,7 @@ def calculator(request):
             'calculator_results.html',
             {
                 'grouped_results': grouped_results,
-                'global_budget': global_budget
+                'global_budget': global_budget,
+                'targets': targets  
             }
         )
