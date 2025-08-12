@@ -8,10 +8,21 @@ from django.db import connection
 import hashlib
 import sqlite3
 from django.shortcuts import render
-from .models import ClassTargets, DetailedMatrix
-
+from .models import ClassTargets, Interventions
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
 from .models import ClassTargets
-
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth import logout
 
 # Step 1: Home page with "Get Started" button
 def create_project_step2(request):
@@ -29,6 +40,7 @@ def create_project(request):
     return render(request, 'create_project.html', {'sidebar_items': sidebar_items})
 
 
+@login_required(login_url='login')
 def home(request):
     return render(request, 'home.html')
 
@@ -41,59 +53,21 @@ def dashboard_view(request):
 
 from django.http import HttpResponse
 
+
 def register_view(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password1")
-        confirm_password = request.POST.get("password2")
-
-        full_name = request.POST.get("full_name")
-
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
-
-        # ✅ GET the full DB path safely from Django settings
-        db_path = settings.DATABASES['default']['NAME']
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-
-        # INSERT user into the Users table
-        cursor.execute(
-            "INSERT INTO Users (email, password_hash, full_name) VALUES (?, ?, ?)",
-            (email, password_hash, full_name)
-        )
-
-        conn.commit()
-        conn.close()
-
-        return HttpResponse("✅ Account registered successfully!")
-
     return render(request, 'register.html')
 
-    
 def login_view(request):
-    if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password1']
-        confirm_password = request.POST['password2']
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT id, full_name FROM Users WHERE email=%s AND password_hash=%s",
-                [email, password_hash]
-            )
-            user = cursor.fetchone()
-        if user:
-            # Store user in session
-            request.session['user_email'] = email
-            request.session['user_name'] = user[1]
-            return redirect('dashboard')
-        else:
-            return render(request, 'login.html', {'error': 'Invalid credentials.'})
     return render(request, 'login.html')
 
-# Step 1: Home page
-def home(request):
-    return render(request, 'home.html')
+def logout_view(request):
+    if request.method == "POST":
+        logout(request)
+        messages.success(request, "You have successfully logged out.")
+        return redirect('login')
+    else:
+        return redirect('home')
+
 
 # Unused placeholder (can be removed if not needed)
 def calculator_results(request):
@@ -124,10 +98,10 @@ def calculator(request):
 
         # Get all interventions grouped by class and sorted by impact
         interventions = (
-            DetailedMatrix.objects
+            Interventions.objects
             .exclude(class_name__isnull=True)
-            .exclude(intervention__isnull=True)
-            .order_by('class_name', '-impact_rating')
+            .exclude(name__isnull=True)
+            .order_by('class_name')
         )
 
         # Organize into groups by class

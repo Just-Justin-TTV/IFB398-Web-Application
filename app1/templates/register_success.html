@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-r from-cyan-100 to-blue-100 px-4">
+  <div class="bg-white rounded-2xl shadow-lg px-8 py-10 w-full max-w-md text-center">
+    
+    <!-- Logo -->
+    <img src="{% static 'images/img1.jpg' %}" alt="Logo" class="w-24 h-24 mx-auto mb-5 rounded-full object-cover shadow-md ring-2 ring-cyan-400">
+
+    <!-- Heading -->
+    <h2 class="text-3xl font-extrabold text-gray-800 mb-1">Account created!</h2>
+    <p class="text-sm text-gray-600 mb-6">Fill out the form below to get started</p>
+
+
+    <!-- Login Redirect -->
+    <p class="mt-6 text-sm text-gray-600">
+      Already have an account?
+      <a href="{% url 'login' %}" class="text-cyan-600 hover:underline font-medium">Login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
