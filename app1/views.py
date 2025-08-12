@@ -18,6 +18,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.contrib.auth import logout
 
 # Step 1: Home page with "Get Started" button
 def create_project(request):
@@ -39,11 +40,15 @@ def register_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
-        password = request.POST.get('password')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
 
-       
-        if not username or not email or not password:
+        if not username or not email or not password1 or not password2:
             messages.error(request, "All fields are required.")
+            return render(request, 'register.html')
+
+        if password1 != password2:
+            messages.error(request, "Passwords do not match.")
             return render(request, 'register.html')
 
         if User.objects.filter(username=username).exists():
@@ -54,35 +59,23 @@ def register_view(request):
             messages.error(request, "Email already exists.")
             return render(request, 'register.html')
 
-        
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password
-        )
-
-        
+        user = User.objects.create_user(username=username, email=email, password=password1)
         login(request, user)
-
         messages.success(request, "Registration successful!")
-        return redirect('home')  
+        return redirect('home')
 
-    return render(request, 'register.html')
-
-    
     return render(request, 'register.html')
 
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('home') 
+        return redirect('home')
 
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
 
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
             login(request, user)
             return redirect('home')
@@ -90,6 +83,14 @@ def login_view(request):
             messages.error(request, "Invalid username or password.")
 
     return render(request, 'login.html')
+
+def logout_view(request):
+    if request.method == "POST":
+        logout(request)
+        messages.success(request, "You have successfully logged out.")
+        return redirect('login')
+    else:
+        return redirect('home')
 
 
 # Unused placeholder (can be removed if not needed)

@@ -29,13 +29,27 @@
 
   <!-- Navigation Bar -->
   <nav class="bg-[black] px-4 py-2">
-    <div class="flex items-center max-w-7xl mx-auto">
+    <div class="flex items-center max-w-7xl mx-auto space-x-4">
 
       <!-- Auth Links -->
-      <a href="{% url 'login' %}" 
-         class="flex items-center px-6 h-10 border-l border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">
-        <span class="material-icons mr-2">account_circle</span>Sign In
-      </a>
+      {% if not request.user.is_authenticated %}
+        <a href="{% url 'login' %}" 
+           class="flex items-center px-6 h-10 border-l border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">
+          <span class="material-icons mr-2">account_circle</span>Sign In
+        </a>
+      {% else %}
+<form method="post" action="{% url 'logout' %}" class="inline">
+  {% csrf_token %}
+  <button type="submit"
+    class="flex items-center px-6 h-10 border-l border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition cursor-pointer select-none">
+    <span class="material-icons mr-2 text-white">logout</span>
+    <span class="text-white">Logout</span>
+  </button>
+</form>
+
+
+
+      {% endif %}
 
       <!-- Menu Links -->
       <div class="flex space-x-0">
