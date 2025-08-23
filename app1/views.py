@@ -87,13 +87,6 @@ def logout_view(request):
         return redirect('home')
 
 
-def carbon_step2(request):
-    return render(request, "carbon_2.html")   # put your interventions page here
-
-
-def carbon_view(request):
-    return render(request, 'carbon.html')
-
 # Unused placeholder (can be removed if not needed)
 def calculator_results(request):
     return render(request, 'calculator_results.html')

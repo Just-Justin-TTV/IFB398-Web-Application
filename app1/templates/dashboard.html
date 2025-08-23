@@ -4,189 +4,116 @@
   <head>
     <meta charset="UTF-8" />
     <title>Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Tailwind v3 CDN (simplest to start). Remove the old v2 link. -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Optional: quick design tokens -->
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              brand: { DEFAULT: "#0ea5e9", dark: "#0284c7" }, // cyan
-            },
-            borderRadius: { "2xl": "1rem" },
-          },
-        },
-      };
-    </script>
-    <!-- Material Icons -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   </head>
+  <body class="h-screen bg-gray-50 font-sans">
+    <div class="flex h-full">
 
-  <body class="min-h-screen bg-gray-50 text-gray-900">
-    <div class="flex min-h-screen">
       <!-- Sidebar -->
-      <aside class="w-72 bg-white border-r shadow-sm flex flex-col">
-        <div class="px-6 py-6 border-b">
-          <div class="flex items-center gap-3">
-            <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-12 h-12 rounded-full object-cover" />
-            <div>
-              <p class="text-sm text-gray-500">Welcome</p>
-              <p class="font-semibold">{{ request.session.user_name }}</p>
-            </div>
+    <aside class="w-64 bg-white border-r shadow flex flex-col items-center py-6">
+        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-6" />
+
+        <ul class="w-full px-4 space-y-2">
+          <li>
+            <a href="{% url 'dashboard' %}" class="flex items-center p-3 rounded-lg bg-cyan-500 text-white font-medium shadow">
+              <span class="material-icons mr-3">dashboard</span>
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'projects' %}" 
+              class="flex items-center px-4 py-3 rounded-lg shadow {% if 'projects' in request.path %}bg-cyan-500 text-white{% else %}hover:bg-gray-100{% endif %}">
+              <span class="material-icons mr-3">folder</span>
+              Projects
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
+              <span class="material-icons mr-3">build</span>
+              Interventions
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
+              <span class="material-icons mr-3">calculate</span>
+              Cost Matrix
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
+              <span class="material-icons mr-3">description</span>
+              Reports
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
+              <span class="material-icons mr-3">settings</span>
+              Settings
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Main content -->
+      <main class="flex-1 p-8">
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-semibold">Dashboard</h1>
+          <p>Welcome, {{ request.session.user_name }}</p>
+
+        </div>
+
+        <div class="grid grid-cols-4 gap-4 mb-8">
+          <div class="bg-yellow-400 text-white p-4 rounded shadow">
+            <h2 class="text-sm">Total CO2 Emitted</h2>
+            <p class="text-3xl font-bold">2,032 <span class="text-sm">tons</span></p>
+          </div>
+          <div class="bg-yellow-400 text-white p-4 rounded shadow">
+            <h2 class="text-sm">Projects</h2>
+            <p class="text-3xl font-bold">40 <span class="text-sm">+5%</span></p>
+          </div>
+          <div class="bg-yellow-400 text-white p-4 rounded shadow">
+            <h2 class="text-sm">Add Data</h2>
+          </div>
+          <div class="bg-yellow-400 text-white p-4 rounded shadow">
+            <h2 class="text-sm">Insert</h2>
           </div>
         </div>
 
-        <nav class="flex-1 px-4 py-4">
-          <ul class="space-y-2">
-            <li>
-              <a href="{% url 'dashboard' %}"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand text-white shadow transition hover:bg-brand-dark">
-                <span class="material-icons">dashboard</span>
-                <span class="font-medium">Dashboard</span>
-              </a>
-            </li>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Project Summary</h2>
+          <select class="border rounded px-3 py-1">
+            <option>Project</option>
+          </select>
+        </div>
 
-            <li>
-              <a href="{% url 'projects' %}"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition border border-gray-200 hover:bg-gray-50
-                 {% if 'projects' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% endif %}">
-                <span class="material-icons">folder</span>
-                <span class="font-medium">Projects</span>
-              </a>
-            </li>
+        <table class="min-w-full bg-white shadow rounded mb-6">
+          <thead>
+            <tr class="bg-gray-100 text-left text-sm font-medium text-gray-600">
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">Due</th>
+              <th class="px-4 py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm text-gray-700">
+            <tr><td class="px-4 py-2">Horizon Heights</td><td class="px-4 py-2">20/07/2025</td><td class="px-4 py-2"><span class="bg-red-100 text-red-600 px-2 py-1 rounded">Incomplete</span></td></tr>
+            <tr><td class="px-4 py-2">Riverbend</td><td class="px-4 py-2">3/07/2025</td><td class="px-4 py-2"><span class="bg-orange-100 text-orange-600 px-2 py-1 rounded">In Progress</span></td></tr>
+            <tr><td class="px-4 py-2">Pinecrest Logistics</td><td class="px-4 py-2">12/06/2025</td><td class="px-4 py-2"><span class="bg-green-100 text-green-600 px-2 py-1 rounded">Complete</span></td></tr>
+          </tbody>
+        </table>
 
-            <li>
-              <a href="{% url 'carbon' %}"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">build</span>
-                <span class="font-medium">Interventions</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="#"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">calculate</span>
-                <span class="font-medium">Cost Matrix</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="#"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">description</span>
-                <span class="font-medium">Reports</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="#"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">settings</span>
-                <span class="font-medium">Settings</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      <!-- Main -->
-      <main class="flex-1">
-        <!-- Top bar -->
-        <header class="bg-white border-b">
-          <div class="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
-            <h1 class="text-xl md:text-2xl font-semibold">Dashboard</h1>
-            <div class="hidden md:flex items-center gap-3">
-              <span class="material-icons text-gray-500">notifications</span>
-              <img src="{% static 'images/img6.png' %}" alt="User" class="w-8 h-8 rounded-full object-cover">
-            </div>
+        <div>
+          <h2 class="text-xl font-semibold mb-2">Year to Year Emissions</h2>
+          <div class="bg-blue-100 h-48 rounded flex items-end justify-evenly p-4">
+            <div class="w-6 bg-blue-400 h-1/4 rounded"></div>
+            <div class="w-6 bg-blue-400 h-2/4 rounded"></div>
+            <div class="w-6 bg-blue-400 h-3/4 rounded"></div>
+            <div class="w-6 bg-blue-400 h-2/3 rounded"></div>
+            <div class="w-6 bg-blue-400 h-3/4 rounded"></div>
+            <div class="w-6 bg-blue-400 h-3/4 rounded"></div>
+            <div class="w-6 bg-blue-400 h-2/3 rounded"></div>
           </div>
-        </header>
-
-        <div class="mx-auto max-w-7xl px-6 py-8 space-y-8">
-          <!-- KPI cards -->
-          <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="rounded-2xl p-5 bg-white border shadow-sm">
-              <div class="text-sm text-gray-500">Total CO₂ Emitted</div>
-              <div class="mt-2 text-3xl font-bold">2,032 <span class="text-sm font-medium text-gray-500">tons</span></div>
-              <div class="mt-3 h-2 w-full rounded bg-gray-100">
-                <div class="h-2 w-2/3 rounded bg-brand"></div>
-              </div>
-            </div>
-
-            <div class="rounded-2xl p-5 bg-white border shadow-sm">
-              <div class="text-sm text-gray-500">Projects</div>
-              <div class="mt-2 text-3xl font-bold">40 <span class="text-sm font-medium text-green-600 align-top">+5%</span></div>
-              <p class="mt-3 text-xs text-gray-500">vs last month</p>
-            </div>
-
-            <div class="rounded-2xl p-5 bg-white border shadow-sm">
-              <div class="text-sm text-gray-500">Add Data</div>
-              <button class="mt-3 px-3 py-2 rounded-xl bg-brand text-white hover:bg-brand-dark">Upload</button>
-            </div>
-
-            <div class="rounded-2xl p-5 bg-white border shadow-sm">
-              <div class="text-sm text-gray-500">Insert</div>
-              <button class="mt-3 px-3 py-2 rounded-xl border">New Entry</button>
-            </div>
-          </section>
-
-          <!-- Project summary -->
-          <section class="space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 class="text-lg font-semibold">Project Summary</h2>
-              <select class="border rounded-xl px-3 py-2 bg-white w-full sm:w-56">
-                <option>Project</option>
-              </select>
-            </div>
-
-            <div class="overflow-hidden rounded-2xl border bg-white shadow-sm">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th class="px-4 py-3 text-left font-medium">Name</th>
-                    <th class="px-4 py-3 text-left font-medium">Due</th>
-                    <th class="px-4 py-3 text-left font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y">
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3">Horizon Heights</td>
-                    <td class="px-4 py-3">20/07/2025</td>
-                    <td class="px-4 py-3"><span class="bg-red-100 text-red-700 px-2 py-1 rounded-lg">Incomplete</span></td>
-                  </tr>
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3">Riverbend</td>
-                    <td class="px-4 py-3">3/07/2025</td>
-                    <td class="px-4 py-3"><span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-lg">In Progress</span></td>
-                  </tr>
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3">Pinecrest Logistics</td>
-                    <td class="px-4 py-3">12/06/2025</td>
-                    <td class="px-4 py-3"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-lg">Complete</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- Simple placeholder chart -->
-          <section>
-            <h2 class="text-lg font-semibold mb-3">Year to Year Emissions</h2>
-            <div class="bg-white border rounded-2xl p-4 shadow-sm">
-              <div class="h-52 rounded-xl bg-gradient-to-b from-brand/15 to-transparent flex items-end justify-evenly px-4">
-                <div class="w-6 bg-brand/70 h-1/4 rounded-t-xl"></div>
-                <div class="w-6 bg-brand/70 h-2/4 rounded-t-xl"></div>
-                <div class="w-6 bg-brand/70 h-3/4 rounded-t-xl"></div>
-                <div class="w-6 bg-brand/70 h-2/3 rounded-t-xl"></div>
-                <div class="w-6 bg-brand/70 h-3/4 rounded-t-xl"></div>
-                <div class="w-6 bg-brand/70 h-3/4 rounded-t-xl"></div>
-                <div class="w-6 bg-brand/70 h-2/3 rounded-t-xl"></div>
-              </div>
-            </div>
-          </section>
         </div>
       </main>
     </div>

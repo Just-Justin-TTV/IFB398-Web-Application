@@ -1,219 +1,91 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Tailwind v3 CDN (simplest to start). Remove the old v2 link. -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Optional: quick design tokens -->
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              brand: { DEFAULT: "#0ea5e9", dark: "#0284c7" }, // cyan
-            },
-            borderRadius: { "2xl": "1rem" },
-          },
-        },
-      };
-    </script>
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <title>Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="h-screen bg-gray-100 font-sans">
+  <div class="flex h-full">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r shadow flex flex-col items-center py-6">
+      <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-6" />
+      <ul class="w-full px-4 space-y-2">
+        <li><a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">dashboard</span>Dashboard</a></li>
+        <li><a href="{% url 'projects' %}" class="flex items-center bg-cyan-500 text-white px-4 py-3 rounded-lg shadow"><span class="material-icons mr-3">folder</span>Projects</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">build</span>Interventions</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">calculate</span>Cost Matrix</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">description</span>Reports</a></li>
+        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">settings</span>Settings</a></li>
+      </ul>
+    </aside>
 
-  <body class="min-h-screen bg-gray-50 text-gray-900">
-    <div class="flex min-h-screen">
-      <!-- Sidebar -->
-      <aside class="w-72 bg-white border-r shadow-sm flex flex-col">
-        <div class="px-6 py-6 border-b">
-          <div class="flex items-center gap-3">
-            <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-12 h-12 rounded-full object-cover" />
-            <div>
-              <p class="text-sm text-gray-500">Welcome</p>
-              <p class="font-semibold">{{ request.session.user_name }}</p>
-            </div>
-          </div>
-        </div>
+    <!-- Main -->
+    <main class="flex-1 p-8">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-semibold">Projects</h1>
+        <p class="text-sm text-gray-500">First Name, Last Name</p>
+      </div>
 
-        <nav class="flex-1 px-4 py-4">
-          <ul class="space-y-2">
-            <li>
-              <a href="{% url 'dashboard' %}"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">dashboard</span>
-                <span class="font-medium">Dashboard</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="{% url 'projects' %}"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand text-white shadow transition hover:bg-brand-dark">
-                <span class="material-icons">folder</span>
-                <span class="font-medium">Projects</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="{% url 'carbon' %}"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">build</span>
-                <span class="font-medium">Interventions</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="#"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">calculate</span>
-                <span class="font-medium">Cost Matrix</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="#"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">description</span>
-                <span class="font-medium">Reports</span>
-              </a>
-            </li>
-
-            <li>
-              <a href="#"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
-                <span class="material-icons">settings</span>
-                <span class="font-medium">Settings</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-  <!-- Main content -->
-  <main class="col-span-12 md:col-span-9 lg:col-span-9">
-    <!-- Header actions -->
-    <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold">Projects</h1>
-      <div class="flex items-center gap-3">
-        <button class="h-10 w-10 grid place-items-center rounded-full border bg-white hover:bg-gray-50">
-          <span class="material-icons">notifications</span>
+      <div class="flex justify-end space-x-4 mb-4">
+        <button class="bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-full">
+          <img src="{% static 'images/img5.jpg' %}" alt="Edit" class="h-6 w-6" />
         </button>
-        <a href="{% url 'create_project' %}" class="inline-flex items-center gap-2 rounded-2xl bg-cyan-600 px-4 py-2.5 text-white hover:bg-cyan-700">
-          <span class="material-icons text-[20px]">add</span>
-          <span class="font-medium">New Project</span>
+        <a href="{% url 'create_project' %}">
+            <button class="bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-full">
+                <img src="{% static 'images/img6.png' %}" alt="Add" class="h-6 w-6" />
+            </button>
         </a>
-      </div>
-    </div>
 
-    <!-- Search -->
-    <div class="mt-6">
-      <div class="bg-white rounded-2xl border shadow-sm p-3">
-        <div class="relative">
-          <input id="search" onkeyup="filterTable()" type="text" placeholder="Search projects"
-                 class="w-full rounded-xl border px-10 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-600">
-          <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-        </div>
       </div>
-    </div>
 
-    <!-- Table card -->
-    <section class="mt-4">
-      <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        <table class="min-w-full text-sm">
-          <thead class="bg-gray-50 text-gray-600">
+      <div class="relative mb-4">
+        <input type="text" id="search" onkeyup="filterTable()" placeholder="Search" class="w-full px-4 py-2 border rounded-lg shadow pl-10">
+        <span class="material-icons absolute left-3 top-2.5 text-gray-400">search</span>
+      </div>
+
+      <div class="overflow-auto">
+        <table class="min-w-full bg-white shadow rounded">
+          <thead class="bg-gray-200 text-sm text-gray-600">
             <tr>
-              <th class="px-6 py-3 text-left font-semibold">Project Name</th>
-              <th class="px-6 py-3 text-left font-semibold">Year</th>
-              <th class="px-6 py-3 text-left font-semibold">Region</th>
-              <th class="px-6 py-3 text-left font-semibold">Carbon Total</th>
-              <th class="px-6 py-3 text-left font-semibold">Cost</th>
-              <th class="px-6 py-3 text-left font-semibold">Last Edited</th>
-              <th class="px-6 py-3 text-left font-semibold">Actions</th>
+              <th class="px-4 py-2">Project Name</th>
+              <th class="px-4 py-2">Year</th>
+              <th class="px-4 py-2">Region</th>
+              <th class="px-4 py-2">Carbon Total</th>
+              <th class="px-4 py-2">Cost</th>
+              <th class="px-4 py-2">Last Edited</th>
+              <th class="px-4 py-2">Actions</th>
             </tr>
           </thead>
-          <tbody id="projectTable" class="divide-y divide-gray-100">
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-3">Pinecrest Logistics</td>
-              <td class="px-6 py-3">2025</td>
-              <td class="px-6 py-3">AU</td>
-              <td class="px-6 py-3">248</td>
-              <td class="px-6 py-3">$21,080</td>
-              <td class="px-6 py-3">01/05/2025</td>
-              <td class="px-6 py-3">
-                <a href="#" class="inline-flex items-center gap-1 text-cyan-700 hover:underline">
-                  <span class="material-icons text-[18px]">edit</span> Edit
-                </a>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-3">Aurora Data Center</td>
-              <td class="px-6 py-3">2025</td>
-              <td class="px-6 py-3">UK</td>
-              <td class="px-6 py-3">176</td>
-              <td class="px-6 py-3">$21,120</td>
-              <td class="px-6 py-3">29/04/2025</td>
-              <td class="px-6 py-3">
-                <a href="#" class="inline-flex items-center gap-1 text-cyan-700 hover:underline">
-                  <span class="material-icons text-[18px]">edit</span> Edit
-                </a>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-3">Cascade Elementary</td>
-              <td class="px-6 py-3">2025</td>
-              <td class="px-6 py-3">PNG</td>
-              <td class="px-6 py-3">512</td>
-              <td class="px-6 py-3">$33,280</td>
-              <td class="px-6 py-3">29/04/2025</td>
-              <td class="px-6 py-3">
-                <a href="#" class="inline-flex items-center gap-1 text-cyan-700 hover:underline">
-                  <span class="material-icons text-[18px]">edit</span> Edit
-                </a>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-3">MetroCore Sustainable</td>
-              <td class="px-6 py-3">2025</td>
-              <td class="px-6 py-3">UK</td>
-              <td class="px-6 py-3">89</td>
-              <td class="px-6 py-3">$13,350</td>
-              <td class="px-6 py-3">13/04/2025</td>
-              <td class="px-6 py-3">
-                <a href="#" class="inline-flex items-center gap-1 text-cyan-700 hover:underline">
-                  <span class="material-icons text-[18px]">edit</span> Edit
-                </a>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-3">Suncrest Senior</td>
-              <td class="px-6 py-3">2025</td>
-              <td class="px-6 py-3">PNG</td>
-              <td class="px-6 py-3">321</td>
-              <td class="px-6 py-3">$14,445</td>
-              <td class="px-6 py-3">14/04/2025</td>
-              <td class="px-6 py-3">
-                <a href="#" class="inline-flex items-center gap-1 text-cyan-700 hover:underline">
-                  <span class="material-icons text-[18px]">edit</span> Edit
-                </a>
-              </td>
-            </tr>
+          <tbody id="projectTable" class="text-sm text-gray-700">
+            <tr><td class="px-4 py-2">Pinecrest Logistics</td><td>2025</td><td>AU</td><td>248</td><td>$21,080</td><td>01/05/2025</td><td>Edit</td></tr>
+            <tr><td>Aurora Data Center</td><td>2025</td><td>UK</td><td>176</td><td>$21,120</td><td>29/04/2025</td><td>Edit</td></tr>
+            <tr><td>Cascade Elementry</td><td>2025</td><td>PNG</td><td>512</td><td>$33,280</td><td>29/04/2025</td><td>Edit</td></tr>
+            <tr><td>MetroCore Sustainable</td><td>2025</td><td>UK</td><td>89</td><td>$13,350</td><td>13/04/2025</td><td>Edit</td></tr>
+            <tr><td>Suncrest Senior</td><td>2025</td><td>PNG</td><td>321</td><td>$14,445</td><td>14/04/2025</td><td>Edit</td></tr>
           </tbody>
         </table>
       </div>
-    </section>
-  </main>
-</div>
+    </main>
+  </div>
 
-<script>
-  function filterTable() {
-    const q = document.getElementById("search")?.value?.trim().toUpperCase() || "";
-    const rows = document.querySelectorAll("#projectTable tr");
-    rows.forEach(row => {
-      const nameCell = row.cells[0];
-      const txt = (nameCell?.textContent || "").toUpperCase();
-      row.style.display = txt.includes(q) ? "" : "none";
-    });
-  }
-</script>
+  <script>
+    function filterTable() {
+      const input = document.getElementById("search");
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById("projectTable");
+      const tr = table.getElementsByTagName("tr");
+      for (let i = 0; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+          const txtValue = td.textContent || td.innerText;
+          tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
