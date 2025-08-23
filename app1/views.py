@@ -72,28 +72,42 @@ def register_view(request):
     
 def login_view(request):
     if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password1']
-        confirm_password = request.POST['password2']
+        email = (request.POST.get('email') or '').strip().lower()
+        password = request.POST.get('password') or ''
+
+        # Hash must match whatever you used at register time
         password_hash = hashlib.sha256(password.encode()).hexdigest()
+
+        # Correct placeholder for the DB engine
+        sql = (
+            "SELECT id, full_name FROM Users WHERE email=? AND password_hash=?"
+            if connection.vendor == "sqlite"
+            else "SELECT id, full_name FROM Users WHERE email=%s AND password_hash=%s"
+        )
+
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT id, full_name FROM Users WHERE email=%s AND password_hash=%s",
-                [email, password_hash]
-            )
-            user = cursor.fetchone()
-        if user:
-            # Store user in session
+            cursor.execute(sql, [email, password_hash])
+            row = cursor.fetchone()
+
+        if row:
             request.session['user_email'] = email
-            request.session['user_name'] = user[1]
+            request.session['user_name'] = row[1]  # full_name
             return redirect('dashboard')
-        else:
-            return render(request, 'login.html', {'error': 'Invalid credentials.'})
+
+        return render(request, 'login.html', {'error': 'Invalid credentials.'})
+
     return render(request, 'login.html')
 
 # Step 1: Home page
 def home(request):
     return render(request, 'home.html')
+
+def carbon_step2(request):
+    return render(request, "carbon_2.html")   # put your interventions page here
+
+
+def carbon_view(request):
+    return render(request, 'carbon.html')
 
 # Unused placeholder (can be removed if not needed)
 def calculator_results(request):
