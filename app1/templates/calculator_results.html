@@ -8,16 +8,12 @@
     <p><strong>Total Budget:</strong> ${{ global_budget|floatformat:2 }}</p>
 
     {% for cls, rows in grouped_results.items %}
-
-
         <h3>{{ cls }}</h3>
         <ul>
             {% for row in rows %}
                 <li>
-                    <strong>{{ row.intervention }}</strong> – 
-                    {{ row.description }} <br>
-                    Impact: {{ row.impact_rating }},
-                    Cost Range: ${{ row.low_cost }} – ${{ row.high_cost }}
+                    <strong>{{ row.name }}</strong> – {{ row.description }} <br>
+                    <em>Theme:</em> {{ row.theme }}
                 </li>
             {% endfor %}
         </ul>
