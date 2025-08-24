@@ -13,8 +13,11 @@
             {% for row in rows %}
                 <li>
                     <strong>{{ row.name }}</strong> – {{ row.description }} <br>
-                    <em>Theme:</em> {{ row.theme }}
+                    <em>Theme:</em> {{ row.theme }} <br>
+                    <em>Cost:</em> ${{ row.cost|floatformat:2 }}
                 </li>
+            {% empty %}
+                <li>No interventions available within budget for {{ cls }}</li>
             {% endfor %}
         </ul>
     {% endfor %}
