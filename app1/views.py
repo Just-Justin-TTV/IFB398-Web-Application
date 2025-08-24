@@ -19,6 +19,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth import logout
+from django.views.decorators.http import require_GET, require_POST
+from .models import Interventions
+from django.http import JsonResponse
+
 
 # Step 1: Home page with "Get Started" button
 def create_project(request):
@@ -39,6 +43,36 @@ def carbon(request):
 
 def carbon_2(request):
     return render(request, "carbon_2.html")
+
+# Dropdown value -> label exactly as stored in your DB
+CLASS_MAP = {
+    "carbon":   "Carbon Emissions",
+    "health":   "Health and Wellbeing",
+    "water":    "Water Use",
+    "circular": "Circular Economy",
+}
+
+@require_GET
+def interventions_api(request):
+    # accept ?class= or ?cls=
+    key = request.GET.get("class") or request.GET.get("cls") or "carbon"
+    label = CLASS_MAP.get(key, key)
+
+    qs = Interventions.objects.filter(class_name__iexact=label).order_by("name")
+
+    # Your table doesn't have impact/cost columns yet, so send 0s for now
+    items = [{
+        "id": f"iv_{iv.id}",
+        "name": iv.name or (iv.description or "Untitled"),
+        "theme":       iv.theme or "",          # <— include
+        "description": iv.description or "",    # <— include
+        "group":       iv.theme or "",          # keep grouping by theme (optional)
+        "impact": 0,
+        "cost": [0, 0],
+    } for iv in qs]
+
+    return JsonResponse({"items": items})
+
 
 def register_view(request):
     if request.method == 'POST':

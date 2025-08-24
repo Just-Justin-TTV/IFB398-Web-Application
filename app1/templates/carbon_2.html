@@ -10,9 +10,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" }
-          },
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
           borderRadius: { "2xl":"1rem" }
         }
       }
@@ -23,7 +21,7 @@
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <div class="flex min-h-screen">
-    <!-- ============ Sidebar ============ -->
+    <!-- Sidebar -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
       <div class="px-5 py-6 border-b">
         <div class="flex items-center gap-3">
@@ -36,16 +34,13 @@
       </div>
 
       <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
-        <a href="{% url 'projects' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
-        <a href="{% url 'carbon' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
+        <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
           <span class="material-icons text-[18px]">build</span> Interventions
         </a>
         <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
@@ -59,19 +54,17 @@
         </a>
       </nav>
     </aside>
-    <!-- ============ End Sidebar ============ -->
 
-    <!-- ============ Main ============ -->
+    <!-- Main -->
     <main class="flex-1">
-      <!-- Top header -->
+      <!-- Header -->
       <header class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-semibold">Carbon Calculator</h1>
             <p class="text-sm text-gray-600">Compare interventions, costs, and synergies to meet your targets</p>
           </div>
-          <button id="saveBtn"
-                  class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-600">
+          <button id="saveBtn" class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-600">
             <span class="material-icons text-base">save</span> Save
           </button>
         </div>
@@ -89,14 +82,13 @@
                 <option value="health">Health & Wellbeing</option>
                 <option value="water">Water Use</option>
                 <option value="circular">Circular Economy</option>
+                <option value="resilience">Resilience</option>
+                <option value="biodiversity">Biodiversity</option>
               </select>
               <span class="material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-base pointer-events-none">expand_more</span>
             </div>
 
-            <button id="resetBtn"
-                    class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">
-              Reset
-            </button>
+            <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
           </div>
 
           <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
@@ -109,7 +101,6 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- LEFT: Table -->
           <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
-            <!-- Column headers -->
             <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <div class="col-span-5 px-4 py-3">Intervention</div>
               <div class="col-span-2 px-4 py-3 text-center">Impact</div>
@@ -120,12 +111,10 @@
             <div id="rows"></div>
           </section>
 
-          <!-- RIGHT: Score + progress -->
+          <!-- RIGHT -->
           <aside class="space-y-6">
             <div class="bg-white border rounded-2xl shadow-sm">
-              <div class="px-4 py-3 border-b">
-                <h3 class="font-semibold">Class Summary</h3>
-              </div>
+              <div class="px-4 py-3 border-b"><h3 class="font-semibold">Class Summary</h3></div>
               <div class="p-4">
                 <div class="overflow-hidden rounded-xl border">
                   <table class="w-full text-sm">
@@ -144,9 +133,7 @@
             </div>
 
             <div class="bg-white border rounded-2xl shadow-sm">
-              <div class="px-4 py-3 border-b">
-                <h3 class="font-semibold">Progress</h3>
-              </div>
+              <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
               <div class="p-4 space-y-4" id="progressBars"></div>
             </div>
           </aside>
@@ -155,269 +142,260 @@
     </main>
   </div>
 
-  <!-- ============ JS (same data, cleaner rendering) ============ -->
+  <!-- JS -->
   <script>
-    const CAP_HIGH = 300000;
+  const CAP_HIGH = 300000;
 
-    const CLASSES = [
-      { key:'carbon',   label:'Carbon',               target:80 },
-      { key:'health',   label:'Health & Wellbeing',   target:60 },
-      { key:'water',    label:'Water Use',            target:30 },
-      { key:'circular', label:'Circular Economy',     target:40 },
-      { key:'resilience', label:'Resilience',         target:60 },
-      { key:'value',    label:'Value & Cost',         target:10 },
-      { key:'biodiversity', label:'Biodiversity',     target:20 },
-    ];
+  // safe HTML
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+  );
 
-    const INTERVENTIONS = [
-      { id:'group1', group:true, name:'Reducing Embodied Carbon' },
+  const CLASSES = [
+    { key:'carbon',   label:'Carbon',             target:80 },
+    { key:'health',   label:'Health & Wellbeing', target:60 },
+    { key:'water',    label:'Water Use',          target:30 },
+    { key:'circular', label:'Circular Economy',   target:40 },
+    { key:'resilience', label:'Resilience',       target:60 },
+    { key:'value',    label:'Value & Cost',       target:10 },
+    { key:'biodiversity', label:'Biodiversity',   target:20 },
+  ];
 
-      { id:'hvac_high', name:'High-Efficiency HVAC',
-        baseImpact:{carbon:18}, cost:[150000,200000],
-        conflicts:['legacy_boiler'],
-        effects:[ {type:'boost', target:'demand_response', delta:{carbon:5}, note:'+ 5 synergy'} ]
-      },
+  let INTERVENTIONS = [];
+  const state = { selected: new Set(), activeClass: 'carbon' };
 
-      { id:'seer_upgrade', name:'Upgrade to SEER 16+ Systems',
-        baseImpact:{carbon:12}, cost:[100000,150000], conflicts:[] },
+  const money = n => !isFinite(n) ? 'N/A' : (n===0 ? '$0' : `$${Math.round(n/1000)}K`);
+  const range = ([a,b]) => a===b ? money(a) : `${money(a)}–${money(b)}`;
 
-      { id:'legacy_boiler', name:'Legacy Gas Boiler',
-        baseImpact:{carbon:10}, cost:[80000,80000],
-        conflicts:['hvac_high'], disabledNote:'Conflict (Disabled)' },
+  // Fetch interventions for a class
+  async function loadInterventions(cls) {
+    try {
+      // Use ?cls= to match the Django view
+      const res = await fetch(`/api/interventions/?cls=${encodeURIComponent(cls)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-      { id:'demand_response', name:'Demand Response Ready',
-        baseImpact:{carbon:5}, cost:[50000,70000], conflicts:[] },
+      INTERVENTIONS = [];
+      let lastGroup = null;
 
-      { id:'solar', name:'Rooftop Solar Panels',
-        baseImpact:{carbon:12}, cost:[200000,300000], conflicts:[],
-        effects:[ {type:'penalty', target:'hvac_high', delta:{carbon:-3}, note:'-3 penalty to HVAC'} ]
-      },
-
-      { id:'local_proc', name:'Local procurement & low-carbon materials',
-        baseImpact:{carbon:9}, cost:[0,0], conflicts:[] },
-
-      { id:'retention', name:'Retention of existing structures',
-        baseImpact:{carbon:7}, cost:[0,0], conflicts:[] },
-
-      { id:'soffits', name:'Utilising exposed soffits',
-        baseImpact:{carbon:6}, cost:[0,0], conflicts:[] },
-
-      { id:'group2', group:true, name:'Reducing Operational Carbon' },
-
-      { id:'glazing_ratio', name:'Glazing ratio improvement (~30%→~50%)',
-        baseImpact:{carbon:8}, cost:[0,0], conflicts:[] },
-
-      { id:'ext_wall_u', name:'External Wall U-Value enhancements (<0.16–0.18)',
-        baseImpact:{carbon:5}, cost:[0,0], conflicts:[] },
-
-      { id:'glazing_u', name:'Glazing U-Value enhancements',
-        baseImpact:{carbon:4}, cost:[0,0], conflicts:[] },
-
-      { id:'airtight', name:'Façade air-tightness (<1 to <3)',
-        baseImpact:{carbon:3}, cost:[0,0], conflicts:[] },
-    ];
-
-    const state = { selected: new Set(), disabled: new Set(), activeClass: 'carbon' };
-    const $ = (s, r=document)=>r.querySelector(s);
-
-    const money = n => !isFinite(n) ? 'N/A' : (n===0 ? '$0' : `$${Math.round(n/1000)}K`);
-    const range = ([a,b]) => a===b ? money(a) : `${money(a)}–${money(b)}`;
-
-    function recomputeDisabled(){
-      state.disabled.clear();
-      for(const id of state.selected){
-        const iv = INTERVENTIONS.find(x=>x.id===id);
-        (iv?.conflicts||[]).forEach(cid=>{
-          if(!state.selected.has(cid)) state.disabled.add(cid);
-        });
-      }
-    }
-
-    function sumImpacts(){
-      const scores = {};
-      for(const id of state.selected){
-        const iv = INTERVENTIONS.find(x=>x.id===id);
-        if(!iv || iv.group) continue;
-        for(const k in iv.baseImpact){ scores[k]=(scores[k]||0)+iv.baseImpact[k]; }
-      }
-      // synergies / penalties
-      for(const id of state.selected){
-        const src = INTERVENTIONS.find(x=>x.id===id);
-        (src?.effects||[]).forEach(e=>{
-          if(state.selected.has(e.target)){
-            for(const k in e.delta){ scores[k]=(scores[k]||0)+e.delta[k]; }
-          }
-        });
-      }
-      return scores;
-    }
-
-    function selectionCost(){
-      let lo=0, hi=0;
-      for(const id of state.selected){
-        const iv = INTERVENTIONS.find(x=>x.id===id);
-        if(!iv||iv.group) continue;
-        lo += iv.cost?.[0]||0;
-        hi += iv.cost?.[1]||0;
-      }
-      return [lo,hi];
-    }
-
-    const chip = (id, on, variant) =>
-      `<button data-id="${id}" data-act="${on?'Y':'N'}"
-        class="px-2.5 py-1 rounded-full text-xs font-medium transition
-               ${on
-                 ? (variant==='danger'
-                    ? 'bg-red-100 text-red-700 border border-red-200'
-                    : 'bg-cyan-100 text-cyan-700 border border-cyan-200')
-                 : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'}">
-        ${on ? (variant==='danger' ? 'N' : 'Y') : (variant==='danger' ? 'N' : 'Y')}
-       </button>`;
-
-    function render(){
-      recomputeDisabled();
-
-      // Prepare badges
-      const synergy={}, penalty={};
-      for(const id of state.selected){
-        const src = INTERVENTIONS.find(x=>x.id===id);
-        (src?.effects||[]).forEach(e=>{
-          const neg = Object.values(e.delta).some(v=>v<0);
-          const map = neg ? penalty : synergy;
-          (map[e.target] ||= []).push(e.note || (neg?'- penalty':'+ synergy'));
-        });
-      }
-
-      // Per-row adjusted impact
-      const adj={};
-      for(const iv of INTERVENTIONS){
-        if(iv.group) continue;
-        let delta=0;
-        for(const sid of state.selected){
-          const src = INTERVENTIONS.find(x=>x.id===sid);
-          (src?.effects||[]).forEach(e=>{
-            if(e.target===iv.id){ delta += (e.delta[state.activeClass]||0); }
-          });
+      for (const it of (data.items || [])) {
+        if (it.group && it.group !== lastGroup) {
+          INTERVENTIONS.push({ group: true, name: it.group });
+          lastGroup = it.group;
         }
-        const base = iv.baseImpact[state.activeClass] || 0;
-        adj[iv.id] = { base, delta, total: base + delta };
+        const [lo, hi] = Array.isArray(it.cost) ? it.cost
+                          : [it.cost_min ?? 0, (it.cost_max ?? it.cost_min ?? 0)];
+        INTERVENTIONS.push({
+          id: String(it.id),
+          name: it.name,
+          theme: it.theme,
+          description: it.description,
+          baseImpact: { [cls]: Number(it.impact ?? 0) },
+          cost: [Number(lo||0), Number(hi||0)],
+        });
       }
 
-      const out=[];
-      for(const iv of INTERVENTIONS){
-        if(iv.group){
-          out.push(`
-            <div class="grid grid-cols-12">
-              <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
-                ${iv.name}
-              </div>
+      if (INTERVENTIONS.length === 0) {
+        document.getElementById('rows').innerHTML =
+          `<div class="p-8 text-center text-gray-500">No interventions found for this class.</div>`;
+        render(); // still fill right panels
+        return;
+      }
+
+      render();
+    } catch (err) {
+      console.error('Failed to load interventions:', err);
+      document.getElementById('rows').innerHTML =
+        `<div class="p-8 text-center text-red-600">Could not load interventions. Check the API route and console.</div>`;
+    }
+  }
+
+  function sumImpacts(){
+    const scores = {};
+    for(const row of INTERVENTIONS){
+      if(row.group) continue;
+      const val = row.baseImpact?.[state.activeClass] || 0;
+      if(val) scores[state.activeClass] = (scores[state.activeClass]||0) + val;
+    }
+    return scores;
+  }
+
+  function selectionCost(){
+    let lo=0, hi=0;
+    for(const row of INTERVENTIONS){
+      if(row.group) continue;
+      if(state.selected.has(row.id)){
+        lo += row.cost?.[0]||0;
+        hi += row.cost?.[1]||0;
+      }
+    }
+    return [lo,hi];
+  }
+
+  function chip(id, on, danger){
+    const base = "px-2.5 py-1 rounded-full text-xs font-medium transition border";
+    if(on && !danger) return `<button data-id="${id}" data-act="Y" class="${base} bg-cyan-100 text-cyan-700 border-cyan-200">Y</button>`;
+    if(!on && danger) return `<button data-id="${id}" data-act="N" class="${base} bg-red-100 text-red-700 border-red-200">N</button>`;
+    return `<button data-id="${id}" data-act="${on?'Y':'N'}" class="${base} bg-white text-gray-600 border-gray-300 hover:bg-gray-50">${on?'Y':'N'}</button>`;
+  }
+
+  function render(){
+    const out=[];
+
+    for(const row of INTERVENTIONS){
+      if(row.group){
+        out.push(`
+          <div class="grid grid-cols-12">
+            <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
+              ${esc(row.name)}
             </div>
-          `);
-          continue;
-        }
+          </div>
+        `);
+        continue;
+      }
 
-        const dis = state.disabled.has(iv.id);
-        const sel = state.selected.has(iv.id);
-        const {base,delta,total} = adj[iv.id];
+      const sel  = state.selected.has(row.id);
+      const base = row.baseImpact?.[state.activeClass] || 0;
+      const costCell = row.cost ? range(row.cost) : `<span class="text-gray-400">N/A</span>`;
 
-        const impactCell = dis
-          ? `<span class="text-gray-400">0</span>`
-          : (delta!==0
-              ? `<span>${base} <span class="text-gray-400">→</span> <span class="${delta>0?'text-green-600':'text-red-600'} font-medium">${total} (${delta>0?'+':''}${delta})</span></span>`
-              : `<span>${base}</span>`);
+      // name + theme + accordion for description
+      const nameCell = `
+        <div class="col-span-5 px-4 py-3">
+          <div class="flex items-start gap-2">
+            ${
+              row.description && row.description.trim()
+                ? `<button type="button" class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-gray-100"
+                           aria-label="Show details" aria-expanded="false" data-toggle="${row.id}">
+                     <span class="material-icons text-[18px]" data-icon="${row.id}">expand_more</span>
+                   </button>`
+                : ``
+            }
+            <div>
+              <div class="font-medium">${esc(row.name)}</div>
+              ${ row.theme
+                  ? `<div class="mt-0.5">
+                       <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                         ${esc(row.theme)}
+                       </span>
+                     </div>`
+                  : `` }
+            </div>
+          </div>
+          ${
+            row.description && row.description.trim()
+              ? `<div id="panel-${row.id}" class="mt-2 hidden rounded-lg border bg-gray-50 px-3 py-2 text-xs leading-relaxed text-gray-700">
+                   ${esc(row.description)}
+                 </div>`
+              : ``
+          }
+        </div>
+      `;
 
-        const costCell = iv.cost ? `<span>${range(iv.cost)}</span>` : `<span class="text-gray-400">N/A</span>`;
-
-        const selectCell = dis
-          ? `<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 text-xs" title="${iv.disabledNote||'Conflict'}">X</span>`
-          : `
+      out.push(`
+        <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50">
+          ${nameCell}
+          <div class="col-span-2 px-4 py-3 text-center">${base}</div>
+          <div class="col-span-2 px-4 py-3 text-center">${costCell}</div>
+          <div class="col-span-2 px-4 py-3 text-center">
             <div class="inline-flex gap-1 bg-gray-100 rounded-full p-0.5">
-              ${chip(iv.id, true,  'ok')}
-              ${chip(iv.id, false, 'danger')}
+              ${chip(row.id, true,  false)}
+              ${chip(row.id, false, true)}
             </div>
             <span class="ml-2 text-xs ${sel?'text-cyan-700':'text-gray-500'}">${sel?'Selected':'Not selected'}</span>
-          `;
-
-        const badges=[];
-        if(synergy[iv.id]) synergy[iv.id].forEach(n=>badges.push(`<span class="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs">${n}</span>`));
-        if(penalty[iv.id]) penalty[iv.id].forEach(n=>badges.push(`<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs">${n}</span>`));
-        if(dis) badges.push(`<span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs">${iv.disabledNote||'Conflict'}</span>`);
-
-        out.push(`
-          <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50">
-            <div class="col-span-5 px-4 py-3">${iv.name}</div>
-            <div class="col-span-2 px-4 py-3 text-center">${impactCell}</div>
-            <div class="col-span-2 px-4 py-3 text-center">${costCell}</div>
-            <div class="col-span-2 px-4 py-3 text-center">${selectCell}</div>
-            <div class="col-span-1 px-2 py-3 flex items-center justify-center gap-1 flex-wrap">${badges.join('')}</div>
           </div>
-        `);
-      }
-      document.getElementById('rows').innerHTML = out.join('');
-
-      // Score table
-      const scores = sumImpacts();
-      const tbody=[];
-      for(const c of CLASSES){
-        const ach = Math.max(0, Math.round(scores[c.key]||0));
-        const status = (scores[c.key]===undefined) ? 'N/A' : (ach >= c.target ? 'OK' : `${ach-c.target}`);
-        tbody.push(`
-          <tr class="hover:bg-gray-50">
-            <td class="px-3 py-2">${c.label}</td>
-            <td class="px-3 py-2 text-right">${c.target}</td>
-            <td class="px-3 py-2 text-right">${ach}</td>
-            <td class="px-3 py-2 text-right">${(scores[c.key]===undefined)?'N/A':status}</td>
-          </tr>
-        `);
-      }
-      document.getElementById('scoreTable').innerHTML = tbody.join('');
-
-      // Progress bars
-      const bars=[];
-      ['carbon','health','water','circular'].forEach(k=>{
-        const cls = CLASSES.find(x=>x.key===k);
-        const ach = Math.max(0, Math.min(cls.target, Math.round(scores[k]||0)));
-        const pct = Math.min(100, Math.round((ach/cls.target)*100 || 0));
-        bars.push(`
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-sm text-gray-700">${cls.label}</span>
-              <span class="text-sm text-gray-700">${pct}%</span>
-            </div>
-            <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
-              <div class="h-3 bg-brand rounded-full" style="width:${pct}%"></div>
-            </div>
-          </div>
-        `);
-      });
-      document.getElementById('progressBars').innerHTML = bars.join('');
-
-      // Cost + budget warning
-      const [lo,hi] = selectionCost();
-      document.getElementById('costTracker').textContent = range([lo,hi]);
-      document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
-
-      // chip events
-      document.querySelectorAll('[data-id]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const id = btn.getAttribute('data-id');
-          const act = btn.getAttribute('data-act'); // Y or N
-          if(state.disabled.has(id)) return;
-          if(act==='Y'){ state.selected.add(id); } else { state.selected.delete(id); }
-          render();
-        });
-      });
+          <div class="col-span-1 px-2 py-3"></div>
+        </div>
+      `);
     }
 
-    document.addEventListener('DOMContentLoaded', ()=>{
-      render();
-      document.getElementById('resetBtn').addEventListener('click', ()=>{ state.selected.clear(); render(); });
-      document.getElementById('classSelect').addEventListener('change', (e)=>{ state.activeClass=e.target.value; render(); });
-      document.getElementById('saveBtn').addEventListener('click', ()=>{
-        const payload = { selected:[...state.selected], class: state.activeClass };
-        console.log('SAVE', payload);
+    document.getElementById('rows').innerHTML = out.join('');
+
+    // Score table
+    const scores = sumImpacts();
+    const tbody=[];
+    for(const c of CLASSES){
+      const ach = Math.max(0, Math.round(scores[c.key]||0));
+      const status = (scores[c.key]===undefined) ? 'N/A' : (ach >= c.target ? 'OK' : `${ach-c.target}`);
+      tbody.push(`
+        <tr class="hover:bg-gray-50">
+          <td class="px-3 py-2">${c.label}</td>
+          <td class="px-3 py-2 text-right">${c.target}</td>
+          <td class="px-3 py-2 text-right">${ach}</td>
+          <td class="px-3 py-2 text-right">${(scores[c.key]===undefined)?'N/A':status}</td>
+        </tr>
+      `);
+    }
+    document.getElementById('scoreTable').innerHTML = tbody.join('');
+
+    // Progress bars
+    const bars=[];
+    ['carbon','health','water','circular'].forEach(k=>{
+      const cls = CLASSES.find(x=>x.key===k);
+      const ach = Math.max(0, Math.min(cls.target, Math.round(scores[k]||0)));
+      const pct = Math.min(100, Math.round((ach/cls.target)*100 || 0));
+      bars.push(`
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm text-gray-700">${cls.label}</span>
+            <span class="text-sm text-gray-700">${pct}%</span>
+          </div>
+          <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
+            <div class="h-3 bg-brand rounded-full" style="width:${pct}%"></div>
+          </div>
+        </div>
+      `);
+    });
+    document.getElementById('progressBars').innerHTML = bars.join('');
+
+    // Cost + budget
+    const [lo,hi] = selectionCost();
+    document.getElementById('costTracker').textContent = range([lo,hi]);
+    document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
+
+    // Selection chip events
+    document.querySelectorAll('[data-id]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-id');
+        const act = btn.getAttribute('data-act'); // Y or N
+        if(act==='Y'){ state.selected.add(id); } else { state.selected.delete(id); }
+        render();
       });
     });
+
+    // Description toggle events
+    document.querySelectorAll('[data-toggle]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-toggle');
+        const panel = document.getElementById(`panel-${id}`);
+        const icon  = document.querySelector(`[data-icon="${id}"]`);
+        if (!panel) return;
+        panel.classList.toggle('hidden');
+        const open = !panel.classList.contains('hidden');
+        if (icon) icon.textContent = open ? 'expand_less' : 'expand_more';
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    await loadInterventions(state.activeClass);
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      state.selected.clear();
+      render();
+    });
+
+    document.getElementById('classSelect').addEventListener('change', async (e)=>{
+      state.activeClass = e.target.value;
+      state.selected.clear();   // reset selection when class changes
+      await loadInterventions(state.activeClass);
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', ()=>{
+      const payload = { selected:[...state.selected], class: state.activeClass };
+      console.log('SAVE', payload);
+    });
+  });
   </script>
 </body>
 </html>

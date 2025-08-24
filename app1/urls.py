@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 from django.contrib.auth import views as auth_views
+from . import views
 
 urlpatterns = [
     # ... your existing paths ...
@@ -22,5 +23,6 @@ urlpatterns = [
     path('projects/create/', views.create_project, name='create_project'),
     path("carbon/", views.carbon, name="carbon"),
     path("carbon/step-2/", views.carbon_2, name="carbon_2"),
+    path("api/interventions/", views.interventions_api, name="interventions_api"),  # NEW
     path('register/', views.register_view, name='register'),
 ]
