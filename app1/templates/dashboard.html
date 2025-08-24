@@ -1,120 +1,212 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  </head>
-  <body class="h-screen bg-gray-50 font-sans">
-    <div class="flex h-full">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
+          borderRadius: { "2xl": "1rem" }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
 
-      <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r shadow flex flex-col items-center py-6">
-        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-6" />
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <div class="flex min-h-screen">
 
-        <ul class="w-full px-4 space-y-2">
-          <li>
-            <a href="{% url 'dashboard' %}" class="flex items-center p-3 rounded-lg bg-cyan-500 text-white font-medium shadow">
-              <span class="material-icons mr-3">dashboard</span>
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <a href="{% url 'projects' %}" 
-              class="flex items-center px-4 py-3 rounded-lg shadow {% if 'projects' in request.path %}bg-cyan-500 text-white{% else %}hover:bg-gray-100{% endif %}">
-              <span class="material-icons mr-3">folder</span>
-              Projects
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">build</span>
-              Interventions
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">calculate</span>
-              Cost Matrix
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">description</span>
-              Reports
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">settings</span>
-              Settings
-            </a>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- Main content -->
-      <main class="flex-1 p-8">
-        <div class="flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-semibold">Dashboard</h1>
-          <p class="text-sm text-gray-500">First Name, Last Name</p>
-        </div>
-
-        <div class="grid grid-cols-4 gap-4 mb-8">
-          <div class="bg-yellow-400 text-white p-4 rounded shadow">
-            <h2 class="text-sm">Total CO2 Emitted</h2>
-            <p class="text-3xl font-bold">2,032 <span class="text-sm">tons</span></p>
-          </div>
-          <div class="bg-yellow-400 text-white p-4 rounded shadow">
-            <h2 class="text-sm">Projects</h2>
-            <p class="text-3xl font-bold">40 <span class="text-sm">+5%</span></p>
-          </div>
-          <div class="bg-yellow-400 text-white p-4 rounded shadow">
-            <h2 class="text-sm">Add Data</h2>
-          </div>
-          <div class="bg-yellow-400 text-white p-4 rounded shadow">
-            <h2 class="text-sm">Insert</h2>
+    <!-- ============ Sidebar ============ -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
           </div>
         </div>
+      </div>
 
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Project Summary</h2>
-          <select class="border rounded px-3 py-1">
-            <option>Project</option>
-          </select>
-        </div>
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
+        </a>
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+        <a href="{% url 'carbon' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">build</span> Interventions
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+      </nav>
+    </aside>
+    <!-- ============ End Sidebar ============ -->
 
-        <table class="min-w-full bg-white shadow rounded mb-6">
-          <thead>
-            <tr class="bg-gray-100 text-left text-sm font-medium text-gray-600">
-              <th class="px-4 py-2">Name</th>
-              <th class="px-4 py-2">Due</th>
-              <th class="px-4 py-2">Status</th>
-            </tr>
-          </thead>
-          <tbody class="text-sm text-gray-700">
-            <tr><td class="px-4 py-2">Horizon Heights</td><td class="px-4 py-2">20/07/2025</td><td class="px-4 py-2"><span class="bg-red-100 text-red-600 px-2 py-1 rounded">Incomplete</span></td></tr>
-            <tr><td class="px-4 py-2">Riverbend</td><td class="px-4 py-2">3/07/2025</td><td class="px-4 py-2"><span class="bg-orange-100 text-orange-600 px-2 py-1 rounded">In Progress</span></td></tr>
-            <tr><td class="px-4 py-2">Pinecrest Logistics</td><td class="px-4 py-2">12/06/2025</td><td class="px-4 py-2"><span class="bg-green-100 text-green-600 px-2 py-1 rounded">Complete</span></td></tr>
-          </tbody>
-        </table>
-
-        <div>
-          <h2 class="text-xl font-semibold mb-2">Year to Year Emissions</h2>
-          <div class="bg-blue-100 h-48 rounded flex items-end justify-evenly p-4">
-            <div class="w-6 bg-blue-400 h-1/4 rounded"></div>
-            <div class="w-6 bg-blue-400 h-2/4 rounded"></div>
-            <div class="w-6 bg-blue-400 h-3/4 rounded"></div>
-            <div class="w-6 bg-blue-400 h-2/3 rounded"></div>
-            <div class="w-6 bg-blue-400 h-3/4 rounded"></div>
-            <div class="w-6 bg-blue-400 h-3/4 rounded"></div>
-            <div class="w-6 bg-blue-400 h-2/3 rounded"></div>
+    <!-- ============ Main ============ -->
+    <main class="flex-1">
+      <!-- Header -->
+      <header class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold">Dashboard</h1>
+            <p class="text-sm text-gray-600">Overview of projects & emissions</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="hidden md:flex items-center gap-2 text-sm text-gray-600">
+              <span class="material-icons text-[18px] text-gray-500">person</span>
+              <span>{{ request.session.user_name|default:"" }}</span>
+            </div>
+            <a href="{% url 'projects' %}"
+               class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+              <span class="material-icons text-[18px]">add</span> New Project
+            </a>
           </div>
         </div>
-      </main>
-    </div>
-  </body>
+      </header>
+
+      <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+        <!-- Stat cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm text-gray-500">Total CO₂ Emitted</h3>
+              <span class="material-icons text-brand">cloud</span>
+            </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">2,032 <span class="text-sm font-normal text-gray-500">tons</span></p>
+            <p class="mt-1 text-xs text-gray-500">FY to date</p>
+          </article>
+
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm text-gray-500">Projects</h3>
+              <span class="material-icons text-brand">folder_open</span>
+            </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">40 <span class="text-xs font-medium text-green-600 align-middle">+5%</span></p>
+            <p class="mt-1 text-xs text-gray-500">vs last month</p>
+          </article>
+
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm text-gray-500">Open Actions</h3>
+              <span class="material-icons text-brand">checklist</span>
+            </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">18</p>
+            <p class="mt-1 text-xs text-gray-500">Across all projects</p>
+          </article>
+
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm text-gray-500">Avg. Reduction</h3>
+              <span class="material-icons text-brand">trending_down</span>
+            </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">23%</p>
+            <p class="mt-1 text-xs text-gray-500">From interventions</p>
+          </article>
+        </section>
+
+        <!-- Project summary -->
+        <section class="bg-white border rounded-2xl shadow-sm">
+          <div class="px-5 py-4 border-b flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Project Summary</h2>
+            <div class="flex items-center gap-3">
+              <label class="text-sm text-gray-600">Filter</label>
+              <select class="appearance-none rounded-full border px-4 py-2 pr-8 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                <option>All Projects</option>
+                <option>Active</option>
+                <option>Completed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-600">
+                <tr>
+                  <th class="text-left px-5 py-3">Name</th>
+                  <th class="text-left px-5 py-3">Due</th>
+                  <th class="text-left px-5 py-3">Status</th>
+                  <th class="text-right px-5 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3">Horizon Heights</td>
+                  <td class="px-5 py-3">20/07/2025</td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2.5 py-0.5">Incomplete</span>
+                  </td>
+                  <td class="px-5 py-3 text-right">
+                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3">Riverbend</td>
+                  <td class="px-5 py-3">03/07/2025</td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center rounded-full bg-orange-50 text-orange-700 px-2.5 py-0.5">In Progress</span>
+                  </td>
+                  <td class="px-5 py-3 text-right">
+                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3">Pinecrest Logistics</td>
+                  <td class="px-5 py-3">12/06/2025</td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center rounded-full bg-green-50 text-green-700 px-2.5 py-0.5">Complete</span>
+                  </td>
+                  <td class="px-5 py-3 text-right">
+                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Simple bars / mini chart -->
+        <section>
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-lg font-semibold">Year-to-Year Emissions</h2>
+            <p class="text-sm text-gray-500">Synthetic preview</p>
+          </div>
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
+            <div class="h-40 flex items-end justify-between gap-2">
+              <div class="w-7 bg-brand/30 rounded" style="height:25%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:45%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:70%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:55%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:72%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:68%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:58%"></div>
+              <div class="w-7 bg-brand rounded"    style="height:76%"></div>
+            </div>
+            <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
+              <span class="inline-block w-3 h-3 bg-brand/30 rounded"></span> Prior years
+              <span class="inline-block w-3 h-3 bg-brand rounded ml-4"></span> Current year
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
 </html>
