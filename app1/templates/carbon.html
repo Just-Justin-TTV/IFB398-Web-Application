@@ -1,0 +1,335 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Tailwind v3 CDN (simplest to start). Remove the old v2 link. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Optional: quick design tokens -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: { DEFAULT: "#0ea5e9", dark: "#0284c7" }, // cyan
+            },
+            borderRadius: { "2xl": "1rem" },
+          },
+        },
+      };
+    </script>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  </head>
+
+  <body class="min-h-screen bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+      <!-- Sidebar -->
+      <aside class="w-72 bg-white border-r shadow-sm flex flex-col">
+        <div class="px-6 py-6 border-b">
+          <div class="flex items-center gap-3">
+            <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-12 h-12 rounded-full object-cover" />
+            <div>
+              <p class="text-sm text-gray-500">Welcome</p>
+              <p class="font-semibold">{{ request.session.user_name }}</p>
+            </div>
+          </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-4">
+          <ul class="space-y-2">
+            <li>
+              <a href="{% url 'dashboard' %}"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition
+            {% if 'dashboard' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% endif %}">
+                <span class="material-icons">dashboard</span>
+                <span class="font-medium">Dashboard</span>
+              </a>
+            </li>
+
+            <li>
+              <a href="{% url 'projects' %}"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition border border-gray-200 hover:bg-gray-50
+                 {% if 'projects' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% endif %}">
+                <span class="material-icons">folder</span>
+                <span class="font-medium">Projects</span>
+              </a>
+            </li>
+
+            <li>
+              <a href="{% url 'carbon' %}"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand text-white shadow transition hover:bg-brand-dark">
+                <span class="material-icons">build</span>
+                <span class="font-medium">Interventions</span>
+              </a>
+            </li>
+
+            <li>
+              <a href="#"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
+                <span class="material-icons">calculate</span>
+                <span class="font-medium">Cost Matrix</span>
+              </a>
+            </li>
+
+            <li>
+              <a href="#"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
+                <span class="material-icons">description</span>
+                <span class="font-medium">Reports</span>
+              </a>
+            </li>
+
+            <li>
+              <a href="#"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition">
+                <span class="material-icons">settings</span>
+                <span class="font-medium">Settings</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+      <!-- Building Metrics card -->
+<section class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+  <div class="px-6 py-4 border-b">
+    <h2 class="text-lg font-semibold">Building Metrics</h2>
+  </div>
+
+  <form method="post" action="{% url 'calculator_results' %}" class="p-0">
+    {% csrf_token %}
+
+    <!-- Table-like layout -->
+    <div class="w-full">
+      <!-- Header row spacer -->
+      <div class="grid grid-cols-12 border-b">
+        <div class="col-span-5"></div>
+        <div class="col-span-7"></div>
+      </div>
+
+      <!-- Roof Area / % of GIFA -->
+      <div class="grid grid-cols-12 border-b">
+        <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium text-gray-700">
+          Roof Area / roof % of GIFA
+        </div>
+        <div class="col-span-12 md:col-span-7 px-6 py-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <input id="roof_area" name="roof_area" type="number" step="0.01"
+                   value="{{ roof_area|default:'1500' }}"
+                   class="w-44 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                   oninput="cbRecalc()" />
+            <span class="text-gray-600">m²</span>
+            <span class="text-gray-400">/</span>
+            <span id="roof_pct"
+                  class="inline-flex items-center rounded-full px-3 py-1 text-sm bg-gray-100 text-gray-700">
+              — %
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Building Type -->
+      <div class="grid grid-cols-12 border-b">
+        <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium text-gray-700">
+          Building Type
+        </div>
+        <div class="col-span-12 md:col-span-7 px-6 py-3">
+          <select id="building_type" name="building_type"
+                  class="w-full md:w-[28rem] rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+            <option {% if building_type == 'Residential - Apartment Block' %}selected{% endif %}>Residential - Apartment Block</option>
+            <option {% if building_type == 'Residential - Single Family' %}selected{% endif %}>Residential - Single Family</option>
+            <option {% if building_type == 'Commercial - Office' %}selected{% endif %}>Commercial - Office</option>
+            <option {% if building_type == 'Education - School' %}selected{% endif %}>Education - School</option>
+            <option {% if building_type == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+            <option {% if building_type == 'Industrial / Logistics' %}selected{% endif %}>Industrial / Logistics</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Basement (Y/N) -->
+      <div class="grid grid-cols-12 border-b">
+        <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium text-gray-700">
+          Basement (Y/N)
+        </div>
+        <div class="col-span-12 md:col-span-7 px-6 py-3">
+          <label class="inline-flex items-center gap-3">
+            <input id="has_basement" name="has_basement" type="checkbox"
+                   class="rounded border-gray-300 text-brand focus:ring-brand/30"
+                   onchange="cbToggleBasement()" {% if has_basement %}checked{% endif %}>
+            <span id="basement_chip"
+                  class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm bg-gray-100 text-gray-700">
+              No
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Basement Size / % -->
+      <div id="basement_row" class="grid grid-cols-12 border-b">
+        <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium text-gray-700">
+          Basement Size / basement % of GIFA
+        </div>
+        <div class="col-span-12 md:col-span-7 px-6 py-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <input id="basement_area" name="basement_area" type="number" step="0.01"
+                   value="{{ basement_area|default:'1000' }}"
+                   class="w-44 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                   oninput="cbRecalc()" />
+            <span class="text-gray-600">m²</span>
+            <span class="text-gray-400">/</span>
+            <span id="basement_pct"
+                  class="inline-flex items-center rounded-full px-3 py-1 text-sm bg-gray-100 text-gray-700">
+              — %
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- No of Apartments / Keys / WCS (stacked labels above numbers) -->
+    <div class="grid grid-cols-12">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium text-gray-700">
+        No of Apartments / Keys / WCS
+    </div>
+
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <!-- 3-up grid on md+, single column on mobile -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-[28rem]">
+        <!-- Apartments -->
+        <div class="text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Apartments</div>
+            <input id="apartments" name="apartments" type="number" inputmode="numeric"
+                value="{{ apartments|default:'40' }}"
+                class="mt-1 w-full rounded-xl border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                oninput="cbCombineLine()" />
+        </div>
+
+        <!-- Keys -->
+        <div class="text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Keys</div>
+            <input id="keys" name="keys" type="number" inputmode="numeric"
+                value="{{ keys|default:'40' }}"
+                class="mt-1 w-full rounded-xl border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                oninput="cbCombineLine()" />
+        </div>
+
+        <!-- WCS -->
+        <div class="text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">WCS</div>
+            <input id="wcs" name="wcs" type="number" inputmode="numeric"
+                value="{{ wcs|default:'80' }}"
+                class="mt-1 w-full rounded-xl border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                oninput="cbCombineLine()" />
+        </div>
+        </div>
+
+        <!-- Optional combined line under the grid -->
+        <div class="mt-2 text-brand font-medium" id="combined_line"></div>
+    </div>
+    </div>
+
+
+      <!-- Dark divider bar -->
+      <div class="h-8 bg-gray-700"></div>
+
+    <!-- ===== AFTER DARK DIVIDER: Editable Reference Metrics ===== -->
+
+    <!-- GIFA (m²) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">GIFA (m²)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <input id="gifa_input" name="gifa" type="number" step="0.01"
+            value="{{ GIFA|default:'6000' }}"
+            class="w-44 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+            oninput="cbRecalc()" />
+    </div>
+    </div>
+
+    <!-- External Wall Area (m²) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">External Wall Area (m²)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <input id="wall_area_input" name="external_wall_area" type="number" step="0.01"
+            value="{{ external_wall_area|default:'2200' }}"
+            class="w-44 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+            oninput="cbRecalc()" />
+    </div>
+    </div>
+
+    <!-- External Openings (m²) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">External Openings (m²)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <input id="openings_input" name="external_openings" type="number" step="0.01"
+            value="{{ external_openings|default:'320' }}"
+            class="w-44 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+            oninput="cbRecalc()" />
+    </div>
+    </div>
+
+    <!-- Building Footprint (m²) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">Building Footprint (m²)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <input id="footprint_input" name="building_footprint" type="number" step="0.01"
+            value="{{ building_footprint|default:'1500' }}"
+            class="w-44 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+            oninput="cbRecalc()" />
+    </div>
+    </div>
+
+    <!-- % of Openings in Facade (computed) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">% of Openings in Facade</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3 font-medium" id="openings_pct">—</div>
+    </div>
+
+    <!-- Footprint: GIFA (%) (computed) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">Footprint: GIFA (%)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3 font-medium" id="footprint_gifa">—</div>
+    </div>
+
+    <!-- Number of Levels -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">Number of Levels</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <input id="levels_input" name="levels" type="number" step="1" min="0"
+            value="{{ levels|default:'4' }}"
+            class="w-28 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+            oninput="cbRecalc()" />
+    </div>
+    </div>
+
+    <!-- Average Height per Level (m) -->
+    <div class="grid grid-cols-12 border-b">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">Average Height per Level (m)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3">
+        <input id="height_input" name="avg_height" type="number" step="0.01" min="0"
+            value="{{ avg_height|default:'3' }}"
+            class="w-28 rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+            oninput="cbRecalc()" />
+    </div>
+    </div>
+
+    <!-- Wall : Floor (%) (computed) -->
+    <div class="grid grid-cols-12">
+    <div class="col-span-12 md:col-span-5 px-6 py-3 text-gray-700">Wall: Floor (%)</div>
+    <div class="col-span-12 md:col-span-7 px-6 py-3 font-medium" id="wall_floor">—</div>
+    </div>
+    <!-- ===== END Editable Reference Metrics ===== -->
+     <!-- Sticky bottom action bar -->
+<div class="sticky bottom-0 bg-white/90 backdrop-blur border-t px-6 py-4">
+  <div class="max-w-7xl ml-auto">
+    <div class="flex justify-end">
+        <a href="{% url 'carbon_2' %}"
+            class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-white font-medium shadow-sm hover:bg-brand-dark">
+              Next
+                <span class="material-icons text-base">arrow_forward</span>
+        </a>
+    </div>
+  </div>
+</div>
+
+

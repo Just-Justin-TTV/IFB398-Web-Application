@@ -19,7 +19,12 @@ def projects_view(request):
 def dashboard_view(request):
     return render(request, 'dashboard.html')
 
-# Authentication
+def carbon(request):
+    return render(request, "carbon.html")
+
+def carbon_2(request):
+    return render(request, "carbon_2.html")
+
 def register_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')

@@ -14,6 +14,8 @@
                     {{ intervention.name }} – Cost Level: {{ intervention.cost_level }}
                     – Estimated Range: {{ intervention.cost_range }}
                 </li>
+            {% empty %}
+                <li>No interventions available within budget for {{ cls }}</li>
             {% endfor %}
         </ul>
     {% empty %}

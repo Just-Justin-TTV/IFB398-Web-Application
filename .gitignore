@@ -7,3 +7,11 @@ sdt_app
 
 
 
+
+# Python bytecode
+
+__pycache__/
+
+*.pyc
+
+*.pyo

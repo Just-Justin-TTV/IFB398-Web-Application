@@ -12,5 +12,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('projects/', views.projects_view, name='projects'),
     path('projects/create/', views.create_project, name='create_project'),
+    path("carbon/", views.carbon, name="carbon"),
+    path("carbon/step-2/", views.carbon_2, name="carbon_2"),
     path('register/', views.register_view, name='register'),
 ]
