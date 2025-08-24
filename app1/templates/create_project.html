@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <title>Create New Project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <!-- Material Icons -->
@@ -17,24 +17,44 @@
     <!-- Sidebar -->
     <aside class="w-64 bg-white border-r shadow-md flex flex-col items-center py-8">
       <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-20 h-20 rounded-full mb-6 shadow-md" />
-      
+
       <ul class="w-full px-6 space-y-2">
-        {% comment %} Sidebar Links {% endcomment %}
-        {% for item in [
-          {'url': 'dashboard', 'icon': 'dashboard', 'label': 'Dashboard'},
-          {'url': 'projects', 'icon': 'folder', 'label': 'Projects'},
-          {'url': '#', 'icon': 'build', 'label': 'Interventions'},
-          {'url': '#', 'icon': 'calculate', 'label': 'Cost Matrix'},
-          {'url': '#', 'icon': 'description', 'label': 'Reports'},
-          {'url': '#', 'icon': 'settings', 'label': 'Settings'},
-        ] %}
         <li>
-          <a href="{% url item.url %}" class="flex items-center px-4 py-3 rounded-lg transition hover:bg-gray-100 {% if item.label == 'Projects' %}bg-cyan-600 text-white shadow{% else %}text-gray-800{% endif %}">
-            <span class="material-icons text-base mr-3 {% if item.label != 'Projects' %}text-gray-600{% else %}text-white{% endif %}">{{ item.icon }}</span>
-            <span class="font-medium">{{ item.label }}</span>
+          <a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 rounded-lg transition hover:bg-gray-100 text-gray-800">
+            <span class="material-icons text-base mr-3 text-gray-600">dashboard</span>
+            <span class="font-medium">Dashboard</span>
           </a>
         </li>
-        {% endfor %}
+        <li>
+          <a href="{% url 'projects' %}" class="flex items-center px-4 py-3 rounded-lg transition bg-cyan-600 text-white shadow">
+            <span class="material-icons text-base mr-3 text-white">folder</span>
+            <span class="font-medium">Projects</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-3 rounded-lg transition hover:bg-gray-100 text-gray-800">
+            <span class="material-icons text-base mr-3 text-gray-600">build</span>
+            <span class="font-medium">Interventions</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-3 rounded-lg transition hover:bg-gray-100 text-gray-800">
+            <span class="material-icons text-base mr-3 text-gray-600">calculate</span>
+            <span class="font-medium">Cost Matrix</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-3 rounded-lg transition hover:bg-gray-100 text-gray-800">
+            <span class="material-icons text-base mr-3 text-gray-600">description</span>
+            <span class="font-medium">Reports</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="flex items-center px-4 py-3 rounded-lg transition hover:bg-gray-100 text-gray-800">
+            <span class="material-icons text-base mr-3 text-gray-600">settings</span>
+            <span class="font-medium">Settings</span>
+          </a>
+        </li>
       </ul>
     </aside>
 
