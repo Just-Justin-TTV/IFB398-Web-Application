@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Recommendations</title>
+    <title>Calculator Results</title>
 </head>
 <body>
-    <h2>Recommended Interventions</h2>
-    <p><strong>Total Budget:</strong> ${{ global_budget|floatformat:2 }}</p>
+    <h1>Interventions within Budget: AUD {{ global_budget|floatformat:0 }}</h1>
 
-    {% for cls, rows in grouped_results.items %}
-        <h3>{{ cls }}</h3>
+    {% for class_name, interventions in grouped_results.items %}
+        <h2>{{ class_name }}</h2>
         <ul>
-            {% for row in rows %}
+            {% for intervention in interventions %}
                 <li>
-                    <strong>{{ row.name }}</strong> – {{ row.description }} <br>
-                    <em>Theme:</em> {{ row.theme }} <br>
-                    <em>Cost:</em> ${{ row.cost|floatformat:2 }}
+                    {{ intervention.name }} – Cost Level: {{ intervention.cost_level }}
+                    – Estimated Range: {{ intervention.cost_range }}
                 </li>
             {% empty %}
                 <li>No interventions available within budget for {{ cls }}</li>
             {% endfor %}
         </ul>
+    {% empty %}
+        <p>No interventions available within the selected budget.</p>
     {% endfor %}
 </body>
 </html>
