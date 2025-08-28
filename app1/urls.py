@@ -4,13 +4,9 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    # Home page
-    path('', views.home, name='home'),
-
-    # Calculator page
+    path('', views.home, name='home'),  # Corrected to home page path
     path('calculator/', views.calculator, name='calculator'),
-
-    # Django browser reload for development
+    path('calculator/results/', views.calculator_results, name='calculator_results'),
     path('django_browser_reload/', include('django_browser_reload.urls')),
 
     # Authentication
