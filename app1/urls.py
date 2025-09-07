@@ -25,6 +25,7 @@ urlpatterns = [
     path('carbon/', views.carbon_view, name='carbon'),  # <-- added to fix NoReverseMatch
     path('calculator/results/', views.calculator, name='calculator_results'),
     path('carbon-2/', views.carbon_2_view, name='carbon_2'),
+    path('carbon_2/', views.carbon_2_view, name='carbon_2'),
 
 
 ]

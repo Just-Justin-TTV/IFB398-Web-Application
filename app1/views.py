@@ -13,12 +13,49 @@ def calculator_results(request):
     # Replace 'carbon.html' with the template you want to render
     return render(request, 'calculator_results.html')
 
+@login_required(login_url='login')
+def carbon_view(request):
+    if request.method == 'GET':
+        class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
+        class_targets = [{'class': ct['class_name'], 'target_rating': ct['target_rating']} for ct in class_targets_qs]
+        return render(request, 'carbon.html', {'class_targets': class_targets})
+
+    elif request.method == 'POST':
+        global_budget = float(request.POST.get('global_budget', 1e6))
+
+        # Extract per-class targets
+        targets = {key[6:]: float(value) for key, value in request.POST.items() if key.startswith('class_')}
+
+        # Fetch interventions
+        interventions = Interventions.objects.exclude(class_name__isnull=True).exclude(name__isnull=True).order_by('class_name')
+
+        # Map cost_level to approximate cost
+        cost_mapping = {1: 5000, 2: 10000, 3: 25000, 4: 50000, 5: 100000, 6: 200000, 7: 500000,
+                        8: 1000000, 9: 2000000, 10: 5000000}
+
+        # Group interventions by class and filter by budget
+        grouped_results = {}
+        for row in interventions:
+            if row.cost_level is None:
+                continue
+            approx_cost = cost_mapping.get(row.cost_level, 0)
+            if approx_cost <= global_budget:
+                grouped_results.setdefault(row.class_name, []).append(row)
+
+        # Optional: sort interventions by cost level
+        for cls in grouped_results:
+            grouped_results[cls].sort(key=lambda x: x.cost_level)
+
+        return render(request, 'carbon_2.html', {
+            'grouped_results': grouped_results,
+            'global_budget': global_budget,
+            'targets': targets
+        })
+
+
 def carbon_2_view(request):
     return render(request, 'carbon_2.html')
 
-def carbon_view(request):
-    # Replace 'carbon.html' with the template you want to render
-    return render(request, 'carbon.html')
 
 @login_required(login_url='login')
 def home(request):
