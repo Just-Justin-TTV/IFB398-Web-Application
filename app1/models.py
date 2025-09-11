@@ -21,6 +21,7 @@ class Interventions(models.Model):
     # Added fields
     cost_level = models.IntegerField(null=True)
     cost_range = models.CharField(max_length=50, null=True)
+    intervention_rating = models.IntegerField(null=True, blank=True)
 
     class Meta:
         db_table = 'Interventions'
