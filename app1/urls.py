@@ -26,6 +26,9 @@ urlpatterns = [
     path('calculator/results/', views.calculator, name='calculator_results'),
     path('carbon-2/', views.carbon_2_view, name='carbon_2'),
     path('carbon_2/', views.carbon_2_view, name='carbon_2'),
+    path("api/interventions/", views.interventions_api, name="interventions_api"),
+    path("api/metrics/save/", views.save_metrics, name="save_metrics"),
+
 
 
 ]

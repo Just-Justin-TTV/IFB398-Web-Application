@@ -3,11 +3,176 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import ClassTargets, Interventions
+from .models import ClassTargets, Interventions, Metrics
+from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.contrib.auth import get_user
+import json
+from decimal import Decimal, InvalidOperation
+from .models import Metrics, User as AppUser
+from django.db import connection
+
 
 # Home page
 def create_project(request):
     return render(request, 'create_project.html')
+
+
+
+# UI key -> possible DB labels/aliases
+CLASS_ALIASES = {
+    "carbon":      ["carbon", "carbon emissions", "operating carbon", "operational carbon", "embodied carbon"],
+    "health":      ["health", "health & wellbeing", "health and wellbeing"],
+    "water":       ["water", "water use", "water efficiency"],
+    "circular":    ["circular", "circular economy"],
+    "resilience":  ["resilience"],
+    "biodiversity":["biodiversity"],
+    "value":       ["value", "value & cost", "value and cost"],
+}
+
+@require_GET
+def interventions_api(request):
+    """
+    GET /api/interventions/?cls=carbon
+    Returns rows grouped by theme (front-end shows a header when theme changes)
+    Fields: id, name, theme, description, cost_level, cost_range
+    """
+    ui_key = (request.GET.get("cls") or "").strip().lower()
+
+    # Introspect available columns so we never crash on missing local columns
+    with connection.cursor() as cur:
+        desc = connection.introspection.get_table_description(cur, "Interventions")
+        colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
+
+    # Build SELECT *so we can include "extra" columns if needed*
+    select_cols = ", ".join(f'"{c}"' if c.lower() in {"class"} else c for c in colnames)
+    sql = f'SELECT {select_cols} FROM "Interventions"'
+    params = []
+
+    if ui_key:
+        terms = CLASS_ALIASES.get(ui_key, [ui_key])
+        # flexible WHERE: class LIKE any alias (case-insensitive)
+        like_parts = []
+        for t in terms:
+            like_parts.append('LOWER("class") LIKE LOWER(%s)')
+            params.append(f"%{t}%")
+        sql += " WHERE " + " OR ".join(like_parts)
+
+    sql += " ORDER BY theme, name"
+
+    items = []
+    with connection.cursor() as cur:
+        cur.execute(sql, params)
+        cols = [c[0] for c in cur.description]
+        for row in cur.fetchall():
+            obj = dict(zip(cols, row))
+            items.append({
+                "id": obj.get("id"),
+                "name": obj.get("name") or f"Intervention #{obj.get('id')}",
+                "theme": obj.get("theme") or "",
+                "description": obj.get("description") or "",
+                "cost_level": obj.get("cost_level") or 0,          # int if present
+                "cost_range": obj.get("cost_range") or "",         # e.g., "10–25k AUD"
+                # You can expose everything else if you need it on the client:
+                # "extra": obj,
+            })
+
+    return JsonResponse({"items": items})
+
+def _num(x, default=None):
+    """
+    Convert things like '73,560', '25.8%', '200–500k AUD' to a float.
+    Returns default (None) if it can't parse.
+    """
+    if x is None:
+        return default
+    s = str(x).strip().lower()
+    # normalize
+    s = (s
+         .replace('aud', '')
+         .replace(',', '')
+         .replace('k', '000')
+         .replace('–', '-')  # en dash
+         .replace('%', '')
+         .strip())
+    try:
+        return float(s)
+    except Exception:
+        return default
+    
+def _resolve_app_user(request):
+    """
+    Try to find a matching app1.User from the authenticated Django auth user.
+    Returns an AppUser instance or None.
+    """
+    u = getattr(request, "user", None)
+    if not getattr(u, "is_authenticated", False):
+        return None
+
+    uname = getattr(u, "username", None)
+    email = getattr(u, "email", None)
+
+    if uname:
+        found = AppUser.objects.filter(username=uname).first()
+        if found:
+            return found
+    if email:
+        found = AppUser.objects.filter(email=email).first()
+        if found:
+            return found
+    return None
+
+
+@require_POST
+def save_metrics(request):
+    """
+    Create or update a Metrics row from JSON body.
+    If 'metrics_id' is provided and exists, update it; else create new.
+    """
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("Invalid JSON")
+
+    # load or create
+    metrics_id = payload.get("metrics_id")
+    if metrics_id:
+        m = Metrics.objects.filter(id=metrics_id).first()
+        if not m:
+            return JsonResponse({"ok": False, "error": "metrics_id not found"}, status=404)
+    else:
+        m = Metrics()
+
+    # optional user attach
+    if hasattr(request, "user") and request.user.is_authenticated:
+        m.user = _resolve_app_user(request)
+
+    # assign fields
+    m.project_code = payload.get("project_code") or None
+    m.building_type = payload.get("building_type") or ""
+
+    m.roof_area_m2 = _num(payload.get("roof_area_m2"))
+    m.roof_percent_gifa = _num(payload.get("roof_percent_gifa"))
+
+    m.basement_present = bool(payload.get("basement_present"))
+    m.basement_size_m2 = _num(payload.get("basement_size_m2"))
+    m.basement_percent_gifa = _num(payload.get("basement_percent_gifa"))
+
+    m.num_apartments = int(payload.get("num_apartments") or 0)
+    m.num_keys       = int(payload.get("num_keys") or 0)
+    m.num_wcs        = int(payload.get("num_wcs") or 0)
+
+    m.gifa_m2 = _num(payload.get("gifa_m2"))
+    m.external_wall_area_m2 = _num(payload.get("external_wall_area_m2"))
+    m.external_openings_m2  = _num(payload.get("external_openings_m2"))
+    m.building_footprint_m2 = _num(payload.get("building_footprint_m2"))
+
+    m.estimated_auto_budget_aud = _num(payload.get("estimated_auto_budget_aud"))
+
+    m.save()
+    return JsonResponse({"ok": True, "metrics_id": m.id})
+
 
 def calculator_results(request):
     # Replace 'carbon.html' with the template you want to render
