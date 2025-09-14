@@ -1,4 +1,9 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 class ClassTargets(models.Model):
@@ -24,19 +29,19 @@ class Interventions(models.Model):
     class Meta:
         db_table = 'Interventions'
 
-class User(models.Model):
-    id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=150, unique=True)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
+#class User(models.Model):
+   # id = models.AutoField(primary_key=True)
+  #  username = models.CharField(max_length=150, unique=True)
+  #  email = models.EmailField(unique=True)
+  #  password = models.CharField(max_length=128)
 
 
 
-    class Meta:
-        db_table = 'User'
+  #  class Meta:
+  #      db_table = 'User'
 
-    def __str__(self):
-        return f"{self.class_name} - {self.intervention}"
+  #  def __str__(self):
+  #      return f"{self.class_name} - {self.intervention}"
 
 
 
@@ -52,5 +57,34 @@ class User(models.Model):
   #  class Meta:
   #      db_table = 'DetailedMatrix'
 
-    def __str__(self):
-        return f"{self.class_name} - {self.intervention}"
+#    def __str__(self):
+  #      return f"{self.class_name} - {self.intervention}"
+    
+
+# settings page
+class UserProfile(models.Model):
+    THEME_CHOICES = [
+        ('light', 'Light'),
+        ('dark', 'Dark'),
+        ('high-contrast', 'High Contrast'),  
+    ]
+
+    TEXT_SIZE_CHOICES = [
+        ('normal', 'Normal'),
+        ('large', 'Large'),
+        ('x-large', 'Extra Large'), 
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)  # This uses the correct User
+    theme = models.CharField(max_length=15, choices=THEME_CHOICES, default='light')
+    text_size = models.CharField(max_length=10, choices=TEXT_SIZE_CHOICES, default='normal')
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'userprofile'):
+        instance.userprofile.save()

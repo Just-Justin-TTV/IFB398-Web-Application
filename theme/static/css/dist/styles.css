@@ -1256,3 +1256,39 @@ select {
     top: -1.5rem;
   }
 }
+
+/* Settings page: Light theme (default)*/
+/* Light theme (default) */
+.theme-light {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #f8f9fa;
+    --border-color: #dee2e6;
+    --primary-color: #007bff;
+}
+
+/* Dark theme */
+.theme-dark {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --card-bg: #2d2d2d;
+    --border-color: #404040;
+    --primary-color: #4dabf7;
+}
+
+/* Apply the variables */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}

@@ -22,10 +22,82 @@
       line-height: 1.6;
       letter-spacing: 0.01em;
     }
+
+    /* Dark mode styles that will apply globally */
+    .theme-dark {
+        background-color: #1a1a1a !important;
+    }
+    
+    .theme-dark .bg-white {
+        background-color: #2d3748 !important;
+    }
+    
+    .theme-dark .text-gray-900 {
+        color: #e2e8f0 !important;
+    }
+    
+    .theme-dark .text-gray-700 {
+        color: #cbd5e0 !important;
+    }
+    
+    .theme-dark .text-gray-600 {
+        color: #a0aec0 !important;
+    }
+    
+    .theme-dark .border-gray-200 {
+        border-color: #4a5568 !important;
+    }
+    
+    .theme-dark .border-gray-300 {
+        border-color: #4a5568 !important;
+    }
+
+     /* High Contrast Mode */
+        [data-theme="high-contrast"] {
+            --bg-color: #000;
+            --text-color: #fff;
+            --primary-color: #ffff00;
+            --secondary-color: #00ffff;
+            --border-color: #fff;
+        }
+        
+        [data-theme="high-contrast"] body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        [data-theme="high-contrast"] a {
+            color: var(--primary-color);
+        }
+        
+        [data-theme="high-contrast"] button,
+        [data-theme="high-contrast"] .btn {
+            background-color: var(--primary-color);
+            color: #000;
+            border: 2px solid var(--border-color);
+        }
+        
+        /* Text Size Adjustments */
+        [data-text-size="large"] body {
+            font-size: 1.2rem;
+        }
+        
+        [data-text-size="x-large"] body {
+            font-size: 1.5rem;
+        }
+        
+        [data-text-size="large"] h1 {
+            font-size: 2.4rem;
+        }
+        
+        [data-text-size="x-large"] h1 {
+            font-size: 3rem;
+        }
+
   </style>
 </head>
 
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-gray-50 text-gray-900 {% if current_theme == 'dark' %}theme-dark{% endif %}">
 
   <!-- Navigation Bar -->
   <nav class="bg-[black] px-4 py-2">
@@ -70,5 +142,35 @@
     {% endblock %}
   </div>
 
+  <script>
+    // Apply theme class to body on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const theme = '{{ current_theme }}' || 'light';
+        console.log('Current theme:', theme);
+        
+        if (theme === 'dark') {
+            document.body.classList.add('theme-dark');
+        } else {
+            document.body.classList.remove('theme-dark');
+        }
+    });
+  </script>
 </body>
 </html>
+
+<!--Settings page-->
+<style>
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+.inset-y-0 {
+  top: 0;
+  bottom: 0;
+}
+.right-0 {
+  right: 0;
+}
+</style>
