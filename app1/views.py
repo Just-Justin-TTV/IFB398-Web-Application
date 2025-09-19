@@ -12,6 +12,8 @@ import json
 from decimal import Decimal, InvalidOperation
 from .models import Metrics, User as AppUser
 from django.db import connection
+from django.contrib.auth.models import User
+
 
 
 # Home page
