@@ -4,88 +4,186 @@
 <head>
   <meta charset="UTF-8" />
   <title>Projects</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
+          borderRadius: { "2xl": "1rem" }
+        }
+      }
+    }
+  </script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
-<body class="h-screen bg-gray-100 font-sans">
-  <div class="flex h-full">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r shadow flex flex-col items-center py-6">
-      <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-6" />
-      <ul class="w-full px-4 space-y-2">
-        <li><a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">dashboard</span>Dashboard</a></li>
-        <li><a href="{% url 'projects' %}" class="flex items-center bg-cyan-500 text-white px-4 py-3 rounded-lg shadow"><span class="material-icons mr-3">folder</span>Projects</a></li>
-        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">build</span>Interventions</a></li>
-        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">calculate</span>Cost Matrix</a></li>
-        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">description</span>Reports</a></li>
-        <li><a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100"><span class="material-icons mr-3">settings</span>Settings</a></li>
-      </ul>
-    </aside>
 
-    <!-- Main -->
-    <main class="flex-1 p-8">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-semibold">Projects</h1>
-        <p class="text-sm text-gray-500">First Name, Last Name</p>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <div class="flex min-h-screen">
+
+    <!-- ============ Sidebar ============ -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+          </div>
+        </div>
       </div>
 
-      <div class="flex justify-end space-x-4 mb-4">
-        <button class="bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-full">
-          <img src="{% static 'images/img5.jpg' %}" alt="Edit" class="h-6 w-6" />
-        </button>
-        <a href="{% url 'create_project' %}">
-            <button class="bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-full">
-                <img src="{% static 'images/img6.png' %}" alt="Add" class="h-6 w-6" />
-            </button>
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+        <a href="{% url 'carbon' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">build</span> Interventions
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+      </nav>
+    </aside>
+    <!-- ============ End Sidebar ============ -->
 
-      </div>
+    <!-- ============ Main ============ -->
+    <main class="flex-1">
+      <!-- Header -->
+      <header class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-6 py-5">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 class="text-2xl font-semibold">Projects</h1>
+              <p class="text-sm text-gray-600">Manage, search, and create projects</p>
+            </div>
 
-      <div class="relative mb-4">
-        <input type="text" id="search" onkeyup="filterTable()" placeholder="Search" class="w-full px-4 py-2 border rounded-lg shadow pl-10">
-        <span class="material-icons absolute left-3 top-2.5 text-gray-400">search</span>
-      </div>
+            <div class="flex items-center gap-3 w-full md:w-auto">
+              <div class="relative flex-1 md:w-80">
+                <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
+                <input id="searchProjects" type="text" placeholder="Search projects…"
+                       class="w-full rounded-full border pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+              </div>
+              <a href="{% url 'create_project' %}"
+                 class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+                <span class="material-icons text-[18px]">add</span> New Project
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      <div class="overflow-auto">
-        <table class="min-w-full bg-white shadow rounded">
-          <thead class="bg-gray-200 text-sm text-gray-600">
-            <tr>
-              <th class="px-4 py-2">Project Name</th>
-              <th class="px-4 py-2">Year</th>
-              <th class="px-4 py-2">Region</th>
-              <th class="px-4 py-2">Carbon Total</th>
-              <th class="px-4 py-2">Cost</th>
-              <th class="px-4 py-2">Last Edited</th>
-              <th class="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="projectTable" class="text-sm text-gray-700">
-            <tr><td class="px-4 py-2">Pinecrest Logistics</td><td>2025</td><td>AU</td><td>248</td><td>$21,080</td><td>01/05/2025</td><td>Edit</td></tr>
-            <tr><td>Aurora Data Center</td><td>2025</td><td>UK</td><td>176</td><td>$21,120</td><td>29/04/2025</td><td>Edit</td></tr>
-            <tr><td>Cascade Elementry</td><td>2025</td><td>PNG</td><td>512</td><td>$33,280</td><td>29/04/2025</td><td>Edit</td></tr>
-            <tr><td>MetroCore Sustainable</td><td>2025</td><td>UK</td><td>89</td><td>$13,350</td><td>13/04/2025</td><td>Edit</td></tr>
-            <tr><td>Suncrest Senior</td><td>2025</td><td>PNG</td><td>321</td><td>$14,445</td><td>14/04/2025</td><td>Edit</td></tr>
-          </tbody>
-        </table>
+      <div class="max-w-7xl mx-auto px-6 py-6">
+        <section class="bg-white border rounded-2xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+              <tr>
+                <th class="text-left px-5 py-3">Project</th>
+                <th class="text-left px-5 py-3">Year</th>
+                <th class="text-left px-5 py-3">Region</th>
+                <th class="text-left px-5 py-3">Carbon (tCO₂e)</th>
+                <th class="text-left px-5 py-3">Cost</th>
+                <th class="text-left px-5 py-3">Updated</th>
+                <th class="text-right px-5 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="projectRows" class="divide-y">
+              <!-- Example rows; replace with your loop -->
+              <tr class="hover:bg-gray-50" data-name="Pinecrest Logistics">
+                <td class="px-5 py-3 font-medium">Pinecrest Logistics</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">AU</span></td>
+                <td class="px-5 py-3">248</td>
+                <td class="px-5 py-3">$21,080</td>
+                <td class="px-5 py-3">01/05/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-gray-50" data-name="Aurora Data Center">
+                <td class="px-5 py-3 font-medium">Aurora Data Center</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">UK</span></td>
+                <td class="px-5 py-3">176</td>
+                <td class="px-5 py-3">$21,120</td>
+                <td class="px-5 py-3">29/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-gray-50" data-name="Cascade Elementary">
+                <td class="px-5 py-3 font-medium">Cascade Elementary</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">PNG</span></td>
+                <td class="px-5 py-3">512</td>
+                <td class="px-5 py-3">$33,280</td>
+                <td class="px-5 py-3">29/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-gray-50" data-name="MetroCore Sustainable">
+                <td class="px-5 py-3 font-medium">MetroCore Sustainable</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">UK</span></td>
+                <td class="px-5 py-3">89</td>
+                <td class="px-5 py-3">$13,350</td>
+                <td class="px-5 py-3">13/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-gray-50" data-name="Suncrest Senior">
+                <td class="px-5 py-3 font-medium">Suncrest Senior</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">PNG</span></td>
+                <td class="px-5 py-3">321</td>
+                <td class="px-5 py-3">$14,445</td>
+                <td class="px-5 py-3">14/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
       </div>
     </main>
   </div>
 
   <script>
-    function filterTable() {
-      const input = document.getElementById("search");
-      const filter = input.value.toUpperCase();
-      const table = document.getElementById("projectTable");
-      const tr = table.getElementsByTagName("tr");
-      for (let i = 0; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName("td")[0];
-        if (td) {
-          const txtValue = td.textContent || td.innerText;
-          tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-        }
-      }
-    }
+    // Simple client-side name filter
+    const q = document.getElementById('searchProjects');
+    const rows = document.getElementById('projectRows');
+    q.addEventListener('input', () => {
+      const needle = q.value.trim().toLowerCase();
+      [...rows.querySelectorAll('tr')].forEach(tr => {
+        const name = (tr.dataset.name || tr.cells[0]?.innerText || '').toLowerCase();
+        tr.style.display = name.includes(needle) ? '' : 'none';
+      });
+    });
   </script>
 </body>
 </html>
