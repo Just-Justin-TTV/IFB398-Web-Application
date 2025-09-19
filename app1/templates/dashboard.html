@@ -22,62 +22,52 @@
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <div class="flex min-h-screen">
 
-      <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r shadow flex flex-col items-center py-6">
-        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-16 h-16 rounded-full mb-6" />
-
-        <ul class="w-full px-4 space-y-2">
-          <li>
-            <a href="{% url 'dashboard' %}" class="flex items-center p-3 rounded-lg bg-cyan-500 text-white font-medium shadow">
-              <span class="material-icons mr-3">dashboard</span>
-              Dashboard
-            </a>
-          </li>
-          <li>
-            <a href="{% url 'projects' %}" 
-              class="flex items-center px-4 py-3 rounded-lg shadow {% if 'projects' in request.path %}bg-cyan-500 text-white{% else %}hover:bg-gray-100{% endif %}">
-              <span class="material-icons mr-3">folder</span>
-              Projects
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">build</span>
-              Interventions
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">calculate</span>
-              Cost Matrix
-            </a>
-          </li>
-          <li>
-            <a href="#" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-              <span class="material-icons mr-3">description</span>
-              Reports
-            </a>
-          </li>
-          <li>
-      <a href="{% url 'settings' %}" class="flex items-center p-3 rounded-lg border border-gray-200 text-gray-900 font-medium hover:bg-gray-100">
-            <span class="material-icons mr-3">settings</span>
-              Settings
-            </a>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- Main content -->
-      <main class="flex-1 p-8">
-        <div class="flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-semibold">Dashboard</h1>
-          <p class="text-sm text-gray-500">First Name, Last Name</p>
+    <!-- ============ Sidebar =========== -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+          </div>
         </div>
+      </div>
 
-        <div class="grid grid-cols-4 gap-4 mb-8">
-          <div class="bg-yellow-400 text-white p-4 rounded shadow">
-            <h2 class="text-sm">Total CO2 Emitted</h2>
-            <p class="text-3xl font-bold">2,032 <span class="text-sm">tons</span></p>
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
+        </a>
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+        <a href="{% url 'carbon' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">build</span> Interventions
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+      </nav>
+    </aside>
+    <!-- ============ End Sidebar ============ -->
+
+    <!-- ============ Main ============ -->
+    <main class="flex-1">
+      <!-- Header -->
+      <header class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold">Dashboard</h1>
+            <p class="text-sm text-gray-600">Overview of projects & emissions</p>
           </div>
           <div class="flex items-center gap-3">
             <div class="hidden md:flex items-center gap-2 text-sm text-gray-600">

@@ -1,9 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-User = get_user_model()
 
 class ClassTargets(models.Model):
     class_name = models.CharField(max_length=100, primary_key=True)
@@ -41,8 +36,8 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
 
-  #  class Meta:
-  #      db_table = 'User'
+    class Meta:
+        db_table = 'User'
 
     def __str__(self):
         return self.username
@@ -102,4 +97,4 @@ class Metrics(models.Model):
         return (self.num_apartments or 0) + (self.num_keys or 0) + (self.num_wcs or 0)
 
     def __str__(self):
-        return f"{self.class_name} - {self.intervention}"
+        return f"Metrics #{self.id} – {self.building_type or 'Building'}"
