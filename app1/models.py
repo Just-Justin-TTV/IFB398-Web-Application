@@ -24,8 +24,6 @@ class Interventions(models.Model):
     cost_level = models.IntegerField(null=True)
     cost_range = models.CharField(max_length=50, null=True)
     intervention_rating = models.IntegerField(null=True, blank=True)
-    impact_rating = models.IntegerField(null=True, blank=True, help_text="1–5 (from Excel Impact Rating)")
-
 
     class Meta:
         db_table = 'Interventions'
