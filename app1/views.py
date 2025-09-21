@@ -176,7 +176,7 @@ def interventions_api(request):
                 "theme": obj.get("theme") or "",
                 "description": obj.get("description") or "",
                 "cost_level": obj.get("cost_level") or 0,
-                "cost_range": obj.get("cost_range") or "",
+                "intervention_rating": obj.get("intervention_rating") or 0,
             })
 
     return JsonResponse({"items": items})
