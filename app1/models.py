@@ -1,4 +1,6 @@
 from django.db import models
+from django.conf import settings
+
 
 class ClassTargets(models.Model):
     class_name = models.CharField(max_length=100, primary_key=True)
@@ -44,15 +46,22 @@ class User(models.Model):
     
 # NEW
 class Metrics(models.Model):
-    """
-    Stores the values entered on the Building Metrics step.
-    Numbers use DecimalField for consistent units (m², %).
-    """
     id = models.AutoField(primary_key=True)
 
-    # Optional linkage
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="metrics")
-    project_code = models.CharField(max_length=120, null=True, blank=True)  # free-form link to a project if needed
+    # ✅ Now this accepts request.user directly
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="metrics",
+    )
+
+    # (Optional) store first-page project info in the same row
+    project_id = models.IntegerField(null=True, blank=True, db_index=True)
+    project_name = models.CharField(max_length=255, null=True, blank=True)
+    project_type = models.CharField(max_length=64, null=True, blank=True)   # Residential / Commercial / Infrastructure
+    location = models.CharField(max_length=255, null=True, blank=True)
 
     # High-level
     building_type = models.CharField(max_length=120, null=True, blank=True)
@@ -71,13 +80,13 @@ class Metrics(models.Model):
     num_keys = models.PositiveIntegerField(null=True, blank=True)
     num_wcs = models.PositiveIntegerField(null=True, blank=True)
 
-    # Derived areas
+    # Areas
     gifa_m2 = models.DecimalField("GIFA (m²)", max_digits=14, decimal_places=2, null=True, blank=True)
     external_wall_area_m2 = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     external_openings_m2 = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     building_footprint_m2 = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
-    # Optional computed outputs
+    # Computed
     estimated_auto_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
 
     # Housekeeping
@@ -87,8 +96,9 @@ class Metrics(models.Model):
     class Meta:
         db_table = "Metrics"
         indexes = [
-            models.Index(fields=["building_type"]),
-            models.Index(fields=["project_code"]),
+            models.Index(fields=["user"]),
+            models.Index(fields=["project_id"]),
+            models.Index(fields=["project_type"]),
             models.Index(fields=["created_at"]),
         ]
 
@@ -98,3 +108,9 @@ class Metrics(models.Model):
 
     def __str__(self):
         return f"Metrics #{self.id} – {self.building_type or 'Building'}"
+
+    def update_from_dict(self, data: dict):
+        # handy when merging both pages into one row
+        for k, v in (data or {}).items():
+            if hasattr(self, k):
+                setattr(self, k, v)

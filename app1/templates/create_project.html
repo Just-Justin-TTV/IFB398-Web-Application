@@ -5,30 +5,23 @@
   <meta charset="UTF-8" />
   <title>Create Project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Tailwind v3 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" }
-          },
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
           borderRadius: { "2xl": "1rem" }
         }
       }
     }
   </script>
-
-  <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <div class="flex min-h-screen">
-
-    <!-- Sidebar -->
+    <!-- Sidebar (short) -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
       <div class="px-5 py-6 border-b">
         <div class="flex items-center gap-3">
@@ -39,79 +32,48 @@
           </div>
         </div>
       </div>
-
       <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">dashboard</span>
-          Dashboard
-        </a>
-
-        <a href="{% url 'projects' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow">
-          <span class="material-icons text-[18px]">folder</span>
-          Projects
-        </a>
-
-        <a href="{% url 'carbon' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">build</span>
-          Interventions
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">calculate</span>
-          Cost Matrix
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">description</span>
-          Reports
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">settings</span>
-          Settings
+        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow">
+          <span class="material-icons text-[18px]">folder</span> Projects
         </a>
       </nav>
     </aside>
 
     <!-- Main -->
     <main class="flex-1">
-      <!-- Top header -->
       <header class="bg-white border-b">
-        <div class="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div class="max-w-3xl mx-auto px-6 py-6 flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-semibold">Create New Project</h1>
-            <p class="text-sm text-gray-600">Add a project name, location, and type to get started.</p>
+            <p class="text-sm text-gray-600">Give it a name, location and type.</p>
           </div>
           <a href="{% url 'projects' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-            <span class="material-icons text-[18px]">arrow_back</span>
-            Back to Projects
+            <span class="material-icons text-[18px]">arrow_back</span> Back to Projects
           </a>
         </div>
       </header>
 
-      <div class="max-w-4xl mx-auto px-6 py-8">
-        <!-- Form card -->
-        <div class="bg-white border rounded-2xl shadow-sm p-6 md:p-8">
-          <!-- Fields (no submit required if you're just linking Next) -->
+      <div class="max-w-3xl mx-auto px-6 py-8">
+        <form method="post" action="{% url 'create_project' %}" class="bg-white border rounded-2xl shadow-sm p-6 md:p-8">
+          {% csrf_token %}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
-              <label for="project_name" class="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-              <input id="project_name" name="project_name" type="text" placeholder="e.g. Pinecrest Logistics Hub"
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="project_name">Project Name</label>
+              <input id="project_name" name="project_name" type="text" required
+                     placeholder="e.g. Pinecrest Logistics Hub"
                      class="w-full rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
             </div>
 
             <div>
-              <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input id="location" name="location" type="text" placeholder="e.g. Sydney, NSW"
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="location">Location</label>
+              <input id="location" name="location" type="text" required
+                     placeholder="e.g. Sydney, NSW"
                      class="w-full rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
             </div>
 
             <div>
-              <label for="project_type" class="block text-sm font-medium text-gray-700 mb-1">Project Type</label>
-              <select id="project_type" name="project_type"
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="project_type">Project Type</label>
+              <select id="project_type" name="project_type" required
                       class="w-full rounded-xl border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                 <option value="" selected disabled>Select a type</option>
                 <option value="residential">Residential</option>
@@ -121,23 +83,19 @@
             </div>
           </div>
 
-          <!-- Sticky action bar -->
           <div class="sticky bottom-0 -mx-6 md:-mx-8 mt-8 bg-white/90 backdrop-blur border-t px-6 md:px-8 py-4 rounded-b-2xl">
             <div class="flex justify-end gap-3">
-              <a href="{% url 'projects' %}"
-                 class="inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm hover:bg-gray-50">
+              <a href="{% url 'projects' %}" class="inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm hover:bg-gray-50">
                 Cancel
               </a>
-
-              <!-- Next goes to carbon page directly -->
-              <a href="{% url 'carbon' %}"
-                 class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+              <button type="submit"
+                      class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
                 <span class="material-icons text-[18px]">arrow_forward</span>
-                Next
-              </a>
+                Save & Continue
+              </button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </main>
   </div>
