@@ -217,7 +217,6 @@
       INTERVENTIONS = [];
       for (const [theme, arr] of byTheme) {
         INTERVENTIONS.push({ group: true, name: theme });
-        // initial order inside theme (you can tweak later)
         arr.sort((a,b)=>
           (b.interventionRating - a.interventionRating) ||
           (a.costLevel - b.costLevel) ||
@@ -367,7 +366,6 @@
       const sel   = state.selected.has(row.id);
       const level = Number(row.costLevel ?? 0);
       const ir    = Number(row.interventionRating ?? 0);
-      const score = priorityScore(row);
 
       const familyMax = maxStageSelectedByFamily[row.baseKey] ?? null;
       const disabled  = (row.stage != null && familyMax != null && familyMax > row.stage);
@@ -399,7 +397,6 @@
           <div class="col-span-2 px-4 py-3 text-center">
             <div class="flex flex-col items-center">
               <div class="text-base">${ir || 0}</div>
-              <div class="text-[10px] text-gray-500">score: ${score.toFixed(2)}</div>
             </div>
           </div>
           <div class="col-span-2 px-4 py-3 text-center">
