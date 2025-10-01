@@ -20,6 +20,8 @@ urlpatterns = [
 
     # Projects
     path('projects/', views.projects_view, name='projects'),
+    path('projects/<int:pk>/', views.project_detail_view, name='project_detail'),
+
     path('projects/create/', views.create_project, name='create_project'),
 
     # Carbon page placeholder (add your view logic)

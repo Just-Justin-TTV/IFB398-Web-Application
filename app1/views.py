@@ -3,48 +3,49 @@ import os
 import json
 from decimal import Decimal, InvalidOperation
 
+from django.db import connection
+from django.db.models import Q
+
 from django.shortcuts import render, redirect
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User  # for register/login
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.http import JsonResponse, HttpResponseBadRequest
-from django.db import connection
-from django.contrib.auth.models import User
-
+from django.contrib.auth.models import User  # Django auth user
 
 from .models import (
     Metrics,
     ClassTargets,
     Interventions,
-    User as AppUser,  # your app's user table (FK on Metrics.user)
+    User as AppUser,   # your app's user record that Metrics.user can point to
 )
 
-
-# ---------------------------
+# =========================
 # Helpers
-# ---------------------------
+# =========================
 
 def _resolve_app_user(request):
+    """Map Django auth user -> your app1.User row by username/email."""
     u = getattr(request, "user", None)
     if not getattr(u, "is_authenticated", False):
         return None
-    # Map Django auth user -> your app1.User by username/email
     if getattr(u, "username", None):
         hit = AppUser.objects.filter(username=u.username).first()
-        if hit: return hit
+        if hit:
+            return hit
     if getattr(u, "email", None):
         hit = AppUser.objects.filter(email=u.email).first()
-        if hit: return hit
+        if hit:
+            return hit
     return None
 
 
 def _num(x, default=None):
     """
     Convert strings like '73,560', '25.8%', '200–500k AUD' to float.
-    Used by API -> Metrics save.
+    Useful if you ever parse free-text numeric inputs.
     """
     if x is None:
         return default
@@ -63,49 +64,6 @@ def _num(x, default=None):
         return default
 
 
-# ---------------------------
-# Create Project (Page 1)
-# ---------------------------
-
-@login_required(login_url='login')
-def create_project(request):
-    """
-    GET  -> show the create_project form.
-    POST -> create a Metrics row with just project_name, project_location, project_type;
-            put metrics_id in session; redirect to /carbon/.
-    """
-    if request.method == "POST":
-        project_name     = (request.POST.get("project_name") or "").strip()
-        project_location = (request.POST.get("location") or request.POST.get("project_location") or "").strip()
-        project_type     = (request.POST.get("project_type") or "").strip()
-
-        # create a new Metrics row
-        m = Metrics(user=_resolve_app_user(request))
-
-        # set ONLY the fields that actually exist on your model
-        if hasattr(m, "project_name"):
-            m.project_name = project_name
-        elif hasattr(m, "name"):
-            m.name = project_name
-
-        if hasattr(m, "project_location"):
-            m.project_location = project_location
-        elif hasattr(m, "location"):
-            m.location = project_location
-
-        if hasattr(m, "project_type"):
-            m.project_type = project_type
-
-        m.save()
-        # remember this row so carbon.html updates the same record
-        request.session["metrics_id"] = m.id
-
-        return redirect("carbon")
-
-    # GET
-    return render(request, "create_project.html")
-
-# ---------- API the carbon page already calls to save building metrics ----------
 def _to_dec(x):
     if x in (None, "", "null"):
         return None
@@ -113,6 +71,7 @@ def _to_dec(x):
         return Decimal(str(x).replace(",", "").replace("%", ""))
     except (InvalidOperation, ValueError, TypeError):
         return None
+
 
 def _to_int(x):
     if x in (None, "", "null"):
@@ -123,9 +82,50 @@ def _to_int(x):
         return None
 
 
-# ---------------------------
+# =========================
+# Create Project (Page 1)
+# =========================
+
+def create_project(request):
+    """
+    GET  -> show the create_project form.
+    POST -> create a Metrics row, remember its ID in session for listing,
+            then redirect to /carbon/.
+    """
+    if request.method == "POST":
+        project_name     = (request.POST.get("project_name") or "").strip()
+        project_location = (request.POST.get("location") or request.POST.get("project_location") or "").strip()
+        project_type     = (request.POST.get("project_type") or "").strip()
+
+        # owner only if authenticated; otherwise None
+        owner = request.user if getattr(request.user, "is_authenticated", False) else None
+        m = Metrics(user=owner)
+
+        # set fields that exist on your Metrics model
+        m.project_name = project_name
+        m.location     = project_location
+        m.project_type = project_type
+
+        m.save()
+
+        # remember this row for carbon page
+        request.session["metrics_id"] = m.id
+
+        # also remember it for the Projects listing (session-scoped)
+        my_ids = request.session.get("my_project_ids", [])
+        if m.id not in my_ids:
+            my_ids.append(m.id)
+            request.session["my_project_ids"] = my_ids
+            request.session.modified = True
+
+        return redirect("carbon")
+
+    # GET
+    return render(request, "create_project.html")
+
+# =========================
 # Interventions API
-# ---------------------------
+# =========================
 
 CLASS_ALIASES = {
     "carbon":       ["carbon", "carbon emissions", "operating carbon", "operational carbon", "embodied carbon"],
@@ -141,11 +141,12 @@ CLASS_ALIASES = {
 def interventions_api(request):
     """
     GET /api/interventions/?cls=carbon
-    Returns: id, name, theme, description, cost_level, cost_range
+    Returns: id, name, theme, description, cost_level, intervention_rating
+    (Simple class filter; you can extend later to apply rules by metrics_id)
     """
     ui_key = (request.GET.get("cls") or "").strip().lower()
 
-    # Introspect columns to avoid hard dependency issues
+    # Read table columns to avoid hard-coding
     with connection.cursor() as cur:
         desc = connection.introspection.get_table_description(cur, "Interventions")
         colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
@@ -182,16 +183,16 @@ def interventions_api(request):
     return JsonResponse({"items": items})
 
 
-# ---------------------------
-# API: Save/Update Metrics (Page 2 and beyond)
-# ---------------------------
+# =========================
+# API: Save/Update Metrics (page 2+)
+# =========================
 
 @require_POST
 @login_required(login_url='login')
 def save_metrics(request):
     """
     JSON POST to /api/metrics/save/
-    Updates the SAME Metrics row created on create_project step.
+    Updates the same Metrics row created on create_project step.
     Uses metrics_id from payload OR session['metrics_id'].
     """
     try:
@@ -202,11 +203,9 @@ def save_metrics(request):
     metrics_id = payload.get("metrics_id") or request.session.get("metrics_id")
     m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
     if not m:
-        # If a user jumped here directly, create a fresh row so we don't 500
         m = Metrics(user=_resolve_app_user(request))
 
-    # ---- do NOT touch project_* fields here ----
-    # Only update building metrics
+    # Only update building metrics (do not overwrite project_* here)
     if hasattr(m, "building_type"):
         m.building_type             = payload.get("building_type") or getattr(m, "building_type", None)
     if hasattr(m, "roof_area_m2"):
@@ -243,29 +242,22 @@ def save_metrics(request):
     request.session["metrics_id"] = m.id
     return JsonResponse({"ok": True, "metrics_id": m.id})
 
-# ---------------------------
-# Carbon / Calculator pages
-# ---------------------------
+
+# =========================
+# Carbon / Calculator
+# =========================
 
 @ensure_csrf_cookie
 @login_required(login_url='login')
 def carbon_view(request):
     """
-    GET  -> render carbon.html with:
-            - class_targets (for the targets form)
-            - active_metrics_id (the Metrics row we’re editing)
-            - project (project_name, project_location, project_type) pulled
-              from that Metrics row so you can show it under the header.
-    POST -> your existing budget/targets flow to carbon_2.html
+    GET: render carbon.html with targets, active metrics, and project header info.
+    POST: your existing budget/targets -> carbon_2.html
     """
     if request.method == 'GET':
         class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
-        class_targets = [
-            {'class': ct['class_name'], 'target_rating': ct['target_rating']}
-            for ct in class_targets_qs
-        ]
+        class_targets = [{'class': ct['class_name'], 'target_rating': ct['target_rating']} for ct in class_targets_qs]
 
-        # NEW: load project info from the same Metrics row created on the previous page
         metrics_id = request.session.get('metrics_id')
         project = None
         if metrics_id:
@@ -274,17 +266,13 @@ def carbon_view(request):
                        .values('project_name', 'location', 'project_type')
                        .first())
 
-        return render(
-            request,
-            'carbon.html',
-            {
-                'class_targets': class_targets,
-                'active_metrics_id': metrics_id,
-                'project': project,  # <-- use {{ project.project_name }}, etc. in carbon.html
-            }
-        )
+        return render(request, 'carbon.html', {
+            'class_targets': class_targets,
+            'active_metrics_id': metrics_id,
+            'project': project,
+        })
 
-    # POST -> unchanged (your generate interventions flow)
+    # POST (unchanged budgeting flow)
     global_budget = float(request.POST.get('global_budget', 1e6))
     targets = {
         key[6:]: float(value)
@@ -315,16 +303,14 @@ def carbon_view(request):
     for cls in grouped_results:
         grouped_results[cls].sort(key=lambda x: x.cost_level)
 
-    return render(
-        request,
-        'carbon_2.html',
-        {
-            'grouped_results': grouped_results,
-            'global_budget': global_budget,
-            'targets': targets,
-        }
-    )
+    return render(request, 'carbon_2.html', {
+        'grouped_results': grouped_results,
+        'global_budget': global_budget,
+        'targets': targets,
+    })
 
+
+@login_required(login_url='login')
 def carbon_2_view(request):
     return render(request, 'carbon_2.html')
 
@@ -333,12 +319,10 @@ def carbon_2_view(request):
 def calculator(request):
     if request.method == 'GET':
         class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
-        class_targets = [
-            {'class': ct['class_name'], 'target_rating': ct['target_rating']}
-            for ct in class_targets_qs
-        ]
+        class_targets = [{'class': ct['class_name'], 'target_rating': ct['target_rating']} for ct in class_targets_qs]
         return render(request, 'calculator.html', {'class_targets': class_targets})
 
+    # POST
     global_budget = float(request.POST.get('global_budget', 1e6))
     targets = {key[6:]: float(value) for key, value in request.POST.items() if key.startswith('class_')}
 
@@ -365,37 +349,83 @@ def calculator(request):
     for cls in grouped_results:
         grouped_results[cls].sort(key=lambda x: x.cost_level)
 
-    return render(
-        request,
-        'calculator_results.html',
-        {
-            'grouped_results': grouped_results,
-            'global_budget': global_budget,
-            'targets': targets
-        }
-    )
+    return render(request, 'calculator_results.html', {
+        'grouped_results': grouped_results,
+        'global_budget': global_budget,
+        'targets': targets
+    })
 
 
+@login_required(login_url='login')
 def calculator_results(request):
     return render(request, 'calculator_results.html')
 
 
-# ---------------------------
+# =========================
+# Projects (List + Detail)
+# =========================
+
+@login_required(login_url='login')
+def projects_view(request):
+    """
+    List the current user's projects from Metrics.
+    Supports ?q= search across name/type/location.
+    """
+    q = (request.GET.get("q") or "").strip()
+    ids = request.session.get("my_project_ids", [])
+
+
+    qs = Metrics.objects.filter(id__in=ids).order_by("-updated_at", "-created_at")
+
+    if q:
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(project_name__icontains=q) |
+            Q(project_type__icontains=q) |
+            Q(location__icontains=q)
+        )
+
+    return render(request, "projects.html", {
+        "projects": qs,
+        "query": q
+    })
+
+
+@login_required(login_url='login')
+def project_detail_view(request, pk: int):
+    """
+    Show a single project (Metrics row) for the current user.
+    """
+    p = Metrics.objects.filter(id=pk, user=request.user).first()
+    if not p:
+        return redirect("projects")
+
+    return render(request, "project_detail.html", {"p": p})
+
+
+# =========================
 # Basic pages / auth
-# ---------------------------
+# =========================
 
 @login_required(login_url='login')
 def home(request):
     return render(request, 'home.html')
 
 
-def projects_view(request):
-    return render(request, 'projects.html', {}, content_type='text/html')
-
-
 def dashboard_view(request):
-    return render(request, 'dashboard.html')
+    # Show ONLY projects created in this browser session
+    ids = request.session.get("my_project_ids", [])
+    projects = (Metrics.objects
+                .filter(id__in=ids)
+                .order_by("-updated_at", "-created_at"))
 
+    # Keep it light on the dashboard (top 5)
+    top_projects = list(projects[:5])
+
+    return render(request, "dashboard.html", {
+        "top_projects": top_projects,   # for Project Summary table
+        "projects_count": projects.count(),
+    })
 
 def register_view(request):
     if request.method == 'POST':
@@ -446,57 +476,14 @@ def logout_view(request):
         return redirect('login')
     return redirect('home')
 
-# Calculator
 @login_required(login_url='login')
-def calculator(request):
-    if request.method == 'GET':
-        class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
-        class_targets = [{'class': ct['class_name'], 'target_rating': ct['target_rating']} for ct in class_targets_qs]
-        return render(request, 'calculator.html', {'class_targets': class_targets})
-
-    elif request.method == 'POST':
-        global_budget = float(request.POST.get('global_budget', 1e6))
-
-        # Extract per-class targets
-        targets = {key[6:]: float(value) for key, value in request.POST.items() if key.startswith('class_')}
-
-        # Fetch interventions
-        interventions = Interventions.objects.exclude(class_name__isnull=True).exclude(name__isnull=True).order_by('class_name')
-
-        # Map cost_level to approximate cost
-        cost_mapping = {1: 5000, 2: 10000, 3: 25000, 4: 50000, 5: 100000, 6: 200000, 7: 500000,
-                        8: 1000000, 9: 2000000, 10: 5000000}
-
-        # Group interventions by class and filter by budget
-        grouped_results = {}
-        for row in interventions:
-            if row.cost_level is None:
-                continue
-            approx_cost = cost_mapping.get(row.cost_level, 0)
-            if approx_cost <= global_budget:
-                grouped_results.setdefault(row.class_name, []).append(row)
-
-        # Optional: sort interventions by cost level
-        for cls in grouped_results:
-            grouped_results[cls].sort(key=lambda x: x.cost_level)
-
-        return render(request, 'calculator_results.html', {
-            'grouped_results': grouped_results,
-            'global_budget': global_budget,
-            'targets': targets
-        })
-    
-## settings page
-@login_required
 def settings_view(request):
     user = request.user
     current_theme = request.session.get('theme', 'light')
 
     if request.method == 'POST':
         try:
-            # -------------------------
             # Theme change
-            # -------------------------
             if 'theme' in request.POST:
                 new_theme = request.POST.get('theme', 'light')
                 request.session['theme'] = new_theme
@@ -504,9 +491,7 @@ def settings_view(request):
                 messages.success(request, f"Theme changed to {new_theme} mode!")
                 return redirect('settings')
 
-            # -------------------------
             # Profile info update
-            # -------------------------
             if 'update_profile' in request.POST:
                 new_username = request.POST.get('username')
                 new_email = request.POST.get('email')
@@ -520,15 +505,12 @@ def settings_view(request):
                 if User.objects.filter(email=new_email).exclude(id=user.id).exists():
                     raise ValueError("Email already exists.")
 
-                # Save updates
                 user.username = new_username
                 user.email = new_email
                 user.save()
                 messages.success(request, "Profile updated successfully!")
 
-            # -------------------------
             # Password change
-            # -------------------------
             if 'change_password' in request.POST:
                 current_password = request.POST.get('current_password')
                 new_password = request.POST.get('new_password')
@@ -543,111 +525,22 @@ def settings_view(request):
                 if not user.check_password(current_password):
                     raise ValueError("Current password is incorrect.")
 
-                # Set new password and keep user logged in
                 user.set_password(new_password)
                 user.save()
-                from django.contrib.auth import update_session_auth_hash
-                update_session_auth_hash(request, user)
+                update_session_auth_hash(request, user)  # keep user logged in
                 messages.success(request, "Password changed successfully!")
 
         except ValueError as ve:
-            # Caught logical/user errors
             messages.error(request, f"Error: {ve}")
         except Exception as e:
-            # Catch unexpected errors
             messages.error(request, "Unexpected error occurred. Please try again later.")
-            # Optional: log the error
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Settings update failed: {e}")
 
         return redirect('settings')
 
-    # GET request
-    context = {
-        'user': user,
-        'current_theme': current_theme
-    }
-    return render(request, 'settings.html', context)
-    
-## settings page
-@login_required
-def settings_view(request):
-    user = request.user
-    current_theme = request.session.get('theme', 'light')
-
-    if request.method == 'POST':
-        try:
-            # -------------------------
-            # Theme change
-            # -------------------------
-            if 'theme' in request.POST:
-                new_theme = request.POST.get('theme', 'light')
-                request.session['theme'] = new_theme
-                request.session.modified = True
-                messages.success(request, f"Theme changed to {new_theme} mode!")
-                return redirect('settings')
-
-            # -------------------------
-            # Profile info update
-            # -------------------------
-            if 'update_profile' in request.POST:
-                new_username = request.POST.get('username')
-                new_email = request.POST.get('email')
-
-                if not new_username or not new_email:
-                    raise ValueError("Username and email cannot be blank.")
-
-                # Check if username/email already exists
-                if User.objects.filter(username=new_username).exclude(id=user.id).exists():
-                    raise ValueError("Username already exists.")
-                if User.objects.filter(email=new_email).exclude(id=user.id).exists():
-                    raise ValueError("Email already exists.")
-
-                # Save updates
-                user.username = new_username
-                user.email = new_email
-                user.save()
-                messages.success(request, "Profile updated successfully!")
-
-            # -------------------------
-            # Password change
-            # -------------------------
-            if 'change_password' in request.POST:
-                current_password = request.POST.get('current_password')
-                new_password = request.POST.get('new_password')
-                confirm_password = request.POST.get('confirm_password')
-
-                if not current_password or not new_password or not confirm_password:
-                    raise ValueError("All password fields are required.")
-
-                if new_password != confirm_password:
-                    raise ValueError("New passwords do not match.")
-
-                if not user.check_password(current_password):
-                    raise ValueError("Current password is incorrect.")
-
-                # Set new password and keep user logged in
-                user.set_password(new_password)
-                user.save()
-                from django.contrib.auth import update_session_auth_hash
-                update_session_auth_hash(request, user)
-                messages.success(request, "Password changed successfully!")
-
-        except ValueError as ve:
-            # Caught logical/user errors
-            messages.error(request, f"Error: {ve}")
-        except Exception as e:
-            # Catch unexpected errors
-            messages.error(request, "Unexpected error occurred. Please try again later.")
-            # Optional: log the error
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Settings update failed: {e}")
-
-        return redirect('settings')
-
-    # GET request
+    # GET
     context = {
         'user': user,
         'current_theme': current_theme

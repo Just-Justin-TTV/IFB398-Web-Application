@@ -147,37 +147,36 @@
                 </tr>
               </thead>
               <tbody class="divide-y">
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Horizon Heights</td>
-                  <td class="px-5 py-3">20/07/2025</td>
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2.5 py-0.5">Incomplete</span>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Riverbend</td>
-                  <td class="px-5 py-3">03/07/2025</td>
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full bg-orange-50 text-orange-700 px-2.5 py-0.5">In Progress</span>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Pinecrest Logistics</td>
-                  <td class="px-5 py-3">12/06/2025</td>
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full bg-green-50 text-green-700 px-2.5 py-0.5">Complete</span>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
-                  </td>
-                </tr>
+                {% if top_projects %}
+                  {% for p in top_projects %}
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-5 py-3">
+                        <a href="{% url 'project_detail' p.id %}" class="text-gray-900 font-medium hover:underline">
+                          {{ p.project_name|default:"Untitled Project" }}
+                        </a>
+                      </td>
+                      <td class="px-5 py-3">
+                        {{ p.updated_at|default:p.created_at|date:"d/m/Y" }}
+                      </td>
+                      <td class="px-5 py-3">
+                        <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs">
+                          Created
+                        </span>
+                      </td>
+                      <td class="px-5 py-3">
+                        <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-dark">Open</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="px-5 py-6 text-center text-gray-500">
+                      No projects yet. <a href="{% url 'create_project' %}" class="text-brand hover:underline">Create your first project</a>.
+                    </td>
+                  </tr>
+                {% endif %}
               </tbody>
+
             </table>
           </div>
         </section>
