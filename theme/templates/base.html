@@ -99,25 +99,28 @@
   {% block head %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 text-gray-900 {% if current_theme == 'dark' %}theme-dark{% endif %}">
+<body class="bg-gray-50 text-gray-900 
+    {% if current_theme == 'dark' %}theme-dark{% endif %}
+    {% if current_theme == 'high-contrast' %}high-contrast{% endif %}"
+    data-theme="{{ current_theme }}">
 
-  <!-- Navigation Bar -->
-  <nav class="bg-[black] px-4 py-2">
+ <!-- Navigation Bar -->
+<nav class="px-4 py-2 {% if current_theme == 'dark' %}bg-[black] text-white{% else %}bg-white text-gray-900 border-b{% endif %}">
     <div class="flex items-center max-w-7xl mx-auto space-x-4">
 
       <!-- Auth Links -->
       {% if not request.user.is_authenticated %}
         <a href="{% url 'login' %}" 
-           class="flex items-center px-6 h-10 border-l border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">
+           class="flex items-center px-6 h-10 border-l border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition">
           <span class="material-icons mr-2">account_circle</span>Sign In
         </a>
       {% else %}
         <form method="post" action="{% url 'logout' %}" class="inline">
           {% csrf_token %}
           <button type="submit"
-            class="flex items-center px-6 h-10 border-l border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition cursor-pointer select-none">
-            <span class="material-icons mr-2 text-white">logout</span>
-            <span class="text-white">Logout</span>
+            class="flex items-center px-6 h-10 border-l border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition cursor-pointer select-none">
+            <span class="material-icons mr-2">logout</span>
+            <span>Logout</span>
           </button>
         </form>
       {% endif %}
@@ -125,21 +128,21 @@
       <!-- Menu Links -->
       <div class="flex space-x-0">
         <a href="{% url 'register' %}" 
-           class="px-6 h-10 flex items-center border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">Sign Up</a>
+           class="px-6 h-10 flex items-center border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition">Sign Up</a>
         <a href="{% url 'dashboard' %}" 
-           class="px-6 h-10 flex items-center border-r border-gray-600 bg-[black] text-[white] font-semibold hover:bg-gray-900 transition">Dashboard</a>
+           class="px-6 h-10 flex items-center border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition">Dashboard</a>
       </div>
 
       <!-- Search -->
-      <form class="flex items-center ml-auto bg-[black] rounded border border-[black] overflow-hidden h-10 w-64">
-        <input type="text" class="flex-1 px-4 py-1 focus:outline-none bg-[black] text-[white]" placeholder="Search" />
+      <form class="flex items-center ml-auto {% if current_theme == 'dark' %}bg-[black] border-[black]{% else %}bg-white border-gray-300{% endif %} rounded border overflow-hidden h-10 w-64">
+        <input type="text" class="flex-1 px-4 py-1 focus:outline-none {% if current_theme == 'dark' %}bg-[black] text-white{% else %}bg-white text-gray-900{% endif %}" placeholder="Search" />
         <button type="submit" class="px-3">
-          <span class="material-icons text-red-600">search</span>
+          <span class="material-icons {% if current_theme == 'dark' %}text-red-400{% else %}text-red-600{% endif %}">search</span>
         </button>
       </form>
 
     </div>
-  </nav>
+</nav>
 
   <!-- Page Content -->
   <div class="container mx-auto mt-6 px-4">

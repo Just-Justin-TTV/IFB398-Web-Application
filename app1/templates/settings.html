@@ -24,16 +24,21 @@
         <!-- Theme Selection -->
         <div class="mb-10">
             <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Appearance</h2>
-            <form method="POST" action="{% url 'settings' %}" id="themeForm">
+            <form method="POST">
                 {% csrf_token %}
-                <input type="hidden" name="theme" id="themeInput" value="{{ current_theme }}">
                 <div class="mb-4">
                     <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Theme:</label>
-                    <select name="theme_select" onchange="updateTheme(this.value)" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <select name="theme" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                         <option value="light" {% if current_theme == 'light' %}selected{% endif %}>Light Mode</option>
                         <option value="dark" {% if current_theme == 'dark' %}selected{% endif %}>Dark Mode</option>
+                        <option value="high-contrast" {% if current_theme == 'high-contrast' %}selected{% endif %}>High Contrast Mode</option>
                     </select>
                 </div>
+                <button type="submit" 
+                        class="font-medium py-2 px-6 rounded-xl transition duration-200"
+                        style="background-color: #32c3e2; color: black;">
+                    Save Theme
+                </button>
             </form>
         </div>
 
