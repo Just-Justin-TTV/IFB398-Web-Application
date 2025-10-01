@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
+          borderRadius: { "2xl": "1rem" }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <div class="flex min-h-screen">
+
+    <!-- ============ Sidebar =========== -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
+        </a>
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+        <a href="{% url 'carbon' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">build</span> Interventions
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+      </nav>
+    </aside>
+    <!-- ============ End Sidebar ============ -->
+
+
+<div class="max-w-5xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">{{ p.project_name|default:"Project" }}</h1>
+    <div class="text-sm text-gray-500">
+      Updated: {{ p.updated_at|date:"d/m/Y H:i" }}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="font-semibold mb-4">Overview</h2>
+      <div class="space-y-2 text-sm">
+        <div><span class="font-medium">Type:</span> {{ p.project_type|default:"—" }}</div>
+        <div><span class="font-medium">Location:</span> {{ p.location|default:"—" }}</div>
+        <div><span class="font-medium">Estimated Budget:</span>
+          {% if p.estimated_auto_budget_aud %} ${{ p.estimated_auto_budget_aud|floatformat:0 }} {% else %} — {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="font-semibold mb-4">Building Metrics</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><span class="font-medium">GIFA (m²):</span> {{ p.gifa_m2|default:"—" }}</div>
+        <div><span class="font-medium">Roof Area (m²):</span> {{ p.roof_area_m2|default:"—" }}</div>
+        <div><span class="font-medium">Basement:</span> {{ p.basement_present|yesno:"Yes,No,—" }}</div>
+        <div><span class="font-medium">Basement Size (m²):</span> {{ p.basement_size_m2|default:"—" }}</div>
+        <div><span class="font-medium">External Wall Area (m²):</span> {{ p.external_wall_area_m2|default:"—" }}</div>
+        <div><span class="font-medium">External Openings (m²):</span> {{ p.external_openings_m2|default:"—" }}</div>
+        <div><span class="font-medium">Building Footprint (m²):</span> {{ p.building_footprint_m2|default:"—" }}</div>
+        <div><span class="font-medium">Units:</span>
+          Apts {{ p.num_apartments|default:"0" }}, Keys {{ p.num_keys|default:"0" }}, WCs {{ p.num_wcs|default:"0" }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-semibold">Interventions (coming from your rules/API)</h2>
+      <a class="btn btn-outline btn-sm" href="{% url 'calculator' %}?mid={{ p.id }}">Run Calculator</a>
+    </div>
+    <p class="text-sm text-gray-500">Hook your filtered interventions list here (via your `interventions_api?mid={{ p.id }}` call) or render them server-side.</p>
+  </div>
+</div>
+
