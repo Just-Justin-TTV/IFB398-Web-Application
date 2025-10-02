@@ -347,11 +347,22 @@ def projects_view(request: HttpRequest):
 
 
 @login_required(login_url='login')
-def project_detail_view(request: HttpRequest, pk: int):
-    project = Metrics.objects.filter(id=pk, user=request.user).first()
-    if not project:
+@login_required(login_url='login')
+def project_detail_view(request, pk: int):
+    p = Metrics.objects.filter(id=pk).first()
+    if not p:
         return redirect("projects")
-    return render(request, "project_detail.html", {"p": project})
+
+    session_ids = set(request.session.get("my_project_ids", []))
+    is_owner = (p.user_id == getattr(request.user, "id", None))
+    if not is_owner and pk not in session_ids:
+        return redirect("projects")
+
+    can_edit = request.GET.get("edit") == "1"   # <-- THIS LINE
+    request.session["metrics_id"] = p.id
+    request.session.modified = True
+    return render(request, "project_detail.html", {"p": p, "can_edit": can_edit})
+
 
 
 # =========================

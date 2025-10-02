@@ -1,109 +1,194 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard</title>
+  <meta charset="utf-8" />
+  <title>{{ p.project_name|default:"Project" }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
-          borderRadius: { "2xl": "1rem" }
-        }
-      }
-    }
-  </script>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
 
-<body class="min-h-screen bg-gray-50 text-gray-900">
-  <div class="flex min-h-screen">
-
-    <!-- ============ Sidebar =========== -->
-    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-      <div class="px-5 py-6 border-b">
-        <div class="flex items-center gap-3">
-          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-          <div>
-            <p class="text-xs text-gray-500">Welcome</p>
-            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
-          </div>
-        </div>
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold">{{ p.project_name|default:"Untitled Project" }}</h1>
+        <p class="text-sm text-gray-600">{{ p.location|default:"—" }} · {{ p.project_type|default:"—" }}</p>
       </div>
 
-      <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">dashboard</span> Dashboard
-        </a>
-        <a href="{% url 'projects' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">folder</span> Projects
-        </a>
-        <a href="{% url 'carbon' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">build</span> Interventions
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">description</span> Reports
-        </a>
-        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">settings</span> Settings
-        </a>
-      </nav>
-    </aside>
-    <!-- ============ End Sidebar ============ -->
-
-
-<div class="max-w-5xl mx-auto space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-semibold">{{ p.project_name|default:"Project" }}</h1>
-    <div class="text-sm text-gray-500">
-      Updated: {{ p.updated_at|date:"d/m/Y H:i" }}
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-white rounded-2xl shadow p-6">
-      <h2 class="font-semibold mb-4">Overview</h2>
-      <div class="space-y-2 text-sm">
-        <div><span class="font-medium">Type:</span> {{ p.project_type|default:"—" }}</div>
-        <div><span class="font-medium">Location:</span> {{ p.location|default:"—" }}</div>
-        <div><span class="font-medium">Estimated Budget:</span>
-          {% if p.estimated_auto_budget_aud %} ${{ p.estimated_auto_budget_aud|floatformat:0 }} {% else %} — {% endif %}
-        </div>
+      <div class="flex items-center gap-4">
+        {% if can_edit %}
+          <a href="{% url 'project_detail' p.id %}" class="text-sm text-gray-600 hover:text-gray-900">View only</a>
+        {% else %}
+          <a href="{% url 'project_detail' p.id %}?edit=1" class="text-sm text-blue-600 hover:text-blue-700">Edit</a>
+        {% endif %}
+        <a href="{% url 'projects' %}" class="text-sm text-gray-600 hover:text-gray-900">Back to Projects</a>
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow p-6">
-      <h2 class="font-semibold mb-4">Building Metrics</h2>
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <div><span class="font-medium">GIFA (m²):</span> {{ p.gifa_m2|default:"—" }}</div>
-        <div><span class="font-medium">Roof Area (m²):</span> {{ p.roof_area_m2|default:"—" }}</div>
-        <div><span class="font-medium">Basement:</span> {{ p.basement_present|yesno:"Yes,No,—" }}</div>
-        <div><span class="font-medium">Basement Size (m²):</span> {{ p.basement_size_m2|default:"—" }}</div>
-        <div><span class="font-medium">External Wall Area (m²):</span> {{ p.external_wall_area_m2|default:"—" }}</div>
-        <div><span class="font-medium">External Openings (m²):</span> {{ p.external_openings_m2|default:"—" }}</div>
-        <div><span class="font-medium">Building Footprint (m²):</span> {{ p.building_footprint_m2|default:"—" }}</div>
-        <div><span class="font-medium">Units:</span>
-          Apts {{ p.num_apartments|default:"0" }}, Keys {{ p.num_keys|default:"0" }}, WCs {{ p.num_wcs|default:"0" }}
-        </div>
+    <!-- Building Metrics -->
+    <section class="bg-white border rounded-2xl shadow-sm">
+      <div class="px-5 py-4 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Building Metrics</h2>
+
+        {% if can_edit %}
+          <button id="btnGenerate"
+                  class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700">
+            Generate (Save)
+          </button>
+        {% endif %}
       </div>
-    </div>
-  </div>
 
-  <div class="bg-white rounded-2xl shadow p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="font-semibold">Interventions (coming from your rules/API)</h2>
-      <a class="btn btn-outline btn-sm" href="{% url 'calculator' %}?mid={{ p.id }}">Run Calculator</a>
-    </div>
-    <p class="text-sm text-gray-500">Hook your filtered interventions list here (via your `interventions_api?mid={{ p.id }}` call) or render them server-side.</p>
-  </div>
-</div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- GIFA -->
+        <label class="block">
+          <span class="text-sm text-gray-700">GIFA (m²)</span>
+          <input id="gifa_m2" type="number" step="0.01"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.gifa_m2|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
 
+        <!-- Roof Area -->
+        <label class="block">
+          <span class="text-sm text-gray-700">Roof Area (m²)</span>
+          <input id="roof_area_m2" type="number" step="0.01"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.roof_area_m2|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <!-- Basement present -->
+        <label class="flex items-center gap-2 mt-6">
+          <input id="basement_present" type="checkbox"
+                 class="rounded border-gray-300"
+                 {% if p.basement_present %}checked{% endif %}
+                 {% if not can_edit %}disabled{% endif %}>
+          <span class="text-sm text-gray-700">Basement present</span>
+        </label>
+
+        <!-- Basement size -->
+        <label class="block">
+          <span class="text-sm text-gray-700">Basement Size (m²)</span>
+          <input id="basement_size_m2" type="number" step="0.01"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.basement_size_m2|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <!-- External Wall Area -->
+        <label class="block">
+          <span class="text-sm text-gray-700">External Wall Area (m²)</span>
+          <input id="external_wall_area_m2" type="number" step="0.01"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.external_wall_area_m2|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <!-- External Openings -->
+        <label class="block">
+          <span class="text-sm text-gray-700">External Openings (m²)</span>
+          <input id="external_openings_m2" type="number" step="0.01"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.external_openings_m2|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <!-- Building Footprint -->
+        <label class="block">
+          <span class="text-sm text-gray-700">Building Footprint (m²)</span>
+          <input id="building_footprint_m2" type="number" step="0.01"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.building_footprint_m2|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <!-- Units -->
+        <label class="block">
+          <span class="text-sm text-gray-700">Apartments</span>
+          <input id="num_apartments" type="number" step="1" min="0"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.num_apartments|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <label class="block">
+          <span class="text-sm text-gray-700">Keys</span>
+          <input id="num_keys" type="number" step="1" min="0"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.num_keys|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+
+        <label class="block">
+          <span class="text-sm text-gray-700">WCs</span>
+          <input id="num_wcs" type="number" step="1" min="0"
+                 class="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                 value="{{ p.num_wcs|default_if_none:'' }}"
+                 {% if not can_edit %}disabled{% endif %}>
+        </label>
+      </div>
+    </section>
+  </main>
+
+  {% if can_edit %}
+  <script>
+    // CSRF: read cookie (works for fetch)
+    function getCookie(name){
+      const m = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+      return m ? m.pop() : '';
+    }
+
+    const mid = {{ p.id }};
+    const $ = id => document.getElementById(id);
+
+    async function saveMetrics(payload){
+      const res = await fetch("{% url 'save_metrics' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie('csrftoken')
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json(); // {ok:true, metrics_id:N}
+    }
+
+    document.getElementById('btnGenerate').addEventListener('click', async () => {
+      const payload = {
+        metrics_id: mid,
+        gifa_m2: $('gifa_m2').value || null,
+        roof_area_m2: $('roof_area_m2').value || null,
+        basement_present: $('basement_present').checked,
+        basement_size_m2: $('basement_size_m2').value || null,
+        external_wall_area_m2: $('external_wall_area_m2').value || null,
+        external_openings_m2: $('external_openings_m2').value || null,
+        building_footprint_m2: $('building_footprint_m2').value || null,
+        num_apartments: $('num_apartments').value || null,
+        num_keys: $('num_keys').value || null,
+        num_wcs: $('num_wcs').value || null
+      };
+
+      try {
+        const data = await saveMetrics(payload);
+
+        // (Optional) if you want to jump straight to the interventions page:
+        // Remember the metrics id so the calculator filters correctly
+        sessionStorage.setItem('metrics_id', String(data.metrics_id || mid));
+        // Go to calculator/interventions which will call /api/interventions/?mid=...
+        window.location.assign("{% url 'calculator_results' %}?mid=" + encodeURIComponent(data.metrics_id || mid));
+
+        // If you prefer to stay here in read-only mode instead, use:
+        // window.location.assign("{% url 'project_detail' p.id %}");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save. Please check console/network.");
+      }
+    });
+  </script>
+  {% endif %}
+</body>
+</html>
