@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %}{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +10,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: { brand: { DEFAULT: '#0ea5e9', 600: '#0891b2', 700: '#0e7490' } },
+          colors: { brand: { DEFAULT:'#0ea5e9', 600:'#0891b2', 700:'#0e7490' } },
           borderRadius: { '2xl': '1rem' }
         }
       }
@@ -20,97 +20,111 @@
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
-  <div class="flex min-h-screen">
-    <!-- Sidebar -->
-    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-      <div class="px-5 py-6 border-b flex items-center gap-3">
-        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+    <div class="px-5 py-6 border-b flex items-center gap-3">
+      <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+      <div>
+        <p class="text-xs text-gray-500">Welcome</p>
+        <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
+      </div>
+    </div>
+    <nav class="px-3 py-4 space-y-1">
+      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <span class="material-icons text-[18px]">dashboard</span> Dashboard
+      </a>
+      <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <span class="material-icons text-[18px]">folder</span> Projects
+      </a>
+      <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
+        <span class="material-icons text-[18px]">build</span> Interventions
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1">
+    <!-- Header -->
+    <header class="bg-white border-b">
+      <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <div>
-          <p class="text-xs text-gray-500">Welcome</p>
-          <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
+          <h1 class="text-2xl font-semibold">Carbon Calculator</h1>
+          <p class="text-sm text-gray-600">Compare interventions, costs, and synergies to meet your targets</p>
+        </div>
+        <button id="saveBtn" class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-600">
+          <span class="material-icons text-base">save</span> Save
+        </button>
+      </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
+      <!-- Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="text-sm text-gray-700">Select Class</label>
+          <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+            <option value="all">All</option>
+            {% for c in classes %}
+              <option value="{{ c.key|escape }}">{{ c.label|escape }}</option>
+            {% endfor %}
+          </select>
+
+          <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
+        </div>
+
+        <!-- Search with suggestions -->
+        <div class="relative w-full sm:w-96">
+          <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
+          <input id="searchBox" type="text" placeholder="Search interventions…"
+                 class="w-full rounded-full border pl-9 pr-10 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                 autocomplete="off" />
+          <button id="clearSearch"
+                  class="hidden material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[18px]">close</button>
+          <div id="searchSuggest"
+               class="absolute z-10 mt-2 w-full bg-white border rounded-xl shadow-lg overflow-hidden hidden"></div>
+        </div>
+
+        <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
+          <span class="text-gray-500">Cost Tracker:</span>
+          <span id="costTracker" class="font-semibold ml-1">$0</span>
         </div>
       </div>
-      <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">dashboard</span> Dashboard
-        </a>
-        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">folder</span> Projects
-        </a>
-        <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
-          <span class="material-icons text-[18px]">build</span> Interventions
-        </a>
-      </nav>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1">
-      <!-- Header -->
-      <header class="bg-white border-b">
-        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-semibold">Carbon Calculator</h1>
-            <p class="text-sm text-gray-600">Compare interventions, costs, and synergies to meet your targets</p>
-          </div>
-          <button id="saveBtn" class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-600">
-            <span class="material-icons text-base">save</span> Save
-          </button>
-        </div>
-      </header>
-
-      <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
-        <!-- Controls -->
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-3">
-            <label class="text-sm text-gray-700">Select Class</label>
-            <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-              <option value="all">All</option>
-              {% for c in classes %}
-                <option value="{{ c.key }}">{{ c.label }}</option>
-              {% endfor %}
-            </select>
-
-            <select id="sortSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-              <option value="best">Best value (rating ÷ cost)</option>
-              <option value="impact">Highest rating</option>
-              <option value="cost">Lowest cost</option>
-              <option value="theme">Original order</option>
-            </select>
-
-            <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Table -->
+        <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div class="col-span-6 px-4 py-3">Intervention</div>
+            <div class="col-span-2 px-4 py-3 text-center">Cost</div>
+            <div class="col-span-2 px-4 py-3 text-center">Rating</div>
+            <div class="col-span-2 px-4 py-3 text-center">Select</div>
           </div>
 
-          <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
-            <span class="text-gray-500">Cost Tracker:</span>
-            <span id="costTracker" class="font-semibold ml-1">$0</span>
-            <span id="budgetWarn" class="ml-3 hidden text-red-600 font-medium">Cap exceeded</span>
-          </div>
-        </div>
+          <div id="rows">
+            {% for theme, items in interventions.items %}
+              <div class="grid grid-cols-12 theme-header" data-theme="{{ theme|escape }}">
+                <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
+                  {{ theme }}
+                </div>
+              </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- LEFT: Interventions Table -->
-          <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
-            <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              <div class="col-span-5 px-4 py-3">Intervention</div>
-              <div class="col-span-2 px-4 py-3 text-center">Cost</div>
-              <div class="col-span-2 px-4 py-3 text-center">Rating</div>
-              <div class="col-span-2 px-4 py-3 text-center">Select</div>
-              <div class="col-span-1 px-4 py-3 text-center">Badges</div>
-            </div>
-            <div id="rows">
-              {% for theme, items in interventions.items %}
-                <div class="grid grid-cols-12"><div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">{{ theme }}</div></div>
-                {% for item in items %}
-                  <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50 intervention-row"
-                       data-id="{{ item.id }}"
-                       data-theme="{{ theme }}"
-                       data-cost-level="{{ item.cost_level }}"
-                       data-rating="{{ item.intervention_rating }}"
-                       data-stage="{{ item.stage|default:'' }}"
-                       data-description="{{ item.description|default:'' }}">
-                    <div class="col-span-5 px-4 py-3 flex items-center justify-between">
-                      <div>
-                        <div class="font-medium">{{ item.name }}</div>
+              {% for item in items %}
+                <div
+                  class="grid grid-cols-12 items-center border-t hover:bg-gray-50 intervention-row"
+                  data-id="{{ item.id|escape }}"
+                  data-theme="{{ theme|escape }}"
+                  data-name="{{ item.name|striptags|escape }}"
+                  data-class="{{ item.class_name|default:''|lower|escape }}"
+                  data-cost-level="{{ item.cost_level|default:0|escape }}"
+                  data-rating="{{ item.intervention_rating|default:0|escape }}"
+                  data-stage="{{ item.stage|default:''|escape }}"
+                  data-description="{{ item.description|default:''|striptags|escape }}"
+                >
+                  <div class="col-span-6 px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <div class="font-medium intervention-name">{{ item.name }}</div>
+                      <div class="mt-1 flex items-center gap-2">
                         {% if item.theme %}
                           <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ item.theme }}</span>
                         {% endif %}
@@ -118,248 +132,302 @@
                           <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage {{ item.stage }}</span>
                         {% endif %}
                       </div>
-                      <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">
-                        expand_more
-                      </button>
                     </div>
-                    <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level }}</div>
-                    <div class="col-span-2 px-4 py-3 text-center">{{ item.intervention_rating }}</div>
-                    <div class="col-span-2 px-4 py-3 text-center">
-                      <input type="checkbox" class="select-intervention" data-id="{{ item.id }}">
-                    </div>
-                    <div class="col-span-1 px-4 py-3 text-center">
-                      {% for badge in item.badges %}
-                        <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full mr-1">{{ badge }}</span>
-                      {% endfor %}
-                    </div>
+                    <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">
+                      expand_more
+                    </button>
                   </div>
-                  <!-- hidden description row -->
-                  <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">
-                    {{ item.description|default:"No description available." }}
+
+                  <div class="col-span-2 px-4 py-3 text-center">
+                    {{ item.cost_level|default:0 }}
                   </div>
-                {% endfor %}
+
+                  <div class="col-span-2 px-4 py-3 text-center">
+                    {{ item.intervention_rating|default:0 }}
+                  </div>
+
+                  <div class="col-span-2 px-4 py-3 text-center">
+                    <input type="checkbox" class="select-intervention accent-brand" data-id="{{ item.id|escape }}">
+                  </div>
+                </div>
+
+                <!-- Description row -->
+                <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">
+                  {{ item.description|default:"No description available." }}
+                </div>
               {% endfor %}
-            </div>
-          </section>
+            {% endfor %}
+          </div>
+        </section>
 
-          <!-- RIGHT: Score & Progress -->
-          <aside class="space-y-6">
-            <div class="bg-white border rounded-2xl shadow-sm">
-              <div class="px-4 py-3 border-b"><h3 class="font-semibold">Class Summary</h3></div>
-              <div class="p-4 overflow-hidden rounded-xl border">
-                <table class="w-full text-sm">
-                  <thead class="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th class="text-left px-3 py-2">Class</th>
-                      <th class="text-right px-3 py-2">Target</th>
-                      <th class="text-right px-3 py-2">Achieved</th>
-                      <th class="text-right px-3 py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="scoreTable">
-                    {% for c in classes %}
-                      <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2">{{ c.label }}</td>
-                        <td class="px-3 py-2 text-right">{{ c.target }}</td>
-                        <td class="px-3 py-2 text-right">0</td>
-                        <td class="px-3 py-2 text-right">N/A</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
+        <!-- Sidebar summary (simple) -->
+        <aside class="space-y-6">
+          <div class="bg-white border rounded-2xl shadow-sm">
+            <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
+            <div class="p-4 space-y-2 text-sm text-gray-700">
+              <div class="flex justify-between"><span>Selected items</span><span id="selCount">0</span></div>
+              <div class="flex justify-between"><span>Total cost level</span><span id="totalCost">0</span></div>
             </div>
-
-            <div class="bg-white border rounded-2xl shadow-sm">
-              <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
-              <div class="p-4 space-y-4" id="progressBars">
-                {% for c in classes %}
-                  {% if c.key in "carbon health water circular" %}
-                  <div>
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="text-sm text-gray-700">{{ c.label }}</span>
-                      <span class="text-sm text-gray-700">0%</span>
-                    </div>
-                    <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
-                      <div class="h-3 bg-brand rounded-full" style="width:0%"></div>
-                    </div>
-                  </div>
-                  {% endif %}
-                {% endfor %}
-              </div>
-            </div>
-          </aside>
-        </div>
+          </div>
+        </aside>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
+</div>
 
 <script>
-const CAP_HIGH = 300000;
-const state = { selected: new Set(), activeClass: 'carbon', sort: 'best' };
+/* -------------------- Utils -------------------- */
+const qs  = (s) => document.querySelector(s);
+const qsa = (s) => Array.from(document.querySelectorAll(s));
 
-// ---------- read interventions from DOM ----------
-const INTERVENTIONS = [];
-document.querySelectorAll('.intervention-row').forEach(el => {
-  INTERVENTIONS.push({
+/* Build a “family” slug that ignores “Stage …” in the name */
+function familyFromName(name) {
+  return String(name || '')
+    .replace(/stage\s*[ivx0-9]+/gi, '')  // remove “Stage X/IV”
+    .replace(/[–—-]/g, ' ')              // unify dashes
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-');
+}
+
+/* Detect stage from name/description if not provided */
+function detectStage(text) {
+  if (!text) return null;
+  let m = String(text).match(/stage\s*0*([1-9]\d*)/i);
+  if (m) return parseInt(m[1], 10);
+
+  m = String(text).match(/stage\s*(i{1,3}|iv|v|vi{0,3}|ix|x)/i);
+  if (m) {
+    const map = {i:1, ii:2, iii:3, iv:4, v:5, vi:6, vii:7, viii:8, ix:9, x:10};
+    return map[m[1].toLowerCase()] || null;
+  }
+  return null;
+}
+
+/* -------------------- Read rows from DOM -------------------- */
+const INTERVENTIONS = qsa('.intervention-row').map(el => {
+  const name = (el.dataset.name || '').trim();
+  let stage = el.dataset.stage ? Number(el.dataset.stage) : null;
+
+  // fall back to detection if missing
+  if (stage == null || Number.isNaN(stage)) {
+    stage = detectStage(name) ?? detectStage(el.dataset.description);
+    if (stage != null) el.dataset.stage = String(stage);
+  }
+
+  // ensure “Stage X” pill exists if we have a stage
+  if (stage != null) {
+    const hasPill = el.querySelector('[data-detected-stage]');
+    if (!hasPill) {
+      const pill = document.createElement('span');
+      pill.dataset.detectedStage = '1';
+      pill.className = 'ml-2 inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100';
+      pill.textContent = `Stage ${stage}`;
+      el.querySelector('.intervention-name')?.parentElement?.appendChild(pill);
+    }
+  }
+
+  return {
     id: el.dataset.id,
+    el,
     theme: el.dataset.theme || 'Other',
+    name,
+    family: familyFromName(name),                 // ✅ same family for all stages
+    classKey: (el.dataset.class || '').trim(),
     costLevel: Number(el.dataset.costLevel || 0),
-    interventionRating: Number(el.dataset.rating || 0),
-    stage: el.dataset.stage ? Number(el.dataset.stage) : null,
-    description: el.dataset.description || '',
-    baseKey: el.dataset.description ? el.dataset.description.toLowerCase().replace(/[^a-z0-9]+/g,'-') : ''
-  });
+    rating: Number(el.dataset.rating || 0),
+    stage,                                        // may be null
+    description: el.dataset.description || ''
+  };
 });
 
-// ---------- helpers ----------
-const money = (n) => {
-  if (!Number.isFinite(n) || n <= 0) return '$0';
-  if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
-  return `$${Math.round(n/1000)}K`;
+/* -------------------- State -------------------- */
+const state = {
+  selected: new Set(),
+  query: '',
+  activeClass: 'all'
 };
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+/* -------------------- Search + filter -------------------- */
+const searchBox  = qs('#searchBox');
+const clearBtn   = qs('#clearSearch');
+const suggestBox = qs('#searchSuggest');
 
-function applyStageConstraints() {
-  const maxStageByDesc = {};
+function closeSuggest(){ suggestBox.classList.add('hidden'); suggestBox.innerHTML=''; }
 
-  // Step 1: max stage per description
+function applyFilter(q){
+  state.query = (q || '').toLowerCase().trim();
+  const classFilter = state.activeClass;
+
+  const visibleByTheme = {};
   INTERVENTIONS.forEach(row => {
-    const desc = row.description || '';
-    const stage = row.stage;
-    if (stage == null) return;
-    if (state.selected.has(row.id)) {
-      if (!maxStageByDesc[desc] || stage > maxStageByDesc[desc]) maxStageByDesc[desc] = stage;
+    const nameMatch  = !state.query || row.name.toLowerCase().includes(state.query);
+    const classMatch = (classFilter === 'all') || (row.classKey === classFilter);
+    const visible    = nameMatch && classMatch;
+
+    row.el.style.display = visible ? '' : 'none';
+    const desc = row.el.nextElementSibling;
+    if (desc && desc.classList.contains('description-row') && !visible) desc.classList.add('hidden');
+
+    if (!visibleByTheme[row.theme]) visibleByTheme[row.theme] = 0;
+    if (visible) visibleByTheme[row.theme] += 1;
+  });
+
+  qsa('.theme-header').forEach(h => {
+    const theme = h.dataset.theme;
+    h.style.display = (visibleByTheme[theme] || 0) ? '' : 'none';
+  });
+}
+
+function buildSuggestions(q){
+  const needle = (q||'').toLowerCase().trim();
+  if (!needle) return closeSuggest();
+
+  const seen = new Set();
+  const names = [];
+  for (const r of INTERVENTIONS){
+    const key = r.name.toLowerCase();
+    if (!seen.has(key) && key.includes(needle)){
+      seen.add(key); names.push(r.name);
+      if (names.length >= 8) break;
+    }
+  }
+  if (!names.length) return closeSuggest();
+
+  suggestBox.innerHTML = names.map(n =>
+    `<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">${n.replace(/</g,'&lt;')}</button>`
+  ).join('');
+  suggestBox.classList.remove('hidden');
+
+  qsa('#searchSuggest button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      searchBox.value = btn.textContent.trim();
+      clearBtn.classList.remove('hidden');
+      applyFilter(searchBox.value);
+      closeSuggest();
+    });
+  });
+}
+
+searchBox.addEventListener('input', e => {
+  const v = e.target.value;
+  clearBtn.classList.toggle('hidden', !v.length);
+  buildSuggestions(v);
+  applyFilter(v);
+});
+searchBox.addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); applyFilter(searchBox.value); closeSuggest(); }
+  if (e.key === 'Escape'){ closeSuggest(); }
+});
+document.addEventListener('click', e => {
+  if (!suggestBox.contains(e.target) && e.target !== searchBox) closeSuggest();
+});
+clearBtn.addEventListener('click', () => {
+  searchBox.value = '';
+  clearBtn.classList.add('hidden');
+  applyFilter('');
+  closeSuggest();
+});
+
+/* -------------------- Stage locking -------------------- */
+/* Rule: inside a family, selecting Stage N disables all lower stages < N. */
+function applyStageConstraints(){
+  // Highest selected stage per family
+  const maxStage = Object.create(null);
+  INTERVENTIONS.forEach(r => {
+    if (r.stage == null) return;
+    if (state.selected.has(r.id)){
+      if (!maxStage[r.family] || r.stage > maxStage[r.family]) maxStage[r.family] = r.stage;
     }
   });
 
-  // Step 2: disable lower stages
-  document.querySelectorAll('.intervention-row').forEach(row => {
-    const chk = row.querySelector('.select-intervention');
-    const stage = row.dataset.stage ? Number(row.dataset.stage) : null;
-    const desc = row.dataset.description || '';
-    const maxStage = maxStageByDesc[desc] || null;
+  // Disable lower stages for that family
+  INTERVENTIONS.forEach(r => {
+    const cb = r.el.querySelector('.select-intervention');
+    const top = maxStage[r.family] ?? null;
 
-    const disabled = stage != null && maxStage != null && stage < maxStage;
+    const disable = (r.stage != null && top != null && r.stage < top);
+    cb.disabled = disable;
 
-    chk.disabled = disabled;
-    if (disabled) {
-      chk.checked = false;
-      state.selected.delete(row.dataset.id);
-    }
-
-    row.classList.toggle('opacity-60', disabled);
-    row.classList.toggle('bg-gray-50', disabled);
-
-    // badge
-    let badge = row.querySelector('.stage-disabled-badge');
-    if (disabled) {
-      if (!badge) {
-        const span = document.createElement('span');
-        span.className = 'inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700 stage-disabled-badge';
-        span.innerText = `Disabled by Stage ${maxStage}`;
-        row.querySelector('div.col-span-5').appendChild(span);
+    if (disable) {
+      cb.checked = false;
+      state.selected.delete(r.id);
+      r.el.classList.add('opacity-60','bg-gray-50');
+      if (!r.el.querySelector('.stage-disabled-badge')){
+        const badge = document.createElement('span');
+        badge.className = 'stage-disabled-badge ml-2 inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700';
+        badge.textContent = `Disabled by Stage ${top}`;
+        r.el.querySelector('.intervention-name')?.parentElement?.appendChild(badge);
       }
-    } else if (badge) badge.remove();
+    } else {
+      r.el.classList.remove('opacity-60','bg-gray-50');
+      const b = r.el.querySelector('.stage-disabled-badge'); if (b) b.remove();
+    }
   });
 }
 
-function sumImpacts(){
-  const scores = {};
-  for(const row of INTERVENTIONS){
-    if(state.selected.has(row.id)){
-      const cls = state.activeClass;
-      scores[cls] = (scores[cls]||0) + (row.costLevel||0);
-    }
-  }
-  return scores;
-}
-
-function selectionCost(){
-  let lo=0, hi=0;
-  for(const row of INTERVENTIONS){
-    if(state.selected.has(row.id)){
-      lo += row.costLevel;
-      hi += row.costLevel;
-    }
-  }
-  return [lo, hi];
-}
-
-function cmpBySort(a,b,mode){
-  if(mode==='impact') return b.interventionRating-a.interventionRating || a.costLevel-b.costLevel;
-  if(mode==='cost') return a.costLevel-b.costLevel || b.interventionRating-a.costLevel;
-  if(mode==='best') return (b.interventionRating/(b.costLevel+0.001))-(a.interventionRating/(a.costLevel+0.001));
-  return 0;
-}
-
-function groupAndSort(items, mode){
-  const groups = {};
-  const order = [];
-  items.forEach(i=>{
-    if(!groups[i.theme]) { groups[i.theme]=[]; order.push(i.theme);}
-    groups[i.theme].push(i);
-  });
-  for(const g in groups) groups[g].sort((a,b)=>cmpBySort(a,b,mode));
-  return {groups, order};
-}
-
-function render(){
+/* -------------------- Counters / cost -------------------- */
+function recalc(){
   applyStageConstraints();
-  const [lo, hi] = selectionCost();
-  document.getElementById('costTracker').innerText = money(hi);
-  document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
 
-  document.querySelectorAll('.select-intervention').forEach(chk=>{
-    chk.checked = state.selected.has(chk.dataset.id);
+  let total = 0, count = 0;
+  INTERVENTIONS.forEach(r => {
+    const cb = r.el.querySelector('.select-intervention');
+    cb.checked = state.selected.has(r.id);
+    if (cb.checked){ total += (r.costLevel||0); count += 1; }
   });
 
-  const scores = sumImpacts();
-  document.querySelectorAll('#progressBars > div').forEach(div=>{
-    const cls = div.querySelector('span.text-gray-700')?.innerText.toLowerCase();
-    if(cls && scores[cls]!=null){
-      const perc = Math.min(100, scores[cls]/CAP_HIGH*100);
-      div.querySelector('div.h-3.bg-brand').style.width = perc+'%';
-      div.querySelector('span:last-child').innerText = perc.toFixed(0)+'%';
-    }
-  });
+  qs('#costTracker').textContent = String(total);
+  qs('#selCount').textContent    = String(count);
+  qs('#totalCost').textContent   = String(total);
+
+  // keep the current filter active
+  applyFilter(state.query);
 }
 
-// ---------- event listeners ----------
-document.getElementById('resetBtn').addEventListener('click',()=>{
-  state.selected.clear();
-  render();
-});
-document.getElementById('classSelect').addEventListener('change',e=>{
+/* -------------------- Events -------------------- */
+qs('#classSelect').addEventListener('change', e => {
   state.activeClass = e.target.value;
-  render();
+  applyFilter(state.query);
 });
-document.getElementById('sortSelect').addEventListener('change',e=>{
-  state.sort = e.target.value;
-  render();
-});
-document.querySelectorAll('.select-intervention').forEach(chk=>{
-  chk.addEventListener('change', e=>{
-    const id = chk.dataset.id;
-    if(chk.checked) state.selected.add(id); else state.selected.delete(id);
-    render();
+
+qsa('.select-intervention').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const id = cb.dataset.id;
+    if (cb.checked) state.selected.add(id); else state.selected.delete(id);
+    recalc();
   });
 });
-document.querySelectorAll('.toggle-desc').forEach(btn=>{
-  btn.addEventListener('click', e=>{
-    const row = btn.closest('.intervention-row');
-    const descRow = row.nextElementSibling;
-    if(descRow && descRow.classList.contains('description-row')){
-      descRow.classList.toggle('hidden');
-      btn.textContent = descRow.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+
+qsa('.toggle-desc').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const row  = btn.closest('.intervention-row');
+    const desc = row.nextElementSibling;
+    if (desc && desc.classList.contains('description-row')){
+      desc.classList.toggle('hidden');
+      btn.textContent = desc.classList.contains('hidden') ? 'expand_more' : 'expand_less';
     }
   });
 });
 
-// initial render
-render();
-</script>
+qs('#resetBtn').addEventListener('click', () => {
+  state.selected.clear();
+  searchBox.value = '';
+  state.query = '';
+  qs('#clearSearch').classList.add('hidden');
+  applyFilter('');
+  recalc();
+});
 
+qs('#saveBtn').addEventListener('click', () => {
+  const payload = { selected: [...state.selected] };
+  console.log('SAVE', payload);
+  // TODO: POST to your backend if you want to persist selections.
+});
+
+/* -------------------- Initial paint -------------------- */
+applyFilter('');
+recalc();
+</script>
 </body>
 </html>
