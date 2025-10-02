@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-3xl font-bold mb-6 text-gray-900">Project Reports</h1>
+    
+    {% for project in projects %}
+    <div class="bg-gray-50 p-6 rounded-lg shadow mb-4 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">{{ project.project_name }}</h2>
+        <p class="text-gray-600 mt-2">{{ project.location }} • {{ project.project_type }}</p>
+        <button onclick="generateReport({{ project.id }})" 
+                class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-200">
+            Generate Report
+        </button>
+    </div>
+    {% empty %}
+    <div class="bg-gray-50 p-8 rounded-lg shadow text-center border border-gray-200">
+        <p class="text-gray-600 text-lg">No projects found. <a href="{% url 'create_project' %}" class="text-blue-600 hover:text-blue-800 font-semibold">Create a project</a> first.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+async function generateReport(projectId) {
+    const response = await fetch(`/api/reports/generate/${projectId}/`);
+    const reportHtml = await response.text();
+    
+    const newWindow = window.open();
+    newWindow.document.write(reportHtml);
+}
+</script>
+{% endblock %}

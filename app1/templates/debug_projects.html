@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Projects</title>
+</head>
+<body>
+    <h1>All Projects in Database</h1>
+    {% for project in projects %}
+    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px;">
+        <h3>Project #{{ project.id }}</h3>
+        <p><strong>Name:</strong> {{ project.project_name }}</p>
+        <p><strong>Location:</strong> {{ project.location }}</p>
+        <p><strong>Type:</strong> {{ project.project_type }}</p>
+        <p><strong>User:</strong> {{ project.user }}</p>
+        <p><strong>Has Metrics:</strong> {{ project.has_metrics }}</p>
+    </div>
+    {% empty %}
+    <p>No projects found in database!</p>
+    {% endfor %}
+</body>
+</html>
