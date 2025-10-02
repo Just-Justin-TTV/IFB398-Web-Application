@@ -2,7 +2,7 @@
 import os
 import json
 from decimal import Decimal, InvalidOperation
-
+import re
 from django.db import connection
 from django.db.models import Q
 
@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User  # Django auth user
+from .matching import matches_intervention  # keep this
 
 from .models import (
     Metrics,
@@ -25,6 +26,14 @@ from .models import (
 # =========================
 # Helpers
 # =========================
+
+# views.py (top-level helpers)
+def _to_bool(x):
+    if isinstance(x, bool):
+        return x
+    s = str(x).strip().lower()
+    return s in ("1", "true", "yes", "y", "on")
+
 
 def _resolve_app_user(request):
     """Map Django auth user -> your app1.User row by username/email."""
@@ -137,50 +146,98 @@ CLASS_ALIASES = {
     "value":        ["value", "value & cost", "value and cost"],
 }
 
+from .matching import matches_intervention
+from .models import Metrics, Interventions
+
 @require_GET
 def interventions_api(request):
-    """
-    GET /api/interventions/?cls=carbon
-    Returns: id, name, theme, description, cost_level, intervention_rating
-    (Simple class filter; you can extend later to apply rules by metrics_id)
-    """
     ui_key = (request.GET.get("cls") or "").strip().lower()
+    metrics_id = request.GET.get("mid")
 
-    # Read table columns to avoid hard-coding
-    with connection.cursor() as cur:
-        desc = connection.introspection.get_table_description(cur, "Interventions")
-        colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
+    mrow = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
 
-    select_cols = ", ".join(f'"{c}"' if c.lower() in {"class"} else c for c in colnames)
-    sql = f'SELECT {select_cols} FROM "Interventions"'
-    params = []
+    qs = Interventions.objects.all()
 
+    # Optional: filter by class (kept lenient with aliases)
     if ui_key:
         terms = CLASS_ALIASES.get(ui_key, [ui_key])
-        like_parts = []
+        q = Q()
         for t in terms:
-            like_parts.append('LOWER("class") LIKE LOWER(%s)')
-            params.append(f"%{t}%")
-        sql += " WHERE " + " OR ".join(like_parts)
+            q |= Q(class_name__icontains=t)
+        qs = qs.filter(q)
 
-    sql += " ORDER BY theme, name"
+    qs = qs.order_by("theme", "name")
 
+    total = qs.count()
+    matched = 0
     items = []
-    with connection.cursor() as cur:
-        cur.execute(sql, params)
-        cols = [c[0] for c in cur.description]
-        for row in cur.fetchall():
-            obj = dict(zip(cols, row))
-            items.append({
-                "id": obj.get("id"),
-                "name": obj.get("name") or f"Intervention #{obj.get('id')}",
-                "theme": obj.get("theme") or "",
-                "description": obj.get("description") or "",
-                "cost_level": obj.get("cost_level") or 0,
-                "intervention_rating": obj.get("intervention_rating") or 0,
-            })
 
-    return JsonResponse({"items": items})
+    for iv in qs:
+        # get MetricRule rows if present
+        try:
+            rules = list(getattr(iv, "rules", []).all())
+        except Exception:
+            rules = []
+
+        # Only apply matching when we have a metrics row AND at least one rule
+        if mrow and rules:
+            try:
+                from .matching import matches_intervention
+                if not matches_intervention(mrow, rules):
+                    continue
+            except Exception:
+                # Fail-open: if matching explodes, keep the item
+                pass
+
+        matched += 1
+        items.append({
+            "id": iv.id,
+            "name": iv.name or f"Intervention #{iv.id}",
+            "theme": iv.theme or "",
+            "description": iv.description or "",
+            "cost_level": iv.cost_level or 0,
+            "intervention_rating": iv.intervention_rating or 0,
+            "cost_range": getattr(iv, "cost_range", "") or "",
+        })
+
+    return JsonResponse({
+        "items": items,
+        "debug": {
+            "total_before_filter": total,
+            "metrics_id": metrics_id,
+            "returned_after_filter": matched,
+            "class_key": ui_key,
+        }
+    })
+
+@require_POST
+def conflicts_api(request):
+    """
+    POST /api/conflicts/
+    payload: {"ids":[1,2,3]}
+    -> returns pairs that conflict among those IDs
+    """
+    import json
+    from .models import InterventionConflict
+
+    data = json.loads(request.body.decode("utf-8"))
+    ids = list(map(int, data.get("ids", []))) if data.get("ids") else []
+
+    rows = (InterventionConflict.objects
+            .filter(A_id__in=ids, B_id__in=ids)
+            .select_related("A","B"))
+
+    out = []
+    for r in rows:
+        out.append({
+            "A_id": r.A_id,
+            "A_name": r.A.name,
+            "B_id": r.B_id,
+            "B_name": r.B.name,
+            "type": r.conflict_type,
+            "reason": r.reason,
+        })
+    return JsonResponse({"conflicts": out})
 
 
 # =========================
@@ -224,6 +281,7 @@ def save_metrics(request):
         m.num_keys                  = _to_int(payload.get("num_keys"))
     if hasattr(m, "num_wcs"):
         m.num_wcs                   = _to_int(payload.get("num_wcs"))
+    
     if hasattr(m, "gifa_m2"):
         m.gifa_m2                   = _to_dec(payload.get("gifa_m2"))
     if hasattr(m, "external_wall_area_m2"):
@@ -234,6 +292,9 @@ def save_metrics(request):
         m.building_footprint_m2     = _to_dec(payload.get("building_footprint_m2"))
     if hasattr(m, "estimated_auto_budget_aud"):
         m.estimated_auto_budget_aud = _to_dec(payload.get("estimated_auto_budget_aud"))
+    # inside save_metrics(...)
+    if hasattr(m, "basement_present"):
+        m.basement_present = _to_bool(payload.get("basement_present"))
 
     if not m.user:
         m.user = _resolve_app_user(request)

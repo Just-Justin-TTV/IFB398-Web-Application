@@ -44,6 +44,38 @@ class User(models.Model):
     def __str__(self):
         return self.username
     
+
+
+# --- keep your existing Interventions model as-is ---
+
+class MetricRule(models.Model):
+    """
+    One atomic rule for an intervention, e.g.:
+      metric_key='basement_present', operator='eq', value='true'
+      metric_key='gifa_m2', operator='gte', value='3000'
+      metric_key='external_openings_m2/external_wall_area_m2', operator='lte', value='0.50'
+    """
+    intervention = models.ForeignKey(
+        Interventions, on_delete=models.CASCADE, related_name="rules"
+    )
+    metric_key = models.CharField(max_length=80)      # basement_present, gifa_m2, external_openings_m2, external_wall_area_m2, building_type, etc.
+    operator   = models.CharField(max_length=8)       # eq, neq, gte, lte, gt, lt, contains
+    value      = models.CharField(max_length=120)     # store as text; parse at runtime
+    weight     = models.FloatField(default=1.0)
+
+class InterventionConflict(models.Model):
+    """
+    Pairs of interventions that conflict (mutually exclusive or compete for space).
+    """
+    A = models.ForeignKey(Interventions, on_delete=models.CASCADE, related_name="conflict_as")
+    B = models.ForeignKey(Interventions, on_delete=models.CASCADE, related_name="conflict_bs")
+    conflict_type = models.CharField(max_length=64)   # "Mutually exclusive" | "Potential conflict – choose dominant roof use"
+    reason        = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = (("A", "B"),)
+
+
 # NEW
 class Metrics(models.Model):
     id = models.AutoField(primary_key=True)
