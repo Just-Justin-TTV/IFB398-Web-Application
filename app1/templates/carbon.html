@@ -60,33 +60,9 @@
         <div class="px-6 py-4 border-b">
           <h2 class="text-lg font-semibold">Building Metrics</h2>
         </div>
-        <!-- Project summary (from previous page) -->
-<div class="px-6 py-3 border-b bg-gray-50 text-sm">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-    <div>
-      <span class="text-gray-500">Project:</span>
-      <span class="font-medium">
-        {{ project.project_name|default:"—" }}
-      </span>
-    </div>
-    <div>
-      <span class="text-gray-500">Location:</span>
-      <span class="font-medium">
-        {{ project.location|default:"—" }}
-      </span>
-    </div>
-    <div>
-      <span class="text-gray-500">Type:</span>
-      <span class="font-medium capitalize">
-        {{ project.project_type|default:"—" }}
-      </span>
-    </div>
-  </div>
-</div>
 
-
-        <!-- Top metrics inputs (no submission; JS saves via /api/metrics/save/) -->
-        <form id="metricsForm" onsubmit="return false;" class="p-0">
+        <!-- Top metrics inputs -->
+        <form method="post" action="{% url 'calculator_results' %}" class="p-0">
           {% csrf_token %}
           <div class="w-full space-y-2">
 
@@ -185,8 +161,7 @@
       <!-- Sticky Bottom Action Bar -->
       <div class="sticky bottom-0 bg-white/90 backdrop-blur border-t px-6 py-4">
         <div class="max-w-7xl ml-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <!-- Next: save metrics, then go to carbon_2 -->
-          <a id="nextBtn" href="{% url 'carbon_2' %}" class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-white font-medium shadow-sm hover:bg-brand-dark">
+          <a href="{% url 'carbon_2' %}" class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-white font-medium shadow-sm hover:bg-brand-dark">
             Next <span class="material-icons text-base">arrow_forward</span>
           </a>
 
@@ -394,7 +369,7 @@
       document.getElementById('confirmList').innerHTML = html;
     }
 
-    // Save -> confirmation -> submit /calculator/
+    // Wire the bottom form flow: save -> show modal -> on OK submit
     (function wireGenerate() {
       const form = document.getElementById('targetsForm');
       if (!form) return;
@@ -408,17 +383,20 @@
           const data = await saveMetrics(payload);
           if (data?.metrics_id) {
             metricsId = String(data.metrics_id);
+            // store for later pages if needed
             sessionStorage.setItem('metrics_id', metricsId);
           }
         } catch (err) {
           console.error(err);
           alert('Could not save building metrics. Check console/logs.');
-          return;
+          return; // stop here on failure
         }
 
+        // show confirmation
         renderConfirmation(payload);
         showModal();
 
+        // on OK -> inject metrics_id to the form and submit
         const okBtn = document.getElementById('confirmOkBtn');
         const metricsInput = document.getElementById('metrics_id');
         const onOk = () => {
@@ -428,29 +406,6 @@
           form.submit();
         };
         okBtn.addEventListener('click', onOk, { once: true });
-      });
-    })();
-
-    // Also save when clicking "Next", then navigate to /carbon_2/
-    (function wireNext() {
-      const next = document.getElementById('nextBtn');
-      if (!next) return;
-
-      next.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const href = next.getAttribute('href') || '{% url "carbon_2" %}';
-
-        try {
-          const payload = buildPayload();
-          const data = await saveMetrics(payload);
-          if (data?.metrics_id) {
-            sessionStorage.setItem('metrics_id', String(data.metrics_id));
-          }
-        } catch (err) {
-          console.error(err);
-          // optional: alert user. We'll still let them proceed.
-        }
-        window.location.href = href;
       });
     })();
   </script>
