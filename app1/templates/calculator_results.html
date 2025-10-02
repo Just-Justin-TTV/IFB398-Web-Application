@@ -23,23 +23,23 @@
   <div class="flex min-h-screen">
     <!-- Sidebar -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-      <div class="px-5 py-6 border-b">
-        <div class="flex items-center gap-3">
-          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-          <div>
-            <p class="text-xs text-gray-500">Welcome</p>
-            <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
-          </div>
+      <div class="px-5 py-6 border-b flex items-center gap-3">
+        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+        <div>
+          <p class="text-xs text-gray-500">Welcome</p>
+          <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
         </div>
       </div>
-
       <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">dashboard</span> Dashboard</a>
-        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">folder</span> Projects</a>
-        <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600"><span class="material-icons text-[18px]">build</span> Interventions</a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">calculate</span> Cost Matrix</a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">description</span> Reports</a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">settings</span> Settings</a>
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
+        </a>
+        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+        <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
+          <span class="material-icons text-[18px]">build</span> Interventions
+        </a>
       </nav>
     </aside>
 
@@ -63,27 +63,19 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-3">
             <label class="text-sm text-gray-700">Select Class</label>
-            <div class="relative">
-              <select id="classSelect" class="appearance-none rounded-full border px-4 py-2 pr-9 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-                <option value="carbon" selected>Carbon Emissions</option>
-                <option value="health">Health & Wellbeing</option>
-                <option value="water">Water Use</option>
-                <option value="circular">Circular Economy</option>
-                <option value="resilience">Resilience</option>
-                <option value="biodiversity">Biodiversity</option>
-              </select>
-              <span class="material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-base pointer-events-none">expand_more</span>
-            </div>
+            <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+              <option value="all">All</option>
+              {% for c in classes %}
+                <option value="{{ c.key }}">{{ c.label }}</option>
+              {% endfor %}
+            </select>
 
-            <div class="relative">
-              <select id="sortSelect" class="appearance-none rounded-full border px-4 py-2 pr-9 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-                <option value="best" selected>Best value (rating ÷ cost)</option>
-                <option value="impact">Highest rating (then lowest cost)</option>
-                <option value="cost">Lowest cost (then highest rating)</option>
-                <option value="theme">Original order (by theme)</option>
-              </select>
-              <span class="material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-base pointer-events-none">expand_more</span>
-            </div>
+            <select id="sortSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+              <option value="best">Best value (rating ÷ cost)</option>
+              <option value="impact">Highest rating</option>
+              <option value="cost">Lowest cost</option>
+              <option value="theme">Original order</option>
+            </select>
 
             <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
           </div>
@@ -96,42 +88,105 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- LEFT: Table -->
+          <!-- LEFT: Interventions Table -->
           <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
             <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <div class="col-span-5 px-4 py-3">Intervention</div>
-              <div class="col-span-2 px-4 py-3 text-center">Cost Level</div>
+              <div class="col-span-2 px-4 py-3 text-center">Cost</div>
               <div class="col-span-2 px-4 py-3 text-center">Rating</div>
               <div class="col-span-2 px-4 py-3 text-center">Select</div>
               <div class="col-span-1 px-4 py-3 text-center">Badges</div>
             </div>
-            <div id="rows"></div>
+            <div id="rows">
+              {% for theme, items in interventions.items %}
+                <div class="grid grid-cols-12"><div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">{{ theme }}</div></div>
+                {% for item in items %}
+                  <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50 intervention-row"
+                       data-id="{{ item.id }}"
+                       data-theme="{{ theme }}"
+                       data-cost-level="{{ item.cost_level }}"
+                       data-rating="{{ item.intervention_rating }}"
+                       data-stage="{{ item.stage|default:'' }}"
+                       data-description="{{ item.description|default:'' }}">
+                    <div class="col-span-5 px-4 py-3 flex items-center justify-between">
+                      <div>
+                        <div class="font-medium">{{ item.name }}</div>
+                        {% if item.theme %}
+                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ item.theme }}</span>
+                        {% endif %}
+                        {% if item.stage %}
+                          <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage {{ item.stage }}</span>
+                        {% endif %}
+                      </div>
+                      <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">
+                        expand_more
+                      </button>
+                    </div>
+                    <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level }}</div>
+                    <div class="col-span-2 px-4 py-3 text-center">{{ item.intervention_rating }}</div>
+                    <div class="col-span-2 px-4 py-3 text-center">
+                      <input type="checkbox" class="select-intervention" data-id="{{ item.id }}">
+                    </div>
+                    <div class="col-span-1 px-4 py-3 text-center">
+                      {% for badge in item.badges %}
+                        <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full mr-1">{{ badge }}</span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <!-- hidden description row -->
+                  <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">
+                    {{ item.description|default:"No description available." }}
+                  </div>
+                {% endfor %}
+              {% endfor %}
+            </div>
           </section>
 
-          <!-- RIGHT -->
+          <!-- RIGHT: Score & Progress -->
           <aside class="space-y-6">
             <div class="bg-white border rounded-2xl shadow-sm">
               <div class="px-4 py-3 border-b"><h3 class="font-semibold">Class Summary</h3></div>
-              <div class="p-4">
-                <div class="overflow-hidden rounded-xl border">
-                  <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-600">
-                      <tr>
-                        <th class="text-left px-3 py-2">Class</th>
-                        <th class="text-right px-3 py-2">Target</th>
-                        <th class="text-right px-3 py-2">Achieved</th>
-                        <th class="text-right px-3 py-2">Status</th>
+              <div class="p-4 overflow-hidden rounded-xl border">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th class="text-left px-3 py-2">Class</th>
+                      <th class="text-right px-3 py-2">Target</th>
+                      <th class="text-right px-3 py-2">Achieved</th>
+                      <th class="text-right px-3 py-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scoreTable">
+                    {% for c in classes %}
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2">{{ c.label }}</td>
+                        <td class="px-3 py-2 text-right">{{ c.target }}</td>
+                        <td class="px-3 py-2 text-right">0</td>
+                        <td class="px-3 py-2 text-right">N/A</td>
                       </tr>
-                    </thead>
-                    <tbody id="scoreTable" class="divide-y"></tbody>
-                  </table>
-                </div>
+                    {% endfor %}
+                  </tbody>
+                </table>
               </div>
             </div>
 
             <div class="bg-white border rounded-2xl shadow-sm">
               <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
-              <div class="p-4 space-y-4" id="progressBars"></div>
+              <div class="p-4 space-y-4" id="progressBars">
+                {% for c in classes %}
+                  {% if c.key in "carbon health water circular" %}
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-sm text-gray-700">{{ c.label }}</span>
+                      <span class="text-sm text-gray-700">0%</span>
+                    </div>
+                    <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
+                      <div class="h-3 bg-brand rounded-full" style="width:0%"></div>
+                    </div>
+                  </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
             </div>
           </aside>
         </div>
@@ -139,376 +194,172 @@
     </main>
   </div>
 
-  <!-- JS -->
-  <script>
-  const CAP_HIGH = 300000;
+<script>
+const CAP_HIGH = 300000;
+const state = { selected: new Set(), activeClass: 'carbon', sort: 'best' };
 
-  // ---------- helpers ----------
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const getStage = txt => {
-    const m = String(txt || '').match(/stage\s*0*([1-9]\d*)/i);
-    return m ? parseInt(m[1],10) : null;
-  };
-
-  const CLASSES = [
-    { key:'carbon',   label:'Carbon',             target:80 },
-    { key:'health',   label:'Health & Wellbeing', target:60 },
-    { key:'water',    label:'Water Use',          target:30 },
-    { key:'circular', label:'Circular Economy',   target:40 },
-    { key:'resilience', label:'Resilience',       target:60 },
-    { key:'value',    label:'Value & Cost',       target:10 },
-    { key:'biodiversity', label:'Biodiversity',   target:20 },
-  ];
-
-  let INTERVENTIONS = [];
-  const state = { selected: new Set(), activeClass: 'carbon', sort: 'best' };
-
-  const money = (n) => {
-    if (!Number.isFinite(n) || n <= 0) return '$0';
-    if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
-    return `$${Math.round(n/1000)}K`;
-  };
-
-  function parseRangeText(txt){
-    if(!txt) return [0,0];
-    const cleaned = txt.replace(/aud|usd|eur|\$/ig,'').trim();
-    const parts = cleaned.split(/[–—-]/);
-    function toNum(s){
-      if(!s) return 0;
-      const m = String(s).trim().match(/([\d,.]+)\s*([kKmM]?)/);
-      if(!m) return 0;
-      let v = parseFloat(m[1].replace(/,/g,'')) || 0;
-      const suf = (m[2]||'').toLowerCase();
-      if(suf==='k') v*=1000; else if(suf==='m') v*=1000000;
-      return v;
-    }
-    const lo = toNum(parts[0]);
-    const hi = parts[1]!==undefined ? toNum(parts[1]) : lo;
-    return [lo,hi];
-  }
-
-  // ---------- data load ----------
-  async function loadInterventions(cls) {
-    try {
-      const res = await fetch(`/api/interventions/?cls=${encodeURIComponent(cls)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      // Build a flat list with group headers and stage metadata
-      const byTheme = new Map();
-      for (const it of (data.items || [])) {
-        const theme = it.theme || "Other";
-        if (!byTheme.has(theme)) byTheme.set(theme, []);
-        const stage = getStage(it.description) ?? getStage(it.name);
-        byTheme.get(theme).push({
-          id: String(it.id),
-          name: it.name,
-          theme: it.theme,
-          description: it.description,
-          costLevel: Number(it.cost_level ?? 0),
-          costRangeText: it.cost_range ?? "",
-          interventionRating: Number(it.intervention_rating ?? 0),
-          stage,
-          baseKey: slug(it.name),
-        });
-      }
-
-      INTERVENTIONS = [];
-      for (const [theme, arr] of byTheme) {
-        INTERVENTIONS.push({ group: true, name: theme });
-        arr.sort((a,b)=>
-          (b.interventionRating - a.interventionRating) ||
-          (a.costLevel - b.costLevel) ||
-          a.name.localeCompare(b.name)
-        );
-        INTERVENTIONS.push(...arr);
-      }
-
-      if (INTERVENTIONS.length === 0) {
-        document.getElementById('rows').innerHTML =
-          `<div class="p-8 text-center text-gray-500">No interventions found for this class.</div>`;
-        render();
-        return;
-      }
-
-      render();
-    } catch (err) {
-      console.error('Failed to load interventions:', err);
-      document.getElementById('rows').innerHTML =
-        `<div class="p-8 text-center text-red-600">Could not load interventions. Check the API route and console.</div>`;
-    }
-  }
-
-  // ---------- stage constraints ----------
-  function applyStageConstraints(){
-    const maxSel = {};
-    for (const r of INTERVENTIONS){
-      if (r.group || r.stage == null) continue;
-      if (state.selected.has(r.id)){
-        const k = r.baseKey;
-        if (!maxSel[k] || r.stage > maxSel[k]) maxSel[k] = r.stage;
-      }
-    }
-    // deselect conflicting lower stages
-    for (const r of INTERVENTIONS){
-      if (r.group || r.stage == null) continue;
-      const k = r.baseKey;
-      if (maxSel[k] && r.stage < maxSel[k] && state.selected.has(r.id)){
-        state.selected.delete(r.id);
-      }
-    }
-    return maxSel;
-  }
-
-  // ---------- scoring / sorting ----------
-  function sumImpacts(){
-    const scores = {};
-    scores[state.activeClass] = 0;
-    for(const row of INTERVENTIONS){
-      if(row.group) continue;
-      const lvl = Number(row.costLevel ?? 0);
-      scores[state.activeClass] += Number.isFinite(lvl) ? lvl : 0;
-    }
-    return scores;
-  }
-
-  function selectionCost(){
-    let lo=0, hi=0;
-    for(const row of INTERVENTIONS){
-      if(row.group) continue;
-      if(state.selected.has(row.id)){
-        const [a,b] = parseRangeText(row.costRangeText);
-        lo += a; hi += b;
-      }
-    }
-    return [lo,hi];
-  }
-
-  const priorityScore = (row, wImpact=1, wCost=1) => {
-    const r = Number(row.interventionRating || 0);
-    const c = Number(row.costLevel || 0);
-    return (wImpact * r) / (wCost * (c + 0.001)); // higher is better
-  };
-
-  function cmpBySort(a, b, mode) {
-    if (mode === 'impact') {
-      if ((b.interventionRating||0) !== (a.interventionRating||0)) {
-        return (b.interventionRating||0) - (a.interventionRating||0);
-      }
-      return (a.costLevel||0) - (b.costLevel||0);
-    }
-    if (mode === 'cost') {
-      if ((a.costLevel||0) !== (b.costLevel||0)) {
-        return (a.costLevel||0) - (b.costLevel||0);
-      }
-      return (b.interventionRating||0) - (a.interventionRating||0);
-    }
-    if (mode === 'best') {
-      const sb = priorityScore(b);
-      const sa = priorityScore(a);
-      if (sb !== sa) return sb - sa;
-      if ((b.interventionRating||0) !== (a.interventionRating||0)) {
-        return (b.interventionRating||0) - (a.interventionRating||0);
-      }
-      return (a.costLevel||0) - (b.costLevel||0);
-    }
-    return 0; // theme/original
-  }
-
-  function groupAndSort(items, mode) {
-    const themeOrder = [];
-    const groups = {};
-    let lastTheme = null;
-
-    for (const it of items) {
-      if (it.group) {
-        lastTheme = it.name || 'Other';
-        if (!groups[lastTheme]) { groups[lastTheme] = []; themeOrder.push(lastTheme); }
-        continue;
-      }
-      const t = it.theme || lastTheme || 'Other';
-      if (!groups[t]) { groups[t] = []; themeOrder.push(t); }
-      groups[t].push(it);
-    }
-
-    if (mode !== 'theme') {
-      for (const t of themeOrder) groups[t].sort((a,b)=>cmpBySort(a,b,mode));
-    }
-
-    const flat = [];
-    for (const t of themeOrder) {
-      flat.push({ group:true, name:t });
-      flat.push(...groups[t]);
-    }
-    return flat;
-  }
-
-  // ---------- render ----------
-  function render() {
-    const maxStageSelectedByFamily = applyStageConstraints();
-
-    const sorted = groupAndSort(INTERVENTIONS, state.sort);
-    const out = [];
-
-    for (const row of sorted) {
-      if (row.group) {
-        out.push(`
-          <div class="grid grid-cols-12">
-            <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
-              ${esc(row.name)}
-            </div>
-          </div>
-        `);
-        continue;
-      }
-
-      const sel   = state.selected.has(row.id);
-      const level = Number(row.costLevel ?? 0);
-      const ir    = Number(row.interventionRating ?? 0);
-
-      const familyMax = maxStageSelectedByFamily[row.baseKey] ?? null;
-      const disabled  = (row.stage != null && familyMax != null && familyMax > row.stage);
-
-      const nameCell = `
-        <div class="col-span-5 px-4 py-3">
-          <div class="flex items-start gap-2">
-            ${ row.description && row.description.trim() ? `
-              <button type="button" class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-gray-100"
-                      aria-label="Show details" aria-expanded="false" data-toggle="${row.id}">
-                <span class="material-icons text-[18px]" data-icon="${row.id}">expand_more</span>
-              </button>` : `` }
-            <div>
-              <div class="font-medium">${esc(row.name)}</div>
-              <div class="mt-0.5 flex items-center gap-2">
-                ${ row.theme ? `<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">${esc(row.theme)}</span>` : `` }
-                ${ row.stage != null ? `<span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage ${row.stage}</span>` : `` }
-              </div>
-            </div>
-          </div>
-          ${ row.description && row.description.trim() ? `
-            <div id="panel-${row.id}" class="mt-2 hidden rounded-lg border bg-gray-50 px-3 py-2 text-xs leading-relaxed text-gray-700">${esc(row.description)}</div>` : `` }
-        </div>`;
-
-      out.push(`
-        <div class="grid grid-cols-12 items-center border-t ${disabled ? 'opacity-60 bg-gray-50' : 'hover:bg-gray-50'}">
-          ${nameCell}
-          <div class="col-span-2 px-4 py-3 text-center">${level || 0}</div>
-          <div class="col-span-2 px-4 py-3 text-center">
-            <div class="flex flex-col items-center">
-              <div class="text-base">${ir || 0}</div>
-            </div>
-          </div>
-          <div class="col-span-2 px-4 py-3 text-center">
-            <div class="inline-flex gap-1 bg-gray-100 rounded-full p-0.5">
-              <button ${disabled?'disabled':''} data-id="${row.id}" data-act="Y" class="px-2.5 py-1 rounded-full text-xs font-medium transition border ${disabled?'bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed':'bg-cyan-100 text-cyan-700 border-cyan-200'}">Y</button>
-              <button data-id="${row.id}" data-act="N" class="px-2.5 py-1 rounded-full text-xs font-medium transition border bg-red-100 text-red-700 border-red-200">N</button>
-            </div>
-            <span class="ml-2 text-xs ${sel?'text-cyan-700':'text-gray-500'}">${sel?'Selected':'Not selected'}</span>
-          </div>
-          <div class="col-span-1 px-2 py-3 text-center">
-            ${ disabled ? `<span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700">Disabled by Stage ${familyMax}</span>` : '' }
-          </div>
-        </div>
-      `);
-    }
-
-    document.getElementById('rows').innerHTML = out.join('');
-
-    // Score table (demo)
-    const scores = sumImpacts();
-    const tbody=[];
-    for(const c of CLASSES){
-      const ach = Math.max(0, Math.round(scores[c.key]||0));
-      const status = (scores[c.key]===undefined) ? 'N/A' : (ach >= c.target ? 'OK' : `${ach-c.target}`);
-      tbody.push(`
-        <tr class="hover:bg-gray-50">
-          <td class="px-3 py-2">${c.label}</td>
-          <td class="px-3 py-2 text-right">${c.target}</td>
-          <td class="px-3 py-2 text-right">${ach}</td>
-          <td class="px-3 py-2 text-right">${(scores[c.key]===undefined)?'N/A':status}</td>
-        </tr>
-      `);
-    }
-    document.getElementById('scoreTable').innerHTML = tbody.join('');
-
-    // Progress bars (demo)
-    const bars=[];
-    ['carbon','health','water','circular'].forEach(k=>{
-      const cls = CLASSES.find(x=>x.key===k);
-      const ach = Math.max(0, Math.min(cls.target, Math.round(scores[k]||0)));
-      const pct = Math.min(100, Math.round((ach/cls.target)*100 || 0));
-      bars.push(`
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-sm text-gray-700">${cls.label}</span>
-            <span class="text-sm text-gray-700">${pct}%</span>
-          </div>
-          <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
-            <div class="h-3 bg-brand rounded-full" style="width:${pct}%"></div>
-          </div>
-        </div>
-      `);
-    });
-    document.getElementById('progressBars').innerHTML = bars.join('');
-
-    // Cost + budget
-    const [lo,hi] = selectionCost();
-    document.getElementById('costTracker').textContent = `${money(lo)}–${money(hi)}`;
-    document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
-
-    // Toggles
-    document.querySelectorAll('[data-toggle]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const id = btn.getAttribute('data-toggle');
-        const panel = document.getElementById(`panel-${id}`);
-        const icon  = document.querySelector(`[data-icon="${id}"]`);
-        if (!panel) return;
-        panel.classList.toggle('hidden');
-        const open = !panel.classList.contains('hidden');
-        if (icon) icon.textContent = open ? 'expand_less' : 'expand_more';
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
-    });
-
-    // Select chips
-    document.querySelectorAll('[data-id]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        if (btn.hasAttribute('disabled')) return;
-        const id = btn.getAttribute('data-id');
-        const act = btn.getAttribute('data-act');
-        if (act === 'Y') state.selected.add(id); else state.selected.delete(id);
-        render();
-      });
-    });
-  }
-
-  // ---------- init ----------
-  document.addEventListener('DOMContentLoaded', async ()=>{
-    await loadInterventions(state.activeClass);
-
-    document.getElementById('resetBtn').addEventListener('click', ()=>{
-      state.selected.clear();
-      render();
-    });
-
-    document.getElementById('sortSelect').addEventListener('change', (e)=>{
-      state.sort = e.target.value;   // 'best' | 'impact' | 'cost' | 'theme'
-      render();
-    });
-
-    document.getElementById('classSelect').addEventListener('change', async (e)=>{
-      state.activeClass = e.target.value;
-      state.selected.clear();
-      await loadInterventions(state.activeClass);
-    });
-
-    document.getElementById('saveBtn').addEventListener('click', ()=>{
-      const payload = { selected:[...state.selected], cls: state.activeClass };
-      console.log('SAVE', payload);
-      // TODO: POST to your backend if you want to persist selections.
-    });
+// ---------- read interventions from DOM ----------
+const INTERVENTIONS = [];
+document.querySelectorAll('.intervention-row').forEach(el => {
+  INTERVENTIONS.push({
+    id: el.dataset.id,
+    theme: el.dataset.theme || 'Other',
+    costLevel: Number(el.dataset.costLevel || 0),
+    interventionRating: Number(el.dataset.rating || 0),
+    stage: el.dataset.stage ? Number(el.dataset.stage) : null,
+    description: el.dataset.description || '',
+    baseKey: el.dataset.description ? el.dataset.description.toLowerCase().replace(/[^a-z0-9]+/g,'-') : ''
   });
-  </script>
+});
+
+// ---------- helpers ----------
+const money = (n) => {
+  if (!Number.isFinite(n) || n <= 0) return '$0';
+  if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
+  return `$${Math.round(n/1000)}K`;
+};
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+function applyStageConstraints() {
+  const maxStageByDesc = {};
+
+  // Step 1: max stage per description
+  INTERVENTIONS.forEach(row => {
+    const desc = row.description || '';
+    const stage = row.stage;
+    if (stage == null) return;
+    if (state.selected.has(row.id)) {
+      if (!maxStageByDesc[desc] || stage > maxStageByDesc[desc]) maxStageByDesc[desc] = stage;
+    }
+  });
+
+  // Step 2: disable lower stages
+  document.querySelectorAll('.intervention-row').forEach(row => {
+    const chk = row.querySelector('.select-intervention');
+    const stage = row.dataset.stage ? Number(row.dataset.stage) : null;
+    const desc = row.dataset.description || '';
+    const maxStage = maxStageByDesc[desc] || null;
+
+    const disabled = stage != null && maxStage != null && stage < maxStage;
+
+    chk.disabled = disabled;
+    if (disabled) {
+      chk.checked = false;
+      state.selected.delete(row.dataset.id);
+    }
+
+    row.classList.toggle('opacity-60', disabled);
+    row.classList.toggle('bg-gray-50', disabled);
+
+    // badge
+    let badge = row.querySelector('.stage-disabled-badge');
+    if (disabled) {
+      if (!badge) {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700 stage-disabled-badge';
+        span.innerText = `Disabled by Stage ${maxStage}`;
+        row.querySelector('div.col-span-5').appendChild(span);
+      }
+    } else if (badge) badge.remove();
+  });
+}
+
+function sumImpacts(){
+  const scores = {};
+  for(const row of INTERVENTIONS){
+    if(state.selected.has(row.id)){
+      const cls = state.activeClass;
+      scores[cls] = (scores[cls]||0) + (row.costLevel||0);
+    }
+  }
+  return scores;
+}
+
+function selectionCost(){
+  let lo=0, hi=0;
+  for(const row of INTERVENTIONS){
+    if(state.selected.has(row.id)){
+      lo += row.costLevel;
+      hi += row.costLevel;
+    }
+  }
+  return [lo, hi];
+}
+
+function cmpBySort(a,b,mode){
+  if(mode==='impact') return b.interventionRating-a.interventionRating || a.costLevel-b.costLevel;
+  if(mode==='cost') return a.costLevel-b.costLevel || b.interventionRating-a.costLevel;
+  if(mode==='best') return (b.interventionRating/(b.costLevel+0.001))-(a.interventionRating/(a.costLevel+0.001));
+  return 0;
+}
+
+function groupAndSort(items, mode){
+  const groups = {};
+  const order = [];
+  items.forEach(i=>{
+    if(!groups[i.theme]) { groups[i.theme]=[]; order.push(i.theme);}
+    groups[i.theme].push(i);
+  });
+  for(const g in groups) groups[g].sort((a,b)=>cmpBySort(a,b,mode));
+  return {groups, order};
+}
+
+function render(){
+  applyStageConstraints();
+  const [lo, hi] = selectionCost();
+  document.getElementById('costTracker').innerText = money(hi);
+  document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
+
+  document.querySelectorAll('.select-intervention').forEach(chk=>{
+    chk.checked = state.selected.has(chk.dataset.id);
+  });
+
+  const scores = sumImpacts();
+  document.querySelectorAll('#progressBars > div').forEach(div=>{
+    const cls = div.querySelector('span.text-gray-700')?.innerText.toLowerCase();
+    if(cls && scores[cls]!=null){
+      const perc = Math.min(100, scores[cls]/CAP_HIGH*100);
+      div.querySelector('div.h-3.bg-brand').style.width = perc+'%';
+      div.querySelector('span:last-child').innerText = perc.toFixed(0)+'%';
+    }
+  });
+}
+
+// ---------- event listeners ----------
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  state.selected.clear();
+  render();
+});
+document.getElementById('classSelect').addEventListener('change',e=>{
+  state.activeClass = e.target.value;
+  render();
+});
+document.getElementById('sortSelect').addEventListener('change',e=>{
+  state.sort = e.target.value;
+  render();
+});
+document.querySelectorAll('.select-intervention').forEach(chk=>{
+  chk.addEventListener('change', e=>{
+    const id = chk.dataset.id;
+    if(chk.checked) state.selected.add(id); else state.selected.delete(id);
+    render();
+  });
+});
+document.querySelectorAll('.toggle-desc').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    const row = btn.closest('.intervention-row');
+    const descRow = row.nextElementSibling;
+    if(descRow && descRow.classList.contains('description-row')){
+      descRow.classList.toggle('hidden');
+      btn.textContent = descRow.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+    }
+  });
+});
+
+// initial render
+render();
+</script>
+
 </body>
 </html>

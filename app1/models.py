@@ -31,6 +31,24 @@ class Interventions(models.Model):
     def __str__(self):
         return f"{self.class_name} - {self.name}"
 
+class InterventionDependencies(models.Model):
+    intervention_id = models.IntegerField(primary_key=True)
+    metric_name = models.CharField(max_length=255, db_column='metric_column')
+    min_value = models.FloatField(null=True, blank=True)
+    max_value = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        db_table = "intervention_dependencies"
+        unique_together = (('intervention_id', 'metric_name'),)
+        managed = False  # Django won't create or alter this table
+
+
+
+
+
+
+
+
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
