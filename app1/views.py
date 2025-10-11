@@ -320,3 +320,28 @@ def calculator(request):
             'global_budget': global_budget,
             'targets': targets
         })
+    
+## settings page
+@login_required
+def settings_view(request):
+    user = request.user
+    current_theme = request.session.get('theme', 'light')
+
+    if request.method == 'POST':
+        try:
+            # Theme change (now includes high-contrast)
+            if 'theme' in request.POST:
+                request.session['theme'] = request.POST.get('theme', 'light')
+                messages.success(request, f"Theme changed to {request.session['theme']} mode!")
+                return redirect('settings')
+            
+            # ... rest of your existing profile/password code ...
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+
+    context = {
+        'user': user,
+        'current_theme': current_theme,
+    }
+    return render(request, 'settings.html', context)
