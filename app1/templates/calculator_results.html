@@ -1,4 +1,5 @@
-{% load static %}{% load humanize %}
+{% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -200,7 +201,7 @@ function detectStage(text){
 }
 
 /* ------------- cache original rows into data objects ------------- */
-const RAW = []; // keeps original order for "theme" mode
+const RAW = [];
 qsa('.intervention-row').forEach(el=>{
   const name = (el.dataset.name||'').trim();
   let stage = el.dataset.stage ? Number(el.dataset.stage) : null;
@@ -228,7 +229,7 @@ const state = {
   selected: new Set(),
   query: '',
   activeClass: 'all',
-  sort: 'best' // 'best' | 'impact' | 'cost' | 'theme'
+  sort: 'best'
 };
 
 /* ------------- sorting helpers ------------- */
@@ -324,10 +325,7 @@ function bindRowEvents(){
 
 /* ------------- recalc with dependencies ------------- */
 function recalc(){
-  // reset ratings
   RAW.forEach(r=>r.currentRating=r.rating);
-
-  // apply dependencies for selected items
   RAW.forEach(r=>{
     if(state.selected.has(r.id) && r.dependencies.length){
       r.dependencies.forEach(dep=>{
@@ -337,7 +335,6 @@ function recalc(){
     }
   });
 
-  // update DOM ratings
   qsa('.intervention-row').forEach(el=>{
     const row = RAW.find(r=>r.id===el.dataset.id);
     if(row){
@@ -346,7 +343,6 @@ function recalc(){
     }
   });
 
-  // recalc cost & count
   let total=0, count=0;
   qsa('.select-intervention').forEach(cb=>{
     const id = cb.dataset.id;

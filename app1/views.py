@@ -15,9 +15,10 @@ from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
 from typing import List, Dict
-
+from .models import Interventions, InterventionDependencies, InterventionEffects, Metrics
 from .models import Metrics, ClassTargets, Interventions, InterventionDependencies, User as AppUser
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
@@ -276,105 +277,106 @@ def carbon_view(request):
     })
 
 
-@login_required(login_url='login')
-def calculator(request: HttpRequest):
-    """
-    Handles the calculator page.
-    GET: renders the form with class targets.
-    POST: processes interventions and shows filtered results.
-    """
-    import json
-
-    if request.method == "GET":
-        class_targets = list(ClassTargets.objects.values("class_name", "target_rating"))
-        return render(request, "calculator.html", {"class_targets": class_targets})
-
-    # POST now renders the results page using the updated intervention_effects
-    return _process_calculator_post(request)
-
-
 def intervention_effects(metric, interventions, selected_ids=None):
     """
-    Adjust intervention ratings dynamically.
-    - metric: Metrics instance
-    - interventions: queryset/list of Interventions
-    - selected_ids: list of intervention IDs selected by user (optional)
+    Adjust intervention ratings based on dependencies/effects.
     """
-    grouped_interventions = {}
+    sel_ids = set(int(s) for s in (selected_ids or []))
+    updated_ratings = {}
 
-    for i in interventions:
-        include = True
-        deps = InterventionDependencies.objects.filter(intervention_id=i.id)
-        for dep in deps:
-            val = getattr(metric, dep.metric_name, None)
-            if val is None:
-                continue
-            try:
-                val = Decimal(val)
-            except Exception:
-                continue
-            if (dep.min_value is not None and val < dep.min_value) or \
-               (dep.max_value is not None and val > dep.max_value):
-                include = False
-                break
+    for effect in InterventionEffects.objects.all():
+        source_name = (effect.source_intervention_name or "").strip().lower()
+        target_name = (effect.target_intervention_name or "").strip().lower()
+        value = Decimal(effect.effect_value or 0)
 
-        if include:
-            base_rating = float(i.intervention_rating or 0)
+        source = next((i for i in interventions if (i.name or "").strip().lower() == source_name), None)
+        target = next((i for i in interventions if (i.name or "").strip().lower() == target_name), None)
 
-            # Dynamic adjustments based on metric or selected interventions
-            adjusted_rating = base_rating
-            if getattr(metric, "roof_area_m2", 0):
-                adjusted_rating *= 1 + float(metric.roof_area_m2 or 0) / 1000
+        if source and target and source.id in sel_ids:
+            target.intervention_rating = max(Decimal("0"), Decimal(target.intervention_rating or 0) + value)
+            target.save(update_fields=["intervention_rating"])
+            updated_ratings[target.id] = float(target.intervention_rating)
 
-            if selected_ids and i.id in selected_ids:
-                # Increase rating for interventions already selected
-                adjusted_rating *= 1.1
-
-            cls = i.theme or "Other"
-            grouped_interventions.setdefault(cls, []).append({
-                "id": str(i.id),
-                "name": i.name or f"Intervention #{i.id}",
-                "cost_level": float(i.cost_level or 0),
-                "intervention_rating": round(adjusted_rating, 2),
-                "description": i.description or "No description available",
-                "stage": getattr(i, "stage", ""),
-                "class_name": getattr(i, "class_name", ""),
-                "theme": cls
-            })
-
-    return grouped_interventions
+    return interventions, updated_ratings
 
 
+# =========================
+# Calculator view
+# =========================
+# =========================
+# Calculator view
+# =========================
+@login_required
+@csrf_exempt  # if you want to skip CSRF for testing, otherwise remove
+def calculator(request):
+    """
+    Handles GET/POST for the calculator page.
+    GET: renders template
+    POST: accepts JSON or form-encoded payload
+    """
+    if request.method == "POST":
+        return _process_calculator_post(request)
+    # GET request just renders page
+    return render(request, "calculator.html")
 
 
+def _process_calculator_post(request):
+    """
+    Process POST requests to the calculator endpoint.
+    Handles both form data and JSON payloads.
+    """
 
-def _process_calculator_post(request: HttpRequest) -> HttpResponse:
-    metric = Metrics.objects.filter(user=request.user).order_by("-created_at").first()
+    # Try to get JSON payload first
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        # Fallback to form POST data
+        payload = request.POST
+
+    # Get metric ID (support both keys)
+    metric_id = payload.get("metric_id") or payload.get("metrics_id")
+    if not metric_id:
+        logger.warning("No metric ID provided in request")
+        return JsonResponse({"error": "Metric ID missing"}, status=400)
+
+    # Fetch metric from DB
+    metric = Metrics.objects.filter(id=metric_id).first()
     if not metric:
-        return render(request, "calculator_results.html", {"interventions": {}, "classes": []})
+        logger.warning("Metric not found for id=%s", metric_id)
+        return JsonResponse({"error": "Metric not found"}, status=400)
 
-    interventions = Interventions.objects.all()
-    grouped_interventions = intervention_effects(metric, interventions)
+    # Get selected interventions (if any)
+    selected_ids = payload.get("selected_ids") or []
+    if isinstance(selected_ids, str):
+        # If sent as comma-separated string
+        selected_ids = [int(i.strip()) for i in selected_ids.split(",") if i.strip().isdigit()]
+    else:
+        # Ensure integers
+        selected_ids = [int(i) for i in selected_ids]
 
-    return render(request, "calculator_results.html", {
-        "interventions": grouped_interventions,
-        "interventions_json": json.dumps(grouped_interventions),
-        "classes": [
-            {"key": "carbon", "label": "Carbon", "target": 80},
-            {"key": "health", "label": "Health & Wellbeing", "target": 60},
-            {"key": "water", "label": "Water Use", "target": 30},
-            {"key": "circular", "label": "Circular Economy", "target": 40},
-            {"key": "resilience", "label": "Resilience", "target": 60},
-            {"key": "value", "label": "Value & Cost", "target": 10},
-            {"key": "biodiversity", "label": "Biodiversity", "target": 20},
-        ],
-        "cap_high": 300000
+    # Get global budget (optional)
+    try:
+        global_budget = float(payload.get("global_budget", 0))
+    except ValueError:
+        global_budget = 0
+
+    logger.info(
+        "Processing calculator for metric_id=%s, selected_ids=%s, global_budget=%s",
+        metric_id,
+        selected_ids,
+        global_budget,
+    )
+
+    # Example: calculate result (replace with your actual logic)
+    result = metric.value * len(selected_ids)  # dummy calculation
+
+    return JsonResponse({
+        "success": True,
+        "metric_id": metric_id,
+        "selected_ids": selected_ids,
+        "global_budget": global_budget,
+        "result": result
     })
-
-
-
-
-
 
 
 
