@@ -44,6 +44,39 @@ class InterventionDependencies(models.Model):
 
 
 
+# app1/models.py
+from django.db import models
+
+class MetricRule(models.Model):
+    """
+    One rule record belongs to one intervention.
+    All rules for an intervention must pass for it to be shown.
+    """
+    OP_CHOICES = [
+        ('eq',  '=='),
+        ('neq', '!='),
+        ('gt',  '>'),
+        ('gte', '>='),
+        ('lt',  '<'),
+        ('lte', '<='),
+        ('in',  'in'),      # value is comma-separated list
+        ('nin', 'not in'),
+        ('true','is True'), # for booleans
+        ('false','is False'),
+        ('empty','is empty'),
+        ('nempty','not empty'),
+        ('contains', 'str contains'),   # for strings
+        ('ncontains','str not contains'),
+    ]
+
+    intervention = models.ForeignKey('Interventions', on_delete=models.CASCADE, related_name='rules')
+    # e.g. "basement_present", "gifa_m2", "project_type", etc.
+    field_name   = models.CharField(max_length=100)
+    operator     = models.CharField(max_length=12, choices=OP_CHOICES)
+    value        = models.CharField(max_length=255, blank=True, null=True)  # store raw; we’ll parse as needed
+
+    class Meta:
+        indexes = [models.Index(fields=['intervention', 'field_name'])]
 
 
 

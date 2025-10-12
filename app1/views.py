@@ -114,58 +114,211 @@ CLASS_ALIASES = {
 @require_GET
 def interventions_api(request):
     ui_key = (request.GET.get("cls") or "").strip().lower()
+    metrics_id = request.GET.get("mid")
+    mrow = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
 
-    # Fetch metrics per project
-    project_id = request.session.get("project_id")
-    metrics = {}
-    with connection.cursor() as cur:
-        cur.execute(
-            'SELECT gifa_m2, building_footprint_m2 FROM "Metrics" WHERE project_id=%s',
-            [project_id]
-        )
-        row = cur.fetchone()
-        if row:
-            metrics["gifa_m2"], metrics["building_footprint_m2"] = row
-        else:
-            metrics["gifa_m2"] = metrics["building_footprint_m2"] = 0
+    qs = Interventions.objects.all()
 
-    # Get table columns
-    with connection.cursor() as cur:
-        desc = connection.introspection.get_table_description(cur, "Interventions")
-        colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
-
-    select_cols = ", ".join(f'"{c}"' if c.lower() == "class" else c for c in colnames)
-    sql = f'SELECT {select_cols} FROM "Interventions"'
-    params = []
-
+    # class filter (unchanged) ...
     if ui_key:
         terms = CLASS_ALIASES.get(ui_key, [ui_key])
-        like_parts = []
+        q = Q()
         for t in terms:
-            like_parts.append('LOWER("class") LIKE LOWER(%s)')
-            params.append(f"%{t}%")
-        sql += " WHERE " + " OR ".join(like_parts)
+            q |= Q(class_name__icontains=t)
+        qs = qs.filter(q)
 
-    sql += " ORDER BY theme, name"
+    qs = qs.order_by("theme", "name")
 
     items = []
-    with connection.cursor() as cur:
-        cur.execute(sql, params)
-        cols = [c[0] for c in cur.description]
-        for row in cur.fetchall():
-            obj = dict(zip(cols, row))
-            items.append({
-                "id": obj.get("id"),
-                "name": obj.get("name") or f"Intervention #{obj.get('id')}",
-                "theme": obj.get("theme") or "",
-                "description": obj.get("description") or "",
-                "cost_level": obj.get("cost_level") or 0,
-                "intervention_rating": obj.get("intervention_rating") or 0,
-                "gifa_m2": metrics.get("gifa_m2", 0),
-                "building_footprint_m2": metrics.get("building_footprint_m2", 0),
-            })
+    total = qs.count()
+    matched = 0
 
-    return JsonResponse({"items": items})
+    for iv in qs:
+        rules = list(getattr(iv, "rules", []).all())
+        # If a metrics row is provided, REQUIRE the rules to pass.
+        if mrow:
+            # If there are no rules, treat as "always allowed" OR "exclude" — choose one.
+            # If you want "basement" interventions to be excluded unless rules say otherwise,
+            # keep some naming guard (optional quick safety):
+            if rules:
+                if not matches_intervention(mrow, rules):
+                    continue
+            else:
+                # Optional: a light naming filter to avoid obvious mismatches when there are no rules yet.
+                if (not mrow.basement_present) and ('basement' in (iv.name or '').lower()):
+                    continue
+
+        matched += 1
+        items.append({
+            "id": iv.id,
+            "name": iv.name or f"Intervention #{iv.id}",
+            "theme": iv.theme or "",
+            "description": iv.description or "",
+            "cost_level": iv.cost_level or 0,
+            "intervention_rating": iv.intervention_rating or 0,
+            "cost_range": getattr(iv, "cost_range", "") or "",
+            "class_name": iv.class_name or "",
+        })
+
+    return JsonResponse({
+        "items": items,
+        "debug": {
+            "total_before_filter": total,
+            "metrics_id": metrics_id,
+            "returned_after_filter": matched,
+            "class_key": ui_key,
+        }
+    })@require_GET
+def interventions_api(request):
+    """
+    GET /api/interventions/?cls=<class_key>&mid=<metrics_id>
+    Returns interventions filtered by:
+      - optional class
+      - metrics-aware rules (matches_intervention) if present
+      - fallback heuristics when rules are missing
+    """
+    ui_key = (request.GET.get("cls") or "").strip().lower()
+    metrics_id = request.GET.get("mid") or request.session.get("metrics_id")
+
+    mrow = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
+
+    qs = Interventions.objects.all()
+
+    # Class filter (lenient aliases)
+    if ui_key:
+        terms = CLASS_ALIASES.get(ui_key, [ui_key])
+        q = Q()
+        for t in terms:
+            q |= Q(class_name__icontains=t)
+        qs = qs.filter(q)
+
+    qs = qs.order_by("theme", "name")
+
+    # ---- Heuristic filters when no rule rows exist ----
+    def _zero(x):  # treat None or <=0 as zero
+        try:
+            return (x is None) or (float(x) <= 0)
+        except Exception:
+            return True
+
+    # quick keyword bags
+    BASEMENT_WORDS = ("basement", "substructure", "foundation", "footing")
+    ROOF_WORDS     = ("roof", "rooftop", "green roof", "cool roof")
+    WALL_WORDS     = ("external wall", "façade", "facade", "cladding", "external wall insulation", "ewi")
+    OPENING_WORDS  = ("window", "glazing", "fenestration", "external opening", "door")
+    FOOTPRINT_WORDS= ("footprint", "ground floor", "slab on grade")
+
+    def needs_basement(text):
+        t = (text or "").lower()
+        return any(w in t for w in BASEMENT_WORDS)
+
+    def needs_roof(text):
+        t = (text or "").lower()
+        return any(w in t for w in ROOF_WORDS)
+
+    def needs_wall(text):
+        t = (text or "").lower()
+        return any(w in t for w in WALL_WORDS)
+
+    def needs_openings(text):
+        t = (text or "").lower()
+        return any(w in t for w in OPENING_WORDS)
+
+    def needs_footprint(text):
+        t = (text or "").lower()
+        return any(w in t for w in FOOTPRINT_WORDS)
+
+    def suppressed_by_metrics(iv: "Interventions", m: "Metrics") -> bool:
+        """
+        Return True when this intervention should be hidden for the given metrics row.
+        Use this only when there are NO rule rows on the intervention.
+        """
+        title = f"{iv.name or ''} {iv.description or ''}"
+
+        # Basement logic
+        if needs_basement(title):
+            if not bool(getattr(m, "basement_present", False)):
+                return True
+            # if present but size is zero, also hide size-dependent basement items
+            if _zero(getattr(m, "basement_size_m2", None)):
+                return True
+
+        # Roof logic
+        if needs_roof(title):
+            roof_area = getattr(m, "roof_area_m2", None)
+            roof_pct  = getattr(m, "roof_percent_gifa", None)
+            if _zero(roof_area) and _zero(roof_pct):
+                return True
+
+        # External wall / façade logic
+        if needs_wall(title):
+            if _zero(getattr(m, "external_wall_area_m2", None)):
+                return True
+
+        # Openings / windows
+        if needs_openings(title):
+            if _zero(getattr(m, "external_openings_m2", None)):
+                return True
+
+        # Footprint-dependent
+        if needs_footprint(title):
+            if _zero(getattr(m, "building_footprint_m2", None)):
+                return True
+
+        # If everything is zero including GIFA, you might want to hide
+        # interventions that clearly require any building area at all.
+        # (Optional – uncomment if desired)
+        # gifa = getattr(m, "gifa_m2", None)
+        # if _zero(gifa):
+        #     return True
+
+        return False
+
+    total = qs.count()
+    returned = 0
+    items = []
+
+    for iv in qs:
+        # Collect rule rows if present
+        try:
+            rules = list(getattr(iv, "rules", []).all())
+        except Exception:
+            rules = []
+
+        # Apply rules first when we have both mrow and rules
+        if mrow and rules:
+            try:
+                if not matches_intervention(mrow, rules):
+                    continue  # filtered out by rule engine
+            except Exception:
+                # If rule evaluation fails, fall back to heuristics below
+                rules = []
+
+        # If there are no rules (or rule eval failed), apply heuristics
+        if mrow and not rules:
+            if suppressed_by_metrics(iv, mrow):
+                continue
+
+        returned += 1
+        items.append({
+            "id": iv.id,
+            "name": iv.name or f"Intervention #{iv.id}",
+            "theme": iv.theme or "",
+            "description": iv.description or "",
+            "cost_level": iv.cost_level or 0,
+            "intervention_rating": iv.intervention_rating or 0,
+            "cost_range": getattr(iv, "cost_range", "") or "",
+        })
+
+    return JsonResponse({
+        "items": items,
+        "debug": {
+            "metrics_id": metrics_id,
+            "class_key": ui_key,
+            "total_before_filter": total,
+            "returned_after_filter": returned,
+        }
+    })
 
 
 # =========================
