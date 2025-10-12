@@ -130,6 +130,7 @@
                   data-rating="{{ item.intervention_rating|default:0|escape }}"
                   data-stage="{{ item.stage|default:''|escape }}"
                   data-description="{{ item.description|default:''|striptags|escape }}"
+                  data-dependencies='{{ item.dependencies|default:"[]"|safe }}'
                 >
                   <div class="col-span-6 px-4 py-3 flex items-center justify-between">
                     <div>
@@ -148,14 +149,8 @@
                     </button>
                   </div>
 
-                  <div class="col-span-2 px-4 py-3 text-center">
-                    {{ item.cost_level|default:0 }}
-                  </div>
-
-                  <div class="col-span-2 px-4 py-3 text-center">
-                    {{ item.intervention_rating|default:0 }}
-                  </div>
-
+                  <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level|default:0 }}</div>
+                  <div class="col-span-2 px-4 py-3 text-center">{{ item.intervention_rating|default:0 }}</div>
                   <div class="col-span-2 px-4 py-3 text-center">
                     <input type="checkbox" class="select-intervention accent-brand" data-id="{{ item.id|escape }}">
                   </div>
@@ -220,11 +215,12 @@ qsa('.intervention-row').forEach(el=>{
     classKey: (el.dataset.class || '').trim(),
     costLevel: Number(el.dataset.costLevel || 0),
     rating: Number(el.dataset.rating || 0),
+    currentRating: Number(el.dataset.rating || 0),
     stage,
-    description: el.dataset.description || ''
+    description: el.dataset.description || '',
+    dependencies: el.dataset.dependencies ? JSON.parse(el.dataset.dependencies) : []
   });
 });
-/* container we’ll render into */
 const ROWS = qs('#rows');
 
 /* ------------- state ------------- */
@@ -236,27 +232,12 @@ const state = {
 };
 
 /* ------------- sorting helpers ------------- */
-const priorityScore = (row, wImpact=1, wCost=1) => {
-  const r = Number(row.rating || 0);
-  const c = Number(row.costLevel || 0);
-  return (wImpact * r) / (wCost * (c + 0.001));
-};
+const priorityScore = (row, wImpact=1, wCost=1) => (wImpact*row.currentRating)/(wCost*(row.costLevel+0.001));
 function cmpBySort(a,b,mode){
-  if (mode==='impact'){
-    if ((b.rating||0)!==(a.rating||0)) return (b.rating||0)-(a.rating||0);
-    return (a.costLevel||0)-(b.costLevel||0);
-  }
-  if (mode==='cost'){
-    if ((a.costLevel||0)!==(b.costLevel||0)) return (a.costLevel||0)-(b.costLevel||0);
-    return (b.rating||0)-(a.rating||0);
-  }
-  if (mode==='best'){
-    const sb=priorityScore(b), sa=priorityScore(a);
-    if (sb!==sa) return sb-sa;
-    if ((b.rating||0)!==(a.rating||0)) return (b.rating||0)-(a.rating||0);
-    return (a.costLevel||0)-(b.costLevel||0);
-  }
-  return 0; // theme/original keeps insertion order inside theme
+  if (mode==='impact') return (b.currentRating||0)-(a.currentRating||0) || (a.costLevel||0)-(b.costLevel||0);
+  if (mode==='cost') return (a.costLevel||0)-(b.costLevel||0) || (b.currentRating||0)-(a.currentRating||0);
+  if (mode==='best') return priorityScore(b)-priorityScore(a) || (b.currentRating||0)-(a.currentRating||0) || (a.costLevel||0)-(b.costLevel||0);
+  return 0;
 }
 
 /* ------------- filtering + rendering ------------- */
@@ -282,214 +263,130 @@ function groupByTheme(items){
 
 function render(){
   const items = currentFiltered();
-
-  // group
   const {order, groups} = groupByTheme(items);
+  if (state.sort!=='theme') for (const t of order) groups[t].sort((a,b)=>cmpBySort(a,b,state.sort));
 
-  // sort each group according to state.sort
-  if (state.sort!=='theme'){
-    for (const t of order){ groups[t].sort((a,b)=>cmpBySort(a,b,state.sort)); }
-  }
-
-  // build HTML
   let html = '';
   for (const t of order){
-    html += `
-      <div class="grid grid-cols-12 theme-header" data-theme="${t.replace(/"/g,'&quot;')}">
-        <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">${t}</div>
-      </div>
-    `;
+    html += `<div class="grid grid-cols-12 theme-header" data-theme="${t.replace(/"/g,'&quot;')}">
+               <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">${t}</div>
+             </div>`;
     for (const r of groups[t]){
       const checked = state.selected.has(r.id) ? 'checked' : '';
-      const stagePill = (r.stage!=null)
-        ? `<span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage ${r.stage}</span>`
-        : '';
-      html += `
-        <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50 intervention-row"
-             data-id="${r.id}" data-theme="${t}" data-name="${r.name.replace(/"/g,'&quot;')}"
-             data-class="${r.classKey}" data-cost-level="${r.costLevel}" data-rating="${r.rating}"
-             data-stage="${r.stage ?? ''}" data-description="${(r.description||'').replace(/"/g,'&quot;')}">
-
-          <div class="col-span-6 px-4 py-3 flex items-center justify-between">
-            <div>
-              <div class="font-medium intervention-name">${r.name}</div>
-              <div class="mt-1 flex items-center gap-2">
-                <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">${t}</span>
-                ${stagePill}
-              </div>
-            </div>
-            <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">expand_more</button>
-          </div>
-
-          <div class="col-span-2 px-4 py-3 text-center">${r.costLevel || 0}</div>
-          <div class="col-span-2 px-4 py-3 text-center">${r.rating || 0}</div>
-          <div class="col-span-2 px-4 py-3 text-center">
-            <input type="checkbox" class="select-intervention accent-brand" data-id="${r.id}" ${checked}>
-          </div>
-        </div>
-        <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">${r.description || 'No description available.'}</div>
-      `;
+      const stagePill = (r.stage!=null) ? `<span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage ${r.stage}</span>` : '';
+      html += `<div class="grid grid-cols-12 items-center border-t hover:bg-gray-50 intervention-row"
+                   data-id="${r.id}" data-theme="${t}" data-name="${r.name.replace(/"/g,'&quot;')}"
+                   data-class="${r.classKey}" data-cost-level="${r.costLevel}" data-rating="${r.rating}"
+                   data-stage="${r.stage ?? ''}" data-description="${(r.description||'').replace(/"/g,'&quot;')}"
+                   data-dependencies='${JSON.stringify(r.dependencies)}'>
+                 <div class="col-span-6 px-4 py-3 flex items-center justify-between">
+                   <div>
+                     <div class="font-medium intervention-name">${r.name}</div>
+                     <div class="mt-1 flex items-center gap-2">
+                       <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">${t}</span>
+                       ${stagePill}
+                     </div>
+                   </div>
+                   <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">expand_more</button>
+                 </div>
+                 <div class="col-span-2 px-4 py-3 text-center">${r.costLevel || 0}</div>
+                 <div class="col-span-2 px-4 py-3 text-center">${r.currentRating.toFixed(1)}</div>
+                 <div class="col-span-2 px-4 py-3 text-center">
+                   <input type="checkbox" class="select-intervention accent-brand" data-id="${r.id}" ${checked}>
+                 </div>
+               </div>
+               <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">${r.description||'No description available.'}</div>`;
     }
   }
   ROWS.innerHTML = html;
-
-  // rebind events after rebuild
   bindRowEvents();
-
-  // re-apply stage constraints + counters
-  recalc(); // this calls applyStageConstraints() and refreshes counts
+  recalc();
 }
 
-/* ------------- stage constraints + counters ------------- */
-function applyStageConstraints(){
-  const maxStage = Object.create(null);
-  // compute highest selected per family
-  RAW.forEach(r=>{
-    if (r.stage==null) return;
-    if (state.selected.has(r.id)){
-      if (!maxStage[r.family] || r.stage > maxStage[r.family]) maxStage[r.family] = r.stage;
-    }
+/* ------------- toggle description ------------- */
+function bindRowEvents(){
+  qsa('.toggle-desc').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const row = e.target.closest('.intervention-row');
+      const desc = row.nextElementSibling;
+      if(desc) desc.classList.toggle('hidden');
+    });
   });
-  // disable lower stages in DOM
-  qsa('.intervention-row').forEach(el=>{
-    const id = el.dataset.id;
-    const row = RAW.find(x=>x.id===id);
-    const cb  = el.querySelector('.select-intervention');
-    const top = maxStage[row.family] ?? null;
-    const disable = (row.stage!=null && top!=null && row.stage < top);
-    cb.disabled = !!disable;
-    if (disable){
-      cb.checked = false;
-      state.selected.delete(id);
-      el.classList.add('opacity-60','bg-gray-50');
-      if (!el.querySelector('.stage-disabled-badge')){
-        const badge = document.createElement('span');
-        badge.className = 'stage-disabled-badge ml-2 inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700';
-        badge.textContent = `Disabled by Stage ${top}`;
-        el.querySelector('.intervention-name')?.parentElement?.appendChild(badge);
-      }
-    } else {
-      el.classList.remove('opacity-60','bg-gray-50');
-      const b = el.querySelector('.stage-disabled-badge'); if (b) b.remove();
-    }
+
+  qsa('.select-intervention').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      const id = cb.dataset.id;
+      if(cb.checked) state.selected.add(id); else state.selected.delete(id);
+      recalc();
+    });
   });
 }
 
+/* ------------- recalc with dependencies ------------- */
 function recalc(){
-  applyStageConstraints();
+  // reset ratings
+  RAW.forEach(r=>r.currentRating=r.rating);
 
-  let total = 0, count = 0;
+  // apply dependencies for selected items
+  RAW.forEach(r=>{
+    if(state.selected.has(r.id) && r.dependencies.length){
+      r.dependencies.forEach(dep=>{
+        const target = RAW.find(x=>x.id===String(dep.intervention_id));
+        if(target) target.currentRating *= (1 + Number(dep.effect||0));
+      });
+    }
+  });
+
+  // update DOM ratings
+  qsa('.intervention-row').forEach(el=>{
+    const row = RAW.find(r=>r.id===el.dataset.id);
+    if(row){
+      const ratingCell = el.querySelector(':scope > div.col-span-2:nth-child(3)');
+      if(ratingCell) ratingCell.textContent = row.currentRating.toFixed(1);
+    }
+  });
+
+  // recalc cost & count
+  let total=0, count=0;
   qsa('.select-intervention').forEach(cb=>{
     const id = cb.dataset.id;
     cb.checked = state.selected.has(id);
-    if (cb.checked){
+    if(cb.checked){
       const r = RAW.find(x=>x.id===id);
-      total += (r?.costLevel || 0);
-      count += 1;
+      if(r) { total += r.costLevel; count += 1; }
     }
   });
 
   qs('#costTracker').textContent = String(total);
-  qs('#selCount').textContent    = String(count);
-  qs('#totalCost').textContent   = String(total);
+  qs('#selCount').textContent = String(count);
+  qs('#totalCost').textContent = String(total);
 }
 
-/* ------------- event binding for rows ------------- */
-function bindRowEvents(){
-  qsa('.select-intervention').forEach(cb=>{
-    cb.addEventListener('change', ()=>{
-      const id = cb.dataset.id;
-      if (cb.checked) state.selected.add(id); else state.selected.delete(id);
-      recalc();
-    });
-  });
-  qsa('.toggle-desc').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const row  = btn.closest('.intervention-row');
-      const desc = row.nextElementSibling;
-      if (!desc || !desc.classList.contains('description-row')) return;
-      desc.classList.toggle('hidden');
-      btn.textContent = desc.classList.contains('hidden') ? 'expand_more' : 'expand_less';
-    });
-  });
-}
-
-/* ------------- search + suggestions ------------- */
-const searchBox  = qs('#searchBox');
-const clearBtn   = qs('#clearSearch');
-const suggestBox = qs('#searchSuggest');
-
-function closeSuggest(){ suggestBox.classList.add('hidden'); suggestBox.innerHTML=''; }
-function buildSuggestions(q){
-  const needle = (q||'').toLowerCase().trim();
-  if (!needle) return closeSuggest();
-  const seen = new Set(), names=[];
-  for (const r of RAW){
-    const key = r.name.toLowerCase();
-    if (!seen.has(key) && key.includes(needle)){
-      seen.add(key); names.push(r.name);
-      if (names.length>=8) break;
-    }
-  }
-  if (!names.length) return closeSuggest();
-  suggestBox.innerHTML = names.map(n=>`<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">${n.replace(/</g,'&lt;')}</button>`).join('');
-  suggestBox.classList.remove('hidden');
-  qsa('#searchSuggest button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      searchBox.value = btn.textContent.trim();
-      clearBtn.classList.remove('hidden');
-      state.query = searchBox.value;
-      render();
-      closeSuggest();
-    });
-  });
-}
-
-searchBox.addEventListener('input', e=>{
-  const v = e.target.value;
-  state.query = v;
-  clearBtn.classList.toggle('hidden', !v.length);
-  buildSuggestions(v);
+/* ------------- search ------------- */
+qs('#searchBox').addEventListener('input', e=>{
+  state.query = e.target.value;
   render();
 });
-searchBox.addEventListener('keydown', e=>{
-  if (e.key==='Enter'){ e.preventDefault(); closeSuggest(); }
-  if (e.key==='Escape'){ closeSuggest(); }
-});
-document.addEventListener('click', e=>{
-  if (!suggestBox.contains(e.target) && e.target!==searchBox) closeSuggest();
-});
-clearBtn.addEventListener('click', ()=>{
-  searchBox.value=''; state.query=''; clearBtn.classList.add('hidden'); closeSuggest(); render();
+qs('#clearSearch').addEventListener('click', e=>{
+  state.query=''; qs('#searchBox').value=''; render();
 });
 
-/* ------------- top controls ------------- */
+/* ------------- class filter ------------- */
 qs('#classSelect').addEventListener('change', e=>{
-  state.activeClass = e.target.value;
-  render();
-});
-qs('#orderSelect').addEventListener('change', e=>{
-  state.sort = e.target.value; // 'best' | 'impact' | 'cost' | 'theme'
-  render();
-});
-qs('#resetBtn').addEventListener('click', ()=>{
-  state.selected.clear();
-  state.query = '';
-  searchBox.value = '';
-  clearBtn.classList.add('hidden');
-  state.activeClass = 'all';
-  qs('#classSelect').value = 'all';
-  state.sort = 'best';
-  qs('#orderSelect').value = 'best';
-  render();
-});
-qs('#saveBtn').addEventListener('click', ()=>{
-  const payload = { selected:[...state.selected] };
-  console.log('SAVE', payload);
-  // hook your POST here if/when you want to persist selection
+  state.activeClass=e.target.value; render();
 });
 
-/* ------------- first paint ------------- */
+/* ------------- order sort ------------- */
+qs('#orderSelect').addEventListener('change', e=>{
+  state.sort=e.target.value; render();
+});
+
+/* ------------- reset ------------- */
+qs('#resetBtn').addEventListener('click', e=>{
+  state.selected.clear();
+  render();
+});
+
 render();
 </script>
 </body>

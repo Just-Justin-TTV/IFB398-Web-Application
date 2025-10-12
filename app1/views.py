@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
+from typing import List, Dict
 
 from .models import Metrics, ClassTargets, Interventions, InterventionDependencies, User as AppUser
 from django.http import JsonResponse
@@ -114,25 +115,34 @@ CLASS_ALIASES = {
 @require_GET
 def interventions_api(request):
     ui_key = (request.GET.get("cls") or "").strip().lower()
+    logger.info("interventions_api called with cls=%s", ui_key)
 
-    # Fetch metrics per project
     project_id = request.session.get("project_id")
     metrics = {}
-    with connection.cursor() as cur:
-        cur.execute(
-            'SELECT gifa_m2, building_footprint_m2 FROM "Metrics" WHERE project_id=%s',
-            [project_id]
-        )
-        row = cur.fetchone()
-        if row:
-            metrics["gifa_m2"], metrics["building_footprint_m2"] = row
-        else:
-            metrics["gifa_m2"] = metrics["building_footprint_m2"] = 0
+    try:
+        with connection.cursor() as cur:
+            cur.execute(
+                'SELECT gifa_m2, building_footprint_m2 FROM "Metrics" WHERE project_id=%s',
+                [project_id]
+            )
+            row = cur.fetchone()
+            if row:
+                metrics["gifa_m2"], metrics["building_footprint_m2"] = row
+            else:
+                metrics["gifa_m2"] = metrics["building_footprint_m2"] = 0
+        logger.info("Fetched metrics: %s", metrics)
+    except Exception as e:
+        logger.exception("Error fetching metrics for project_id=%s", project_id)
+        metrics["gifa_m2"] = metrics["building_footprint_m2"] = 0
 
-    # Get table columns
-    with connection.cursor() as cur:
-        desc = connection.introspection.get_table_description(cur, "Interventions")
-        colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
+    try:
+        with connection.cursor() as cur:
+            desc = connection.introspection.get_table_description(cur, "Interventions")
+            colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
+        logger.info("Columns in Interventions table: %s", colnames)
+    except Exception as e:
+        logger.exception("Failed to get table description for Interventions")
+        colnames = []
 
     select_cols = ", ".join(f'"{c}"' if c.lower() == "class" else c for c in colnames)
     sql = f'SELECT {select_cols} FROM "Interventions"'
@@ -149,21 +159,26 @@ def interventions_api(request):
     sql += " ORDER BY theme, name"
 
     items = []
-    with connection.cursor() as cur:
-        cur.execute(sql, params)
-        cols = [c[0] for c in cur.description]
-        for row in cur.fetchall():
-            obj = dict(zip(cols, row))
-            items.append({
-                "id": obj.get("id"),
-                "name": obj.get("name") or f"Intervention #{obj.get('id')}",
-                "theme": obj.get("theme") or "",
-                "description": obj.get("description") or "",
-                "cost_level": obj.get("cost_level") or 0,
-                "intervention_rating": obj.get("intervention_rating") or 0,
-                "gifa_m2": metrics.get("gifa_m2", 0),
-                "building_footprint_m2": metrics.get("building_footprint_m2", 0),
-            })
+    try:
+        with connection.cursor() as cur:
+            logger.info("Executing SQL: %s with params %s", sql, params)
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            for row in cur.fetchall():
+                obj = dict(zip(cols, row))
+                items.append({
+                    "id": obj.get("id"),
+                    "name": obj.get("name") or f"Intervention #{obj.get('id')}",
+                    "theme": obj.get("theme") or "",
+                    "description": obj.get("description") or "",
+                    "cost_level": obj.get("cost_level") or 0,
+                    "intervention_rating": obj.get("intervention_rating") or 0,
+                    "gifa_m2": metrics.get("gifa_m2", 0),
+                    "building_footprint_m2": metrics.get("building_footprint_m2", 0),
+                })
+        logger.info("Fetched %d interventions", len(items))
+    except Exception as e:
+        logger.exception("Error fetching interventions from DB")
 
     return JsonResponse({"items": items})
 
@@ -176,16 +191,18 @@ def interventions_api(request):
 @login_required(login_url='login')
 def save_metrics(request: HttpRequest) -> JsonResponse:
     try:
-        payload: Dict[str, Any] = json.loads(request.body.decode("utf-8"))
+        payload = json.loads(request.body.decode("utf-8"))
+        logger.info("save_metrics payload: %s", payload)
     except json.JSONDecodeError:
+        logger.warning("Invalid JSON received")
         return HttpResponseBadRequest("Invalid JSON")
 
     metrics_id = payload.get("metrics_id") or request.session.get("metrics_id")
     m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
     if not m:
         m = Metrics(user=_resolve_app_user(request))
+        logger.info("Created new Metrics object for user %s", m.user)
 
-    # Dynamically update numeric fields if they exist
     numeric_fields = [
         "roof_area_m2", "roof_percent_gifa", "basement_size_m2", "basement_percent_gifa",
         "num_apartments", "num_keys", "num_wcs", "gifa_m2", "external_wall_area_m2",
@@ -193,7 +210,9 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     ]
     for field in numeric_fields:
         if hasattr(m, field):
-            setattr(m, field, _to_dec(payload.get(field)))
+            value = _to_dec(payload.get(field))
+            setattr(m, field, value)
+            logger.debug("Set %s=%s", field, value)
 
     if hasattr(m, "building_type"):
         m.building_type = payload.get("building_type") or getattr(m, "building_type", None)
@@ -205,6 +224,8 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
 
     m.save()
     request.session["metrics_id"] = m.id
+    logger.info("Metrics saved with id=%s", m.id)
+
     return JsonResponse({"ok": True, "metrics_id": m.id})
 
 
@@ -257,60 +278,87 @@ def carbon_view(request):
 
 @login_required(login_url='login')
 def calculator(request: HttpRequest):
+    """
+    Handles the calculator page.
+    GET: renders the form with class targets.
+    POST: processes interventions and shows filtered results.
+    """
+    import json
+
     if request.method == "GET":
         class_targets = list(ClassTargets.objects.values("class_name", "target_rating"))
         return render(request, "calculator.html", {"class_targets": class_targets})
 
-    # POST now renders the results page
+    # POST now renders the results page using the updated intervention_effects
     return _process_calculator_post(request)
+
+
+def intervention_effects(metric, interventions, selected_ids=None):
+    """
+    Adjust intervention ratings dynamically.
+    - metric: Metrics instance
+    - interventions: queryset/list of Interventions
+    - selected_ids: list of intervention IDs selected by user (optional)
+    """
+    grouped_interventions = {}
+
+    for i in interventions:
+        include = True
+        deps = InterventionDependencies.objects.filter(intervention_id=i.id)
+        for dep in deps:
+            val = getattr(metric, dep.metric_name, None)
+            if val is None:
+                continue
+            try:
+                val = Decimal(val)
+            except Exception:
+                continue
+            if (dep.min_value is not None and val < dep.min_value) or \
+               (dep.max_value is not None and val > dep.max_value):
+                include = False
+                break
+
+        if include:
+            base_rating = float(i.intervention_rating or 0)
+
+            # Dynamic adjustments based on metric or selected interventions
+            adjusted_rating = base_rating
+            if getattr(metric, "roof_area_m2", 0):
+                adjusted_rating *= 1 + float(metric.roof_area_m2 or 0) / 1000
+
+            if selected_ids and i.id in selected_ids:
+                # Increase rating for interventions already selected
+                adjusted_rating *= 1.1
+
+            cls = i.theme or "Other"
+            grouped_interventions.setdefault(cls, []).append({
+                "id": str(i.id),
+                "name": i.name or f"Intervention #{i.id}",
+                "cost_level": float(i.cost_level or 0),
+                "intervention_rating": round(adjusted_rating, 2),
+                "description": i.description or "No description available",
+                "stage": getattr(i, "stage", ""),
+                "class_name": getattr(i, "class_name", ""),
+                "theme": cls
+            })
+
+    return grouped_interventions
+
 
 
 
 
 def _process_calculator_post(request: HttpRequest) -> HttpResponse:
-    logger.debug("Calculator POST triggered")
-
-    # Load latest metrics for this user
     metric = Metrics.objects.filter(user=request.user).order_by("-created_at").first()
     if not metric:
-        logger.warning("No metrics found for user %s", request.user)
-        return render(request, "calculator_results.html", {"interventions": []})
+        return render(request, "calculator_results.html", {"interventions": {}, "classes": []})
 
     interventions = Interventions.objects.all()
-    final_interventions = []
-
-    for intervention in interventions:
-        deps = InterventionDependencies.objects.filter(intervention_id=intervention.id)
-        include_intervention = True
-
-        for dep in deps:
-            metric_value_raw = getattr(metric, dep.metric_name, None)
-            if metric_value_raw is None:
-                # Skip this dependency if the metric is not provided
-                continue
-
-            try:
-                metric_value = Decimal(metric_value_raw)
-            except Exception:
-                logger.warning("Invalid metric value for %s: %s", dep.metric_name, metric_value_raw)
-                continue
-
-            # Only exclude if metric violates min/max
-            if (dep.min_value is not None and metric_value < dep.min_value) or \
-               (dep.max_value is not None and metric_value > dep.max_value):
-                include_intervention = False
-                break
-
-        if include_intervention:
-            final_interventions.append(intervention)
-
-    # Group interventions by theme for template
-    grouped_interventions = {}
-    for i in final_interventions:
-        grouped_interventions.setdefault(i.theme or "Other", []).append(i)
+    grouped_interventions = intervention_effects(metric, interventions)
 
     return render(request, "calculator_results.html", {
         "interventions": grouped_interventions,
+        "interventions_json": json.dumps(grouped_interventions),
         "classes": [
             {"key": "carbon", "label": "Carbon", "target": 80},
             {"key": "health", "label": "Health & Wellbeing", "target": 60},
@@ -322,6 +370,7 @@ def _process_calculator_post(request: HttpRequest) -> HttpResponse:
         ],
         "cap_high": 300000
     })
+
 
 
 

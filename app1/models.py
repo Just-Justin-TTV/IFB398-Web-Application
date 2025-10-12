@@ -61,7 +61,20 @@ class User(models.Model):
 
     def __str__(self):
         return self.username
-    
+
+class InterventionEffects(models.Model):
+    source_intervention_name = models.CharField(max_length=255, db_column='source_intervention_name')
+    target_intervention_name = models.CharField(max_length=255, db_column='target_intervention_name')
+    effect_value = models.FloatField()
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'intervention_effects'
+
+    def __str__(self):
+        return f"{self.source_intervention_name} → {self.target_intervention_name} ({self.effect_value})"
+
+
 # NEW
 class Metrics(models.Model):
     id = models.AutoField(primary_key=True)
@@ -132,3 +145,4 @@ class Metrics(models.Model):
         for k, v in (data or {}).items():
             if hasattr(self, k):
                 setattr(self, k, v)
+
