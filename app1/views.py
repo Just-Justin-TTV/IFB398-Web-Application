@@ -114,52 +114,50 @@ CLASS_ALIASES = {
 
 @require_GET
 def interventions_api(request):
+    """
+    Returns interventions as JSON, optionally filtered by class/theme.
+    Handles metrics for the current project to include in the response.
+    """
     ui_key = (request.GET.get("cls") or "").strip().lower()
     logger.info("interventions_api called with cls=%s", ui_key)
 
+    # Get metrics for current project
     project_id = request.session.get("project_id")
-    metrics = {}
-    try:
-        with connection.cursor() as cur:
-            cur.execute(
-                'SELECT gifa_m2, building_footprint_m2 FROM "Metrics" WHERE project_id=%s',
-                [project_id]
-            )
-            row = cur.fetchone()
-            if row:
-                metrics["gifa_m2"], metrics["building_footprint_m2"] = row
-            else:
-                metrics["gifa_m2"] = metrics["building_footprint_m2"] = 0
-        logger.info("Fetched metrics: %s", metrics)
-    except Exception as e:
-        logger.exception("Error fetching metrics for project_id=%s", project_id)
-        metrics["gifa_m2"] = metrics["building_footprint_m2"] = 0
+    metrics = {"gifa_m2": 0, "building_footprint_m2": 0}
+    if project_id:
+        try:
+            metric_obj = Metrics.objects.filter(id=project_id).first()
+            if metric_obj:
+                metrics["gifa_m2"] = float(metric_obj.gifa_m2 or 0)
+                metrics["building_footprint_m2"] = float(metric_obj.building_footprint_m2 or 0)
+        except Exception as e:
+            logger.exception("Error fetching metrics for project_id=%s", project_id)
 
+    # Prepare SQL to fetch interventions
     try:
         with connection.cursor() as cur:
+            # Get column names dynamically
             desc = connection.introspection.get_table_description(cur, "Interventions")
             colnames = [getattr(c, "name", getattr(c, "column_name", "")) for c in desc]
-        logger.info("Columns in Interventions table: %s", colnames)
-    except Exception as e:
-        logger.exception("Failed to get table description for Interventions")
-        colnames = []
 
-    select_cols = ", ".join(f'"{c}"' if c.lower() == "class" else c for c in colnames)
-    sql = f'SELECT {select_cols} FROM "Interventions"'
-    params = []
+        # Quote 'class' column properly for SQL
+        select_cols = ", ".join(f'"{c}"' if c.lower() == "class" else c for c in colnames)
+        sql = f'SELECT {select_cols} FROM "Interventions"'
+        params = []
 
-    if ui_key:
-        terms = CLASS_ALIASES.get(ui_key, [ui_key])
-        like_parts = []
-        for t in terms:
-            like_parts.append('LOWER("class") LIKE LOWER(%s)')
-            params.append(f"%{t}%")
-        sql += " WHERE " + " OR ".join(like_parts)
+        # Apply class/theme filtering
+        if ui_key:
+            terms = CLASS_ALIASES.get(ui_key, [ui_key])
+            like_parts = []
+            for t in terms:
+                like_parts.append('LOWER("class") LIKE LOWER(%s)')
+                params.append(f"%{t}%")
+            sql += " WHERE " + " OR ".join(like_parts)
 
-    sql += " ORDER BY theme, name"
+        sql += " ORDER BY theme, name"
 
-    items = []
-    try:
+        # Execute query
+        items = []
         with connection.cursor() as cur:
             logger.info("Executing SQL: %s with params %s", sql, params)
             cur.execute(sql, params)
@@ -171,14 +169,15 @@ def interventions_api(request):
                     "name": obj.get("name") or f"Intervention #{obj.get('id')}",
                     "theme": obj.get("theme") or "",
                     "description": obj.get("description") or "",
-                    "cost_level": obj.get("cost_level") or 0,
-                    "intervention_rating": obj.get("intervention_rating") or 0,
+                    "cost_level": float(obj.get("cost_level") or 0),
+                    "intervention_rating": float(obj.get("intervention_rating") or 0),
                     "gifa_m2": metrics.get("gifa_m2", 0),
                     "building_footprint_m2": metrics.get("building_footprint_m2", 0),
                 })
         logger.info("Fetched %d interventions", len(items))
     except Exception as e:
         logger.exception("Error fetching interventions from DB")
+        items = []
 
     return JsonResponse({"items": items})
 
@@ -293,17 +292,17 @@ def calculator(request: HttpRequest):
     return _process_calculator_post(request)
 
 
-def intervention_effects(metric, interventions, selected_ids=None):
+def intervention_effects(metric, interventions, selected_ids: Optional[List[int]] = None):
     """
-    Adjust intervention ratings dynamically.
-    - metric: Metrics instance
-    - interventions: queryset/list of Interventions
-    - selected_ids: list of intervention IDs selected by user (optional)
+    Adjust intervention ratings dynamically based on metric values and selected interventions.
+    Ratings are only increased for interventions after selection.
     """
     grouped_interventions = {}
 
     for i in interventions:
         include = True
+
+        # Check dependencies for metric thresholds
         deps = InterventionDependencies.objects.filter(intervention_id=i.id)
         for dep in deps:
             val = getattr(metric, dep.metric_name, None)
@@ -318,31 +317,34 @@ def intervention_effects(metric, interventions, selected_ids=None):
                 include = False
                 break
 
-        if include:
-            base_rating = float(i.intervention_rating or 0)
+        if not include:
+            continue
 
-            # Dynamic adjustments based on metric or selected interventions
-            adjusted_rating = base_rating
-            if getattr(metric, "roof_area_m2", 0):
-                adjusted_rating *= 1 + float(metric.roof_area_m2 or 0) / 1000
+        base_rating = float(i.intervention_rating or 0)
+        adjusted_rating = base_rating
 
-            if selected_ids and i.id in selected_ids:
-                # Increase rating for interventions already selected
-                adjusted_rating *= 1.1
+        # Metric-based adjustment (example: scale by roof area)
+        if getattr(metric, "roof_area_m2", 0):
+            adjusted_rating *= 1 + float(metric.roof_area_m2 or 0) / 1000
 
-            cls = i.theme or "Other"
-            grouped_interventions.setdefault(cls, []).append({
-                "id": str(i.id),
-                "name": i.name or f"Intervention #{i.id}",
-                "cost_level": float(i.cost_level or 0),
-                "intervention_rating": round(adjusted_rating, 2),
-                "description": i.description or "No description available",
-                "stage": getattr(i, "stage", ""),
-                "class_name": getattr(i, "class_name", ""),
-                "theme": cls
-            })
+        # Only apply selection multiplier if this intervention is selected
+        if selected_ids and i.id in selected_ids:
+            adjusted_rating *= 1.1  # +10% rating for selection
+
+        cls = i.theme or "Other"
+        grouped_interventions.setdefault(cls, []).append({
+            "id": str(i.id),
+            "name": i.name or f"Intervention #{i.id}",
+            "cost_level": float(i.cost_level or 0),
+            "intervention_rating": round(adjusted_rating, 2),
+            "description": i.description or "No description available",
+            "stage": getattr(i, "stage", ""),
+            "class_name": getattr(i, "class_name", ""),
+            "theme": cls
+        })
 
     return grouped_interventions
+
 
 
 
