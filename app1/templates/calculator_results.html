@@ -198,319 +198,76 @@
     try{
       const res = await fetch(`/get_intervention_effects/?source=${encodeURIComponent(intervention.name)}`);
       const data = await res.json();
-
-      // Build a flat list with group headers and stage metadata
-      const byTheme = new Map();
-      for (const it of (data.items || [])) {
-        const theme = it.theme || "Other";
-        if (!byTheme.has(theme)) byTheme.set(theme, []);
-        const stage = getStage(it.description) ?? getStage(it.name);
-        byTheme.get(theme).push({
-          id: String(it.id),
-          name: it.name,
-          theme: it.theme,
-          description: it.description,
-          costLevel: Number(it.cost_level ?? 0),
-          costRangeText: it.cost_range ?? "",
-          interventionRating: Number(it.intervention_rating ?? 0),
-          stage,
-          baseKey: slug(it.name),
-        });
-      }
-
-      INTERVENTIONS = [];
-      for (const [theme, arr] of byTheme) {
-        INTERVENTIONS.push({ group: true, name: theme });
-        arr.sort((a,b)=>
-          (b.interventionRating - a.interventionRating) ||
-          (a.costLevel - b.costLevel) ||
-          a.name.localeCompare(b.name)
-        );
-        INTERVENTIONS.push(...arr);
-      }
-
-      if (INTERVENTIONS.length === 0) {
-        document.getElementById('rows').innerHTML =
-          `<div class="p-8 text-center text-gray-500">No interventions found for this class.</div>`;
-        render();
-        return;
-      }
-
-      render();
-    } catch (err) {
-      console.error('Failed to load interventions:', err);
-      document.getElementById('rows').innerHTML =
-        `<div class="p-8 text-center text-red-600">Could not load interventions. Check the API route and console.</div>`;
-    }
+      return data.effects || [];
+    }catch(err){ console.error(err); return []; }
   }
 
-  // ---------- stage constraints ----------
-  function applyStageConstraints(){
-    const maxSel = {};
-    for (const r of INTERVENTIONS){
-      if (r.group || r.stage == null) continue;
-      if (state.selected.has(r.id)){
-        const k = r.baseKey;
-        if (!maxSel[k] || r.stage > maxSel[k]) maxSel[k] = r.stage;
-      }
-    }
-    // deselect conflicting lower stages
-    for (const r of INTERVENTIONS){
-      if (r.group || r.stage == null) continue;
-      const k = r.baseKey;
-      if (maxSel[k] && r.stage < maxSel[k] && state.selected.has(r.id)){
-        state.selected.delete(r.id);
-      }
-    }
-    return maxSel;
-  }
-
-  // ---------- scoring / sorting ----------
-  function sumImpacts(){
-    const scores = {};
-    scores[state.activeClass] = 0;
-    for(const row of INTERVENTIONS){
-      if(row.group) continue;
-      const lvl = Number(row.costLevel ?? 0);
-      scores[state.activeClass] += Number.isFinite(lvl) ? lvl : 0;
-    }
-    return scores;
-  }
-
-  function selectionCost(){
-    let lo=0, hi=0;
-    for(const row of INTERVENTIONS){
-      if(row.group) continue;
-      if(state.selected.has(row.id)){
-        const [a,b] = parseRangeText(row.costRangeText);
-        lo += a; hi += b;
-      }
-    }
-    return [lo,hi];
-  }
-
-  const priorityScore = (row, wImpact=1, wCost=1) => {
-    const r = Number(row.interventionRating || 0);
-    const c = Number(row.costLevel || 0);
-    return (wImpact * r) / (wCost * (c + 0.001)); // higher is better
-  };
-
-  function cmpBySort(a, b, mode) {
-    if (mode === 'impact') {
-      if ((b.interventionRating||0) !== (a.interventionRating||0)) {
-        return (b.interventionRating||0) - (a.interventionRating||0);
-      }
-      return (a.costLevel||0) - (b.costLevel||0);
-    }
-    if (mode === 'cost') {
-      if ((a.costLevel||0) !== (b.costLevel||0)) {
-        return (a.costLevel||0) - (b.costLevel||0);
-      }
-      return (b.interventionRating||0) - (a.interventionRating||0);
-    }
-    if (mode === 'best') {
-      const sb = priorityScore(b);
-      const sa = priorityScore(a);
-      if (sb !== sa) return sb - sa;
-      if ((b.interventionRating||0) !== (a.interventionRating||0)) {
-        return (b.interventionRating||0) - (a.interventionRating||0);
-      }
-      return (a.costLevel||0) - (b.costLevel||0);
-    }
-    return 0; // theme/original
-  }
-
-  function groupAndSort(items, mode) {
-    const themeOrder = [];
-    const groups = {};
-    let lastTheme = null;
-
-    for (const it of items) {
-      if (it.group) {
-        lastTheme = it.name || 'Other';
-        if (!groups[lastTheme]) { groups[lastTheme] = []; themeOrder.push(lastTheme); }
-        continue;
-      }
-      const t = it.theme || lastTheme || 'Other';
-      if (!groups[t]) { groups[t] = []; themeOrder.push(t); }
-      groups[t].push(it);
-    }
-
-    if (mode !== 'theme') {
-      for (const t of themeOrder) groups[t].sort((a,b)=>cmpBySort(a,b,mode));
-    }
-
-    const flat = [];
-    for (const t of themeOrder) {
-      flat.push({ group:true, name:t });
-      flat.push(...groups[t]);
-    }
-    return flat;
-  }
-
-  // ---------- render ----------
-  function render() {
-    const maxStageSelectedByFamily = applyStageConstraints();
-
-    const sorted = groupAndSort(INTERVENTIONS, state.sort);
-    const out = [];
-
-    for (const row of sorted) {
-      if (row.group) {
-        out.push(`
-          <div class="grid grid-cols-12">
-            <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
-              ${esc(row.name)}
-            </div>
-          </div>
-        `);
-        continue;
-      }
-
-      const sel   = state.selected.has(row.id);
-      const level = Number(row.costLevel ?? 0);
-      const ir    = Number(row.interventionRating ?? 0);
-
-      const familyMax = maxStageSelectedByFamily[row.baseKey] ?? null;
-      const disabled  = (row.stage != null && familyMax != null && familyMax > row.stage);
-
-      const nameCell = `
-        <div class="col-span-5 px-4 py-3">
-          <div class="flex items-start gap-2">
-            ${ row.description && row.description.trim() ? `
-              <button type="button" class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-gray-100"
-                      aria-label="Show details" aria-expanded="false" data-toggle="${row.id}">
-                <span class="material-icons text-[18px]" data-icon="${row.id}">expand_more</span>
-              </button>` : `` }
-            <div>
-              <div class="font-medium">${esc(row.name)}</div>
-              <div class="mt-0.5 flex items-center gap-2">
-                ${ row.theme ? `<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">${esc(row.theme)}</span>` : `` }
-                ${ row.stage != null ? `<span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage ${row.stage}</span>` : `` }
-              </div>
-            </div>
-          </div>
-          ${ row.description && row.description.trim() ? `
-            <div id="panel-${row.id}" class="mt-2 hidden rounded-lg border bg-gray-50 px-3 py-2 text-xs leading-relaxed text-gray-700">${esc(row.description)}</div>` : `` }
-        </div>`;
-
-      out.push(`
-        <div class="grid grid-cols-12 items-center border-t ${disabled ? 'opacity-60 bg-gray-50' : 'hover:bg-gray-50'}">
-          ${nameCell}
-          <div class="col-span-2 px-4 py-3 text-center">${level || 0}</div>
-          <div class="col-span-2 px-4 py-3 text-center">
-            <div class="flex flex-col items-center">
-              <div class="text-base">${ir || 0}</div>
-            </div>
-          </div>
-          <div class="col-span-2 px-4 py-3 text-center">
-            <div class="inline-flex gap-1 bg-gray-100 rounded-full p-0.5">
-              <button ${disabled?'disabled':''} data-id="${row.id}" data-act="Y" class="px-2.5 py-1 rounded-full text-xs font-medium transition border ${disabled?'bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed':'bg-cyan-100 text-cyan-700 border-cyan-200'}">Y</button>
-              <button data-id="${row.id}" data-act="N" class="px-2.5 py-1 rounded-full text-xs font-medium transition border bg-red-100 text-red-700 border-red-200">N</button>
-            </div>
-            <span class="ml-2 text-xs ${sel?'text-cyan-700':'text-gray-500'}">${sel?'Selected':'Not selected'}</span>
-          </div>
-          <div class="col-span-1 px-2 py-3 text-center">
-            ${ disabled ? `<span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700">Disabled by Stage ${familyMax}</span>` : '' }
-          </div>
-        </div>
-      `);
-    }
-
-    document.getElementById('rows').innerHTML = out.join('');
-
-    // Score table (demo)
-    const scores = sumImpacts();
-    const tbody=[];
-    for(const c of CLASSES){
-      const ach = Math.max(0, Math.round(scores[c.key]||0));
-      const status = (scores[c.key]===undefined) ? 'N/A' : (ach >= c.target ? 'OK' : `${ach-c.target}`);
-      tbody.push(`
-        <tr class="hover:bg-gray-50">
-          <td class="px-3 py-2">${c.label}</td>
-          <td class="px-3 py-2 text-right">${c.target}</td>
-          <td class="px-3 py-2 text-right">${ach}</td>
-          <td class="px-3 py-2 text-right">${(scores[c.key]===undefined)?'N/A':status}</td>
-        </tr>
-      `);
-    }
-    document.getElementById('scoreTable').innerHTML = tbody.join('');
-
-    // Progress bars (demo)
-    const bars=[];
-    ['carbon','health','water','circular'].forEach(k=>{
-      const cls = CLASSES.find(x=>x.key===k);
-      const ach = Math.max(0, Math.min(cls.target, Math.round(scores[k]||0)));
-      const pct = Math.min(100, Math.round((ach/cls.target)*100 || 0));
-      bars.push(`
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-sm text-gray-700">${cls.label}</span>
-            <span class="text-sm text-gray-700">${pct}%</span>
-          </div>
-          <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
-            <div class="h-3 bg-brand rounded-full" style="width:${pct}%"></div>
-          </div>
-        </div>
-      `);
-    });
-    document.getElementById('progressBars').innerHTML = bars.join('');
-
-    // Cost + budget
-    const [lo,hi] = selectionCost();
-    document.getElementById('costTracker').textContent = `${money(lo)}–${money(hi)}`;
-    document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
-
-    // Toggles
-    document.querySelectorAll('[data-toggle]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const id = btn.getAttribute('data-toggle');
-        const panel = document.getElementById(`panel-${id}`);
-        const icon  = document.querySelector(`[data-icon="${id}"]`);
-        if (!panel) return;
-        panel.classList.toggle('hidden');
-        const open = !panel.classList.contains('hidden');
-        if (icon) icon.textContent = open ? 'expand_less' : 'expand_more';
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  async function recalcRatings(){
+    RAW.forEach(r=>{ r.currentRating=r.rating; r.activeNotes=[]; });
+    for(const selId of state.selected){
+      const sel=RAW.find(r=>r.id===selId);
+      const effects = await getEffects(sel);
+      effects.forEach(effect=>{
+        const target=RAW.find(r=>r.name===effect.target);
+        if(target){
+          target.currentRating=Math.max(1, Math.min(10, target.currentRating + effect.effect));
+          if(effect.note) target.activeNotes.push(`${sel.name}: ${effect.note}`);
+        }
       });
-    });
+    }
+    renderRatings();
+    updateStats();
+  }
 
-    // Select chips
-    document.querySelectorAll('[data-id]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        if (btn.hasAttribute('disabled')) return;
-        const id = btn.getAttribute('data-id');
-        const act = btn.getAttribute('data-act');
-        if (act === 'Y') state.selected.add(id); else state.selected.delete(id);
-        render();
-      });
+  function renderRatings(){
+    RAW.forEach(r=>{
+      const row = qs(`.intervention-row[data-id="${r.id}"]`);
+      if(!row) return;
+      const updatedEl=row.querySelector('.updated-rating');
+      updatedEl.firstChild.textContent = r.currentRating.toFixed(1);
+      updatedEl.classList.remove('bg-green-100','bg-red-100');
+      if(r.currentRating>r.rating) updatedEl.classList.add('bg-green-100');
+      else if(r.currentRating<r.rating) updatedEl.classList.add('bg-red-100');
+      row.querySelector('.effect-notes').innerHTML=r.activeNotes.join('<br>')||'';
     });
   }
 
-  // ---------- init ----------
-  document.addEventListener('DOMContentLoaded', async ()=>{
-    await loadInterventions(state.activeClass);
+  function updateStats(){
+    qs('#selCount').textContent=state.selected.size;
+    const total=[...state.selected].reduce((a,id)=>a + (RAW.find(r=>r.id===id)?.cost||0),0);
+    qs('#totalCost').textContent=total;
+    qs('#costTracker').textContent=`$${total}`;
+  }
 
-    document.getElementById('resetBtn').addEventListener('click', ()=>{
-      state.selected.clear();
-      render();
+  function filterRows(){
+    RAW.forEach(r=>{
+      const row = qs(`.intervention-row[data-id="${r.id}"]`);
+      const desc = row.nextElementSibling;
+      const matchesQuery = r.name.toLowerCase().includes(state.query.toLowerCase());
+      const matchesClass = state.activeClass==='all'||r.classKey===state.activeClass;
+      const visible = matchesQuery && matchesClass;
+      row.style.display = visible?'':'none';
+      if(desc) desc.style.display = visible?'':'none';
     });
+  }
 
-    document.getElementById('sortSelect').addEventListener('change', (e)=>{
-      state.sort = e.target.value;   // 'best' | 'impact' | 'cost' | 'theme'
-      render();
+  // Event listeners
+  qs('#classSelect').addEventListener('change',e=>{ state.activeClass=e.target.value; filterRows(); });
+  qs('#searchBox').addEventListener('input',e=>{ state.query=e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden',!state.query); });
+  qs('#clearSearch').addEventListener('click',e=>{ state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
+  qs('#resetBtn').addEventListener('click',e=>{ state.selected.clear(); qsa('.select-intervention').forEach(c=>c.checked=false); recalcRatings(); });
+  qsa('.select-intervention').forEach(cb=>{
+    cb.addEventListener('change',async e=>{
+      if(cb.checked) state.selected.add(cb.dataset.id);
+      else state.selected.delete(cb.dataset.id);
+      await recalcRatings();
     });
-
-    document.getElementById('classSelect').addEventListener('change', async (e)=>{
-      state.activeClass = e.target.value;
-      state.selected.clear();
-      await loadInterventions(state.activeClass);
-    });
-
-    document.getElementById('saveBtn').addEventListener('click', ()=>{
-      const payload = { selected:[...state.selected], cls: state.activeClass };
-      console.log('SAVE', payload);
-      // TODO: POST to your backend if you want to persist selections.
+  });
+  qsa('.toggle-desc').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      const desc = btn.closest('.intervention-row').nextElementSibling;
+      if(desc) desc.classList.toggle('hidden');
+      btn.textContent = desc && !desc.classList.contains('hidden')?'expand_less':'expand_more';
     });
   });
 
