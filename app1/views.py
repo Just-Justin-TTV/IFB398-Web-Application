@@ -16,6 +16,10 @@ from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User  # Django auth user
 from django.http import HttpRequest
+from typing import Optional, List
+from django.http import HttpRequest, HttpResponse, JsonResponse
+
+
 
 
 from .models import (
@@ -367,50 +371,120 @@ def carbon_2_view(request):
     return render(request, 'carbon_2.html')
 
 
+def get_intervention_effects(request):
+    source_name = request.GET.get('source')
+    if not source_name:
+        return JsonResponse({'error': 'No source provided'}, status=400)
+
+    effects = InterventionEffects.objects.filter(source_intervention_name=source_name)
+    data = [
+        {
+            'target': e.target_intervention_name,
+            'effect': e.effect_value,
+            'note': e.note
+        }
+        for e in effects
+    ]
+    return JsonResponse({'effects': data})
+
+
 @login_required(login_url='login')
-def calculator(request):
-    if request.method == 'GET':
-        class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
-        class_targets = [{'class': ct['class_name'], 'target_rating': ct['target_rating']} for ct in class_targets_qs]
-        return render(request, 'calculator.html', {'class_targets': class_targets})
+def calculator(request: HttpRequest):
+    """
+    Handles the calculator page.
+    GET: renders the form with class targets.
+    POST: processes interventions and shows filtered results.
+    """
+    import json
 
-    # POST
-    global_budget = float(request.POST.get('global_budget', 1e6))
-    targets = {key[6:]: float(value) for key, value in request.POST.items() if key.startswith('class_')}
+    if request.method == "GET":
+        class_targets = list(ClassTargets.objects.values("class_name", "target_rating"))
+        return render(request, "calculator.html", {"class_targets": class_targets})
 
-    interventions = (
-        Interventions.objects
-        .exclude(class_name__isnull=True)
-        .exclude(name__isnull=True)
-        .order_by('class_name')
-    )
+    # POST now renders the results page using the updated intervention_effects
+    return _process_calculator_post(request)
 
-    cost_mapping = {
-        1: 5000, 2: 10000, 3: 25000, 4: 50000, 5: 100000,
-        6: 200000, 7: 500000, 8: 1000000, 9: 2000000, 10: 5000000
-    }
 
-    grouped_results = {}
-    for row in interventions:
-        if row.cost_level is None:
+def intervention_effects(metric, interventions, selected_ids: Optional[List[int]] = None):
+    """
+    Adjust intervention ratings dynamically based on metric values and selected interventions.
+    Ratings are only increased for interventions after selection.
+    """
+    grouped_interventions = {}
+
+    for i in interventions:
+        include = True
+
+        # Check dependencies for metric thresholds
+        deps = InterventionDependencies.objects.filter(intervention_id=i.id)
+        for dep in deps:
+            val = getattr(metric, dep.metric_name, None)
+            if val is None:
+                continue
+            try:
+                val = Decimal(val)
+            except Exception:
+                continue
+            if (dep.min_value is not None and val < dep.min_value) or \
+               (dep.max_value is not None and val > dep.max_value):
+                include = False
+                break
+
+        if not include:
             continue
-        approx_cost = cost_mapping.get(row.cost_level, 0)
-        if approx_cost <= global_budget:
-            grouped_results.setdefault(row.class_name, []).append(row)
 
-    for cls in grouped_results:
-        grouped_results[cls].sort(key=lambda x: x.cost_level)
+        base_rating = float(i.intervention_rating or 0)
+        adjusted_rating = base_rating
 
-    return render(request, 'calculator_results.html', {
-        'grouped_results': grouped_results,
-        'global_budget': global_budget,
-        'targets': targets
+        # Metric-based adjustment (example: scale by roof area)
+        if getattr(metric, "roof_area_m2", 0):
+            adjusted_rating *= 1 + float(metric.roof_area_m2 or 0) / 1000
+
+        # Only apply selection multiplier if this intervention is selected
+        if selected_ids and i.id in selected_ids:
+            adjusted_rating *= 1.1  # +10% rating for selection
+
+        cls = i.theme or "Other"
+        grouped_interventions.setdefault(cls, []).append({
+            "id": str(i.id),
+            "name": i.name or f"Intervention #{i.id}",
+            "cost_level": float(i.cost_level or 0),
+            "intervention_rating": round(adjusted_rating, 2),
+            "description": i.description or "No description available",
+            "stage": getattr(i, "stage", ""),
+            "class_name": getattr(i, "class_name", ""),
+            "theme": cls
+        })
+
+    return grouped_interventions
+
+
+
+
+
+
+def _process_calculator_post(request: HttpRequest) -> HttpResponse:
+    metric = Metrics.objects.filter(user=request.user).order_by("-created_at").first()
+    if not metric:
+        return render(request, "calculator_results.html", {"interventions": {}, "classes": []})
+
+    interventions = Interventions.objects.all()
+    grouped_interventions = intervention_effects(metric, interventions)
+
+    return render(request, "calculator_results.html", {
+        "interventions": grouped_interventions,
+        "interventions_json": json.dumps(grouped_interventions),
+        "classes": [
+            {"key": "carbon", "label": "Carbon", "target": 80},
+            {"key": "health", "label": "Health & Wellbeing", "target": 60},
+            {"key": "water", "label": "Water Use", "target": 30},
+            {"key": "circular", "label": "Circular Economy", "target": 40},
+            {"key": "resilience", "label": "Resilience", "target": 60},
+            {"key": "value", "label": "Value & Cost", "target": 10},
+            {"key": "biodiversity", "label": "Biodiversity", "target": 20},
+        ],
+        "cap_high": 300000
     })
-
-
-@login_required(login_url='login')
-def calculator_results(request):
-    return render(request, 'calculator_results.html')
 
 
 # =========================
