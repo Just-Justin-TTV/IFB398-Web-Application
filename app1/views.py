@@ -30,8 +30,11 @@ from .models import (
     Metrics,
     ClassTargets,
     Interventions,
-    User as AppUser,   # your app's user record that Metrics.user can point to
+    InterventionEffects,
+    InterventionDependencies,
+    User as AppUser,  # your app's user record that Metrics.user can point to
 )
+
 
 # =========================
 # Helpers
