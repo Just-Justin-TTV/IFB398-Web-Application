@@ -96,6 +96,7 @@
         </div>
       </div>
 
+<<<<<<< HEAD
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Table -->
         <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
@@ -113,6 +114,90 @@
               <div class="grid grid-cols-12 theme-header" data-theme="{{ theme|escape }}">
                 <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
                   {{ theme }}
+=======
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">dashboard</span> Dashboard</a>
+        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">folder</span> Projects</a>
+        <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600"><span class="material-icons text-[18px]">build</span> Interventions</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">calculate</span> Cost Matrix</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">description</span> Reports</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">settings</span> Settings</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1">
+      <!-- Header -->
+      <header class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold">Carbon Calculator</h1>
+            <p class="text-sm text-gray-600">Compare interventions, costs, and synergies to meet your targets</p>
+          </div>
+          <button id="saveBtn" class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-600">
+            <span class="material-icons text-base">save</span> Save
+          </button>
+        </div>
+      </header>
+
+      <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
+        <!-- Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-gray-700">Select Class</label>
+            <div class="relative">
+              <select id="classSelect" class="appearance-none rounded-full border px-4 py-2 pr-9 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                <option value="carbon" selected>Carbon Emissions</option>
+                <option value="health">Health & Wellbeing</option>
+                <option value="water">Water Use</option>
+                <option value="circular">Circular Economy</option>
+                <option value="resilience">Resilience</option>
+                <option value="biodiversity">Biodiversity</option>
+              </select>
+              <span class="material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-base pointer-events-none">expand_more</span>
+            </div>
+
+            <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
+          </div>
+
+          <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
+            <span class="text-gray-500">Cost Tracker:</span>
+            <span id="costTracker" class="font-semibold ml-1">$0</span>
+            <span id="budgetWarn" class="ml-3 hidden text-red-600 font-medium">Cap exceeded</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- LEFT: Table -->
+          <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
+            <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div class="col-span-5 px-4 py-3">Intervention</div>
+              <div class="col-span-2 px-4 py-3 text-center">Cost Level</div>
+              <div class="col-span-2 px-4 py-3 text-center">Range</div>
+              <div class="col-span-2 px-4 py-3 text-center">Select</div>
+              <div class="col-span-1 px-4 py-3 text-center">Badges</div>
+            </div>
+            <div id="rows"></div>
+          </section>
+
+          <!-- RIGHT -->
+          <aside class="space-y-6">
+            <div class="bg-white border rounded-2xl shadow-sm">
+              <div class="px-4 py-3 border-b"><h3 class="font-semibold">Class Summary</h3></div>
+              <div class="p-4">
+                <div class="overflow-hidden rounded-xl border">
+                  <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th class="text-left px-3 py-2">Class</th>
+                        <th class="text-right px-3 py-2">Target</th>
+                        <th class="text-right px-3 py-2">Achieved</th>
+                        <th class="text-right px-3 py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="scoreTable" class="divide-y"></tbody>
+                  </table>
+>>>>>>> origin/master
                 </div>
               </div>
 
@@ -177,6 +262,7 @@
   const qsa = s => Array.from(document.querySelectorAll(s));
   const RAW = [];
 
+<<<<<<< HEAD
   // Initialize interventions from DOM
   qsa('.intervention-row').forEach(el => {
     RAW.push({
@@ -188,6 +274,257 @@
       classKey: el.dataset.class || 'all',
       theme: el.dataset.theme || '',
       activeNotes: []
+=======
+  // safe HTML
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+
+  const CLASSES = [
+    { key:'carbon',   label:'Carbon',             target:80 },
+    { key:'health',   label:'Health & Wellbeing', target:60 },
+    { key:'water',    label:'Water Use',          target:30 },
+    { key:'circular', label:'Circular Economy',   target:40 },
+    { key:'resilience', label:'Resilience',       target:60 },
+    { key:'value',    label:'Value & Cost',       target:10 },
+    { key:'biodiversity', label:'Biodiversity',   target:20 },
+  ];
+
+  let INTERVENTIONS = [];
+  const state = { selected: new Set(), activeClass: 'carbon' };
+
+  const money = (n) => {
+    if (!Number.isFinite(n) || n <= 0) return '$0';
+    if (n >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
+    return `$${Math.round(n/1000)}K`;
+  };
+
+  function parseRangeText(txt){
+    // supports "50–100k", "25-50k AUD", "200,000–500,000"
+    if(!txt) return [0,0];
+    const cleaned = txt.replace(/aud|usd|eur|\$/ig,'').trim();
+    const parts = cleaned.split(/[–—-]/);
+    function toNum(s){
+      if(!s) return 0;
+      const m = String(s).trim().match(/([\d,.]+)\s*([kKmM]?)/);
+      if(!m) return 0;
+      let v = parseFloat(m[1].replace(/,/g,'')) || 0;
+      const suf = (m[2]||'').toLowerCase();
+      if(suf==='k') v*=1000; else if(suf==='m') v*=1000000;
+      return v;
+    }
+    const lo = toNum(parts[0]);
+    const hi = parts[1]!==undefined ? toNum(parts[1]) : lo;
+    return [lo,hi];
+  }
+
+  // Fetch interventions for a class
+  async function loadInterventions(cls) {
+    try {
+      const res = await fetch(`/api/interventions/?cls=${encodeURIComponent(cls)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      INTERVENTIONS = [];
+      let lastTheme = null;
+
+      for (const it of (data.items || [])) {
+        // Insert a theme header row when theme changes (matches screenshot)
+        if (it.theme && it.theme !== lastTheme) {
+          INTERVENTIONS.push({ group: true, name: it.theme });
+          lastTheme = it.theme;
+        }
+        INTERVENTIONS.push({
+          id: String(it.id),
+          name: it.name,
+          theme: it.theme,
+          description: it.description,
+          costLevel: Number(it.cost_level ?? 0),
+          costRangeText: String(it.cost_range ?? ''),
+        });
+      }
+
+      if (INTERVENTIONS.length === 0) {
+        document.getElementById('rows').innerHTML = `<div class="p-8 text-center text-gray-500">No interventions found for this class.</div>`;
+        render();
+        return;
+      }
+
+      render();
+    } catch (err) {
+      console.error('Failed to load interventions:', err);
+      document.getElementById('rows').innerHTML = `<div class="p-8 text-center text-red-600">Could not load interventions. Check the API route and console.</div>`;
+    }
+  }
+
+  function sumImpacts(){
+    const scores = {};
+    scores[state.activeClass] = 0;
+    for(const row of INTERVENTIONS){
+      if(row.group) continue;
+      const lvl = Number(row.costLevel ?? 0);
+      scores[state.activeClass] += Number.isFinite(lvl) ? lvl : 0;
+    }
+    return scores;
+  }
+
+  function selectionCost(){
+    let lo=0, hi=0;
+    for(const row of INTERVENTIONS){
+      if(row.group) continue;
+      if(state.selected.has(row.id)){
+        const [a,b] = parseRangeText(row.costRangeText);
+        lo += a; hi += b;
+      }
+    }
+    return [lo,hi];
+  }
+
+  function chip(id, on, danger){
+    const base = "px-2.5 py-1 rounded-full text-xs font-medium transition border";
+    if(on && !danger) return `<button data-id="${id}" data-act="Y" class="${base} bg-cyan-100 text-cyan-700 border-cyan-200">Y</button>`;
+    if(!on && danger) return `<button data-id="${id}" data-act="N" class="${base} bg-red-100 text-red-700 border-red-200">N</button>`;
+    return `<button data-id="${id}" data-act="${on?'Y':'N'}" class="${base} bg-white text-gray-600 border-gray-300 hover:bg-gray-50">${on?'Y':'N'}</button>`;
+  }
+
+  function render(){
+    const out=[];
+
+    for(const row of INTERVENTIONS){
+      if(row.group){
+        out.push(`
+          <div class="grid grid-cols-12">
+            <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
+              ${esc(row.name)}
+            </div>
+          </div>
+        `);
+        continue;
+      }
+
+      const sel  = state.selected.has(row.id);
+      const level = Number(row.costLevel ?? 0);
+      const rangeTxt = row.costRangeText ? esc(row.costRangeText) : '<span class="text-gray-400">N/A</span>';
+
+      // name + theme + accordion for description
+      const nameCell = `
+        <div class="col-span-5 px-4 py-3">
+          <div class="flex items-start gap-2">
+            ${ row.description && row.description.trim() ? `
+                <button type="button" class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-gray-100" aria-label="Show details" aria-expanded="false" data-toggle="${row.id}">
+                  <span class="material-icons text-[18px]" data-icon="${row.id}">expand_more</span>
+                </button>` : `` }
+            <div>
+              <div class="font-medium">${esc(row.name)}</div>
+              ${ row.theme ? `<div class="mt-0.5"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">${esc(row.theme)}</span></div>` : `` }
+            </div>
+          </div>
+          ${ row.description && row.description.trim() ? `
+            <div id="panel-${row.id}" class="mt-2 hidden rounded-lg border bg-gray-50 px-3 py-2 text-xs leading-relaxed text-gray-700">${esc(row.description)}</div>` : `` }
+        </div>`;
+
+      out.push(`
+        <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50">
+          ${nameCell}
+          <div class="col-span-2 px-4 py-3 text-center">${level || 0}</div>
+          <div class="col-span-2 px-4 py-3 text-center">${rangeTxt}</div>
+          <div class="col-span-2 px-4 py-3 text-center">
+            <div class="inline-flex gap-1 bg-gray-100 rounded-full p-0.5">
+              ${chip(row.id, true,  false)}
+              ${chip(row.id, false, true)}
+            </div>
+            <span class="ml-2 text-xs ${sel?'text-cyan-700':'text-gray-500'}">${sel?'Selected':'Not selected'}</span>
+          </div>
+          <div class="col-span-1 px-2 py-3"></div>
+        </div>
+      `);
+    }
+
+    document.getElementById('rows').innerHTML = out.join('');
+
+    // Score table
+    const scores = sumImpacts();
+    const tbody=[];
+    for(const c of CLASSES){
+      const ach = Math.max(0, Math.round(scores[c.key]||0));
+      const status = (scores[c.key]===undefined) ? 'N/A' : (ach >= c.target ? 'OK' : `${ach-c.target}`);
+      tbody.push(`
+        <tr class="hover:bg-gray-50">
+          <td class="px-3 py-2">${c.label}</td>
+          <td class="px-3 py-2 text-right">${c.target}</td>
+          <td class="px-3 py-2 text-right">${ach}</td>
+          <td class="px-3 py-2 text-right">${(scores[c.key]===undefined)?'N/A':status}</td>
+        </tr>
+      `);
+    }
+    document.getElementById('scoreTable').innerHTML = tbody.join('');
+
+    // Progress bars (demo: uses targets above)
+    const bars=[];
+    ['carbon','health','water','circular'].forEach(k=>{
+      const cls = CLASSES.find(x=>x.key===k);
+      const ach = Math.max(0, Math.min(cls.target, Math.round(scores[k]||0)));
+      const pct = Math.min(100, Math.round((ach/cls.target)*100 || 0));
+      bars.push(`
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm text-gray-700">${cls.label}</span>
+            <span class="text-sm text-gray-700">${pct}%</span>
+          </div>
+          <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
+            <div class="h-3 bg-brand rounded-full" style="width:${pct}%"></div>
+          </div>
+        </div>
+      `);
+    });
+    document.getElementById('progressBars').innerHTML = bars.join('');
+
+    // Cost + budget
+    const [lo,hi] = selectionCost();
+    document.getElementById('costTracker').textContent = `${money(lo)}–${money(hi)}`;
+    document.getElementById('budgetWarn').classList.toggle('hidden', hi<=CAP_HIGH);
+
+    // Selection chip events
+    document.querySelectorAll('[data-id]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-id');
+        const act = btn.getAttribute('data-act'); // Y or N
+        if(act==='Y'){ state.selected.add(id); } else { state.selected.delete(id); }
+        render();
+      });
+    });
+
+    // Description toggle events
+    document.querySelectorAll('[data-toggle]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-toggle');
+        const panel = document.getElementById(`panel-${id}`);
+        const icon  = document.querySelector(`[data-icon="${id}"]`);
+        if (!panel) return;
+        panel.classList.toggle('hidden');
+        const open = !panel.classList.contains('hidden');
+        if (icon) icon.textContent = open ? 'expand_less' : 'expand_more';
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    await loadInterventions(state.activeClass);
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      state.selected.clear();
+      render();
+    });
+
+    document.getElementById('classSelect').addEventListener('change', async (e)=>{
+      state.activeClass = e.target.value;
+      state.selected.clear();
+      await loadInterventions(state.activeClass);
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', ()=>{
+      const payload = { selected:[...state.selected], class: state.activeClass };
+      console.log('SAVE', payload);
+>>>>>>> origin/master
     });
   });
 

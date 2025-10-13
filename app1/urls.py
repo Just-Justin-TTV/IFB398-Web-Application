@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import include, path
 from django.contrib.auth import views as auth_views
 from . import views
-from django.contrib.auth.views import PasswordChangeView, PasswordChangeDoneView  
 
 urlpatterns = [
     path('', views.home, name='home'),  # Corrected to home page path
@@ -20,8 +19,6 @@ urlpatterns = [
 
     # Projects
     path('projects/', views.projects_view, name='projects'),
-    path('projects/<int:pk>/', views.project_detail_view, name='project_detail'),
-
     path('projects/create/', views.create_project, name='create_project'),
 
     # Carbon page placeholder (add your view logic)
@@ -35,8 +32,4 @@ urlpatterns = [
 
 
 
-    # settings page
-    path('settings/', views.settings_view, name='settings'),
-    path('settings/password/', PasswordChangeView.as_view(template_name='registration/password_change.html'), name='password_change'),  
-    path('settings/password/done/', PasswordChangeDoneView.as_view(template_name='registration/password_change_done.html'), name='password_change_done'),
 ]

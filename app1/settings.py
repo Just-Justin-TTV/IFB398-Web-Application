@@ -43,8 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'theme',
     'django_browser_reload',
-    'django.contrib.humanize',
-
 ]
 
 LOGGING = {
@@ -89,7 +87,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-               # 'app1.context_processors.theme_context',
+                'app1.context_processors.theme_context', 
               #  'app1.context_processors.accessibility_settings',
             ],
         },

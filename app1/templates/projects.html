@@ -1,5 +1,4 @@
 {% load static %}
-{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,41 +22,45 @@
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <div class="flex min-h-screen">
 
-    <!-- Sidebar -->
+    <!-- ============ Sidebar ============ -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
       <div class="px-5 py-6 border-b">
         <div class="flex items-center gap-3">
           <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
           <div>
             <p class="text-xs text-gray-500">Welcome</p>
-            <p class="text-sm font-semibold">{{ request.user.username }}</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
           </div>
         </div>
       </div>
 
       <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
-        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
-        <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <a href="{% url 'carbon' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">build</span> Interventions
         </a>
-        <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">calculate</span> Cost Matrix
         </a>
-        <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
-        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">settings</span> Settings
         </a>
       </nav>
     </aside>
+    <!-- ============ End Sidebar ============ -->
 
-    <!-- Main -->
+    <!-- ============ Main ============ -->
     <main class="flex-1">
       <!-- Header -->
       <header class="bg-white border-b">
@@ -69,13 +72,11 @@
             </div>
 
             <div class="flex items-center gap-3 w-full md:w-auto">
-              <!-- Server-side search (GET) + client-side filtering -->
-              <form method="get" class="relative flex-1 md:w-80">
+              <div class="relative flex-1 md:w-80">
                 <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
-                <input id="searchProjects" name="q" value="{{ query|default:'' }}" type="text" placeholder="Search projects…"
+                <input id="searchProjects" type="text" placeholder="Search projects…"
                        class="w-full rounded-full border pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-              </form>
-
+              </div>
               <a href="{% url 'create_project' %}"
                  class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
                 <span class="material-icons text-[18px]">add</span> New Project
@@ -99,8 +100,8 @@
                 <th class="text-right px-5 py-3">Actions</th>
               </tr>
             </thead>
-
             <tbody id="projectRows" class="divide-y">
+<<<<<<< HEAD
               {% for p in projects %}
               <tr class="hover:bg-gray-50" data-name="{{ p.project_name|default_if_none:'' }}">
                 <td class="px-5 py-3 font-medium">
@@ -141,15 +142,73 @@
                   <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
                   <!-- EDIT = editable (query flag edit=1) -->
                   <a href="{% url 'project_detail' p.id %}?edit=1" class="text-gray-700 hover:text-gray-900">Edit</a>
+=======
+              <!-- Example rows; replace with your loop -->
+              <tr class="hover:bg-gray-50" data-name="Pinecrest Logistics">
+                <td class="px-5 py-3 font-medium">Pinecrest Logistics</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">AU</span></td>
+                <td class="px-5 py-3">248</td>
+                <td class="px-5 py-3">$21,080</td>
+                <td class="px-5 py-3">01/05/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+>>>>>>> origin/master
                 </td>
               </tr>
-              {% empty %}
-              <tr>
-                <td class="px-5 py-8 text-center text-gray-500" colspan="7">
-                  No projects yet. <a href="{% url 'create_project' %}" class="text-brand hover:underline">Create your first project</a>.
+
+              <tr class="hover:bg-gray-50" data-name="Aurora Data Center">
+                <td class="px-5 py-3 font-medium">Aurora Data Center</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">UK</span></td>
+                <td class="px-5 py-3">176</td>
+                <td class="px-5 py-3">$21,120</td>
+                <td class="px-5 py-3">29/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
                 </td>
               </tr>
-              {% endfor %}
+
+              <tr class="hover:bg-gray-50" data-name="Cascade Elementary">
+                <td class="px-5 py-3 font-medium">Cascade Elementary</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">PNG</span></td>
+                <td class="px-5 py-3">512</td>
+                <td class="px-5 py-3">$33,280</td>
+                <td class="px-5 py-3">29/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-gray-50" data-name="MetroCore Sustainable">
+                <td class="px-5 py-3 font-medium">MetroCore Sustainable</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">UK</span></td>
+                <td class="px-5 py-3">89</td>
+                <td class="px-5 py-3">$13,350</td>
+                <td class="px-5 py-3">13/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-gray-50" data-name="Suncrest Senior">
+                <td class="px-5 py-3 font-medium">Suncrest Senior</td>
+                <td class="px-5 py-3">2025</td>
+                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">PNG</span></td>
+                <td class="px-5 py-3">321</td>
+                <td class="px-5 py-3">$14,445</td>
+                <td class="px-5 py-3">14/04/2025</td>
+                <td class="px-5 py-3 text-right">
+                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
+                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                </td>
+              </tr>
             </tbody>
           </table>
         </section>
@@ -158,18 +217,16 @@
   </div>
 
   <script>
-    // Client-side name filter (works in addition to ?q= server filter)
+    // Simple client-side name filter
     const q = document.getElementById('searchProjects');
     const rows = document.getElementById('projectRows');
-    if (q && rows) {
-      q.addEventListener('input', () => {
-        const needle = q.value.trim().toLowerCase();
-        [...rows.querySelectorAll('tr')].forEach(tr => {
-          const name = (tr.dataset.name || tr.cells[0]?.innerText || '').toLowerCase();
-          tr.style.display = name.includes(needle) ? '' : 'none';
-        });
+    q.addEventListener('input', () => {
+      const needle = q.value.trim().toLowerCase();
+      [...rows.querySelectorAll('tr')].forEach(tr => {
+        const name = (tr.dataset.name || tr.cells[0]?.innerText || '').toLowerCase();
+        tr.style.display = name.includes(needle) ? '' : 'none';
       });
-    }
+    });
   </script>
 </body>
 </html>
