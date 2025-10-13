@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
+from .models import InterventionEffects
 from typing import List, Dict
 
 from .models import Metrics, ClassTargets, Interventions, InterventionDependencies, User as AppUser
@@ -273,6 +274,23 @@ def carbon_view(request):
         "interventions_json": interventions_json,
         "classes": classes,
     })
+
+
+def get_intervention_effects(request):
+    source_name = request.GET.get('source')
+    if not source_name:
+        return JsonResponse({'error': 'No source provided'}, status=400)
+
+    effects = InterventionEffects.objects.filter(source_intervention_name=source_name)
+    data = [
+        {
+            'target': e.target_intervention_name,
+            'effect': e.effect_value,
+            'note': e.note
+        }
+        for e in effects
+    ]
+    return JsonResponse({'effects': data})
 
 
 @login_required(login_url='login')
