@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'theme',
     'django_browser_reload',
+    'django.contrib.humanize',
 ]
 
 LOGGING = {

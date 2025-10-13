@@ -19,6 +19,10 @@ from django.http import HttpRequest
 from typing import Optional, List
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 
