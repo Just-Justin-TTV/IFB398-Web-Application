@@ -15,6 +15,8 @@ from .models import ClassTargets, Interventions, Metrics
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User  # Django auth user
+from django.http import HttpRequest
+
 
 from .models import (
     Metrics,
