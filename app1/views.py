@@ -2,11 +2,13 @@ import json
 import logging
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Any, Dict
-
+from .models import MetricsSelection
 from django.db import connection
 from django.db.models import Q
 from django.http import JsonResponse, HttpRequest, HttpResponse, HttpResponseBadRequest
-
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils.timezone import now
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
@@ -109,6 +111,105 @@ CLASS_ALIASES = {
     "biodiversity": ["biodiversity"],
     "value": ["value", "value & cost", "value and cost"],
 }
+
+@require_POST
+
+def save_selection(request):
+    """
+    JSON POST {selected:[intervention_ids], metrics_id?}
+    Saves selected interventions for the current Metrics row, then returns ok.
+    """
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("Invalid JSON")
+
+    metrics_id = payload.get("metrics_id") or request.session.get("metrics_id")
+    if not metrics_id:
+        return HttpResponseBadRequest("Missing metrics_id")
+
+    m = Metrics.objects.filter(id=metrics_id).first()
+    if not m:
+        return HttpResponseBadRequest("Metrics row not found")
+
+    # normalize incoming ids to ints
+    incoming_ids = []
+    for x in (payload.get("selected") or []):
+        try:
+            incoming_ids.append(int(x))
+        except Exception:
+            pass
+
+    # clear & re-create (simple and robust)
+    MetricsSelection.objects.filter(metrics=m).delete()
+    if incoming_ids:
+        ivs = Interventions.objects.filter(id__in=incoming_ids)
+        MetricsSelection.objects.bulk_create([
+            MetricsSelection(metrics=m, intervention=iv) for iv in ivs
+        ])
+
+    return JsonResponse({"ok": True, "count": len(incoming_ids)})
+
+
+
+def report_view(request):
+    """
+    GET /report/ — human-readable HTML summary and a 'Download PDF' link.
+    """
+    metrics_id = request.session.get("metrics_id")
+    m = Metrics.objects.filter(id=metrics_id).first()
+
+    # Pull selected interventions (join for fields you want to show)
+    selected = (
+        Interventions.objects
+        .filter(metricsselection__metrics=m)
+        .values("id", "name", "theme", "description", "cost_level", "intervention_rating")
+        .order_by("theme", "name")
+    )
+
+    context = {
+        "metrics": m,
+        "selected": selected,
+        "generated_at": now(),
+    }
+    return render(request, "report.html", context)
+
+
+
+def report_pdf(request):
+    """
+    GET /report/pdf/ — return a PDF of the same report.
+    Requires WeasyPrint: pip install weasyprint
+    """
+    metrics_id = request.session.get("metrics_id")
+    m = Metrics.objects.filter(id=metrics_id).first()
+
+    selected = (
+        Interventions.objects
+        .filter(metricsselection__metrics=m)
+        .values("id", "name", "theme", "description", "cost_level", "intervention_rating")
+        .order_by("theme", "name")
+    )
+
+    context = {
+        "metrics": m,
+        "selected": selected,
+        "generated_at": now(),
+        "as_pdf": True,  # minor template tweaks if you want
+    }
+
+    html = render_to_string("report.html", context, request=request)
+
+    try:
+        from weasyprint import HTML
+    except Exception:
+        return HttpResponseBadRequest("WeasyPrint not installed. Run: pip install weasyprint")
+
+    pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+    resp = HttpResponse(pdf, content_type="application/pdf")
+    filename = f"project-report-{metrics_id}.pdf"
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
 
 
 @require_GET

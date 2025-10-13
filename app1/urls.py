@@ -31,7 +31,9 @@ urlpatterns = [
     path('carbon_2/', views.carbon_2_view, name='carbon_2'),
     path("api/interventions/", views.interventions_api, name="interventions_api"),
     path("api/metrics/save/", views.save_metrics, name="save_metrics"),
-
+    path("api/selection/save/", views.save_selection, name="save_selection"),
+    path("report/", views.report_view, name="report"),
+    path("report/pdf/", views.report_pdf, name="report_pdf"),
 
 
     # settings page

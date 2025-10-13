@@ -151,6 +151,14 @@ const stageFrom = t => {
   if (m){ const map={i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10}; return map[m[1].toLowerCase()]||null; }
   return null;
 };
+function getCookie(name) {
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? m.pop() : '';
+}
+function getMetricsId() {
+  const ss = sessionStorage.getItem('metrics_id');
+  return ss ? Number(ss) : null;
+}
 
 /* ===== State ===== */
 let RAW = [];  // flat list from API
@@ -176,9 +184,6 @@ async function loadInterventions() {
     stage: stageFrom(it.description) ?? stageFrom(it.name),
     family: family(it.name),
   }));
-
-  // Optional: look in devtools → Network for /api/interventions/ “debug”
-  // to verify metrics_id and counts.
 }
 
 /* ===== Sorting & filtering ===== */
@@ -261,8 +266,8 @@ function recalc(){
     }
   });
   qs('#costTracker').textContent = String(total);
-  qs('#selCount').textContent    = String(count);
-  qs('#totalCost').textContent   = String(total);
+  const selCount = qs('#selCount'); if (selCount) selCount.textContent = String(count);
+  const totalCost = qs('#totalCost'); if (totalCost) totalCost.textContent = String(total);
 }
 
 /* ===== Render ===== */
@@ -372,10 +377,46 @@ qs('#resetBtn').addEventListener('click', async ()=>{
   await loadInterventions();
   render();
 });
-qs('#saveBtn').addEventListener('click', ()=>{
-  const payload = { selected:[...state.selected] };
-  console.log('SAVE', payload);
-  // TODO: POST to persist selections if you need to
+
+/* ===== SAVE -> POST to /api/selection/save/ then go to /report/ ===== */
+qs('#saveBtn').addEventListener('click', async ()=>{
+  const btn = qs('#saveBtn');
+  btn.disabled = true;
+  btn.classList.add('opacity-60','cursor-not-allowed');
+
+  const selected = [...state.selected].map(id => Number(id)).filter(Number.isFinite);
+  const payload = {
+    selected,
+    metrics_id: getMetricsId() || undefined,
+  };
+
+  try {
+    const res = await fetch('/api/selection/save/', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Save failed (HTTP ${res.status}): ${txt.slice(0,200)}`);
+    }
+    const data = await res.json();
+    if (data?.metrics_id) {
+      sessionStorage.setItem('metrics_id', String(data.metrics_id));
+    }
+    // go to report page
+    window.location.href = "/report/";
+  } catch (err) {
+    console.error(err);
+    alert('Could not save your selections. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-60','cursor-not-allowed');
+  }
 });
 
 /* ===== Boot ===== */

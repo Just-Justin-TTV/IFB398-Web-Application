@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Project Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* minimal PDF-safe styles; WeasyPrint supports most CSS */
+    @page { size: A4; margin: 18mm; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-5xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-semibold">Project Report</h1>
+      <a href="{% url 'report_pdf' %}" class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+        <span class="material-icons text-base">download</span> Download PDF
+      </a>
+    </header>
+
+    <!-- Project header -->
+    <section class="bg-white border rounded-xl p-5 mb-6">
+      <h2 class="text-lg font-semibold mb-3">Project Summary</h2>
+      <div><span class="text-gray-500">Name:</span>
+        <span class="font-medium">
+            {% firstof metrics.project_name metrics.name "-" %}
+        </span>
+        </div>
+
+        <div><span class="text-gray-500">Location:</span>
+        <span class="font-medium">
+            {% firstof metrics.project_location metrics.location "-" %}
+        </span>
+        </div>
+
+        <div><span class="text-gray-500">Type:</span>
+        <span class="font-medium">
+            {% firstof metrics.project_type "-" %}
+        </span>
+        </div>
+
+    </section>
+
+    <!-- Building metrics -->
+    <section class="bg-white border rounded-xl p-5 mb-6">
+      <h2 class="text-lg font-semibold mb-3">Building Metrics</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+        <div><span class="text-gray-500">Building Type:</span> <span class="font-medium">{{ metrics.building_type|default:"—" }}</span></div>
+        <div><span class="text-gray-500">GIFA (m²):</span> <span class="font-medium">{{ metrics.gifa_m2|default:"—" }}</span></div>
+        <div><span class="text-gray-500">Roof Area (m²):</span> <span class="font-medium">{{ metrics.roof_area_m2|default:"—" }}</span></div>
+        <div><span class="text-gray-500">Basement:</span> <span class="font-medium">{% if metrics.basement_present %}Yes{% else %}No{% endif %}</span></div>
+        <div><span class="text-gray-500">Basement Size (m²):</span> <span class="font-medium">{{ metrics.basement_size_m2|default:"—" }}</span></div>
+        <div><span class="text-gray-500">Ext. Walls (m²):</span> <span class="font-medium">{{ metrics.external_wall_area_m2|default:"—" }}</span></div>
+        <div><span class="text-gray-500">Openings (m²):</span> <span class="font-medium">{{ metrics.external_openings_m2|default:"—" }}</span></div>
+        <div><span class="text-gray-500">Footprint (m²):</span> <span class="font-medium">{{ metrics.building_footprint_m2|default:"—" }}</span></div>
+        <div class="col-span-2"><span class="text-gray-500">Auto Budget (AUD):</span> <span class="font-semibold text-green-700">{{ metrics.estimated_auto_budget_aud|default:"—" }}</span></div>
+      </div>
+    </section>
+
+    <!-- Interventions -->
+    <section class="bg-white border rounded-xl p-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold mb-3">Selected Interventions</h2>
+        <div class="text-sm text-gray-500">Generated: {{ generated_at|date:"Y-m-d H:i" }}</div>
+      </div>
+
+      {% if selected %}
+        <div class="overflow-hidden rounded-xl border">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+              <tr>
+                <th class="text-left px-3 py-2">Theme</th>
+                <th class="text-left px-3 py-2">Intervention</th>
+                <th class="text-right px-3 py-2">Rating</th>
+                <th class="text-right px-3 py-2">Cost Level</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              {% for it in selected %}
+                <tr>
+                  <td class="px-3 py-2">{{ it.theme|default:"—" }}</td>
+                  <td class="px-3 py-2">
+                    <div class="font-medium">{{ it.name }}</div>
+                    {% if it.description %}<div class="text-gray-500 text-xs mt-0.5">{{ it.description }}</div>{% endif %}
+                  </td>
+                  <td class="px-3 py-2 text-right">{{ it.intervention_rating|default:"0" }}</td>
+                  <td class="px-3 py-2 text-right">{{ it.cost_level|default:"0" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-gray-500">No interventions selected.</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

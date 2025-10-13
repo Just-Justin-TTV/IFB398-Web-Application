@@ -95,6 +95,17 @@ class User(models.Model):
     def __str__(self):
         return self.username
     
+# add near your other models
+class MetricsSelection(models.Model):
+    metrics = models.ForeignKey('Metrics', on_delete=models.CASCADE, related_name="selections")
+    intervention = models.ForeignKey('Interventions', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "MetricsSelection"
+        unique_together = ("metrics", "intervention")
+
+
 # NEW
 class Metrics(models.Model):
     id = models.AutoField(primary_key=True)
