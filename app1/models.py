@@ -29,6 +29,24 @@ class Interventions(models.Model):
     def __str__(self):
         return f"{self.class_name} - {self.name}"
 
+class InterventionDependencies(models.Model):
+    intervention_id = models.IntegerField(primary_key=True)
+    metric_name = models.CharField(max_length=255, db_column='metric_column')
+    min_value = models.FloatField(null=True, blank=True)
+    max_value = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        db_table = "intervention_dependencies"
+        unique_together = (('intervention_id', 'metric_name'),)
+        managed = False  # Django won't create or alter this table
+
+
+
+
+
+
+
+
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
@@ -41,7 +59,20 @@ class User(models.Model):
 
     def __str__(self):
         return self.username
-    
+
+class InterventionEffects(models.Model):
+    source_intervention_name = models.CharField(max_length=255, db_column='source_intervention_name')
+    target_intervention_name = models.CharField(max_length=255, db_column='target_intervention_name')
+    effect_value = models.FloatField()
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'intervention_effects'
+
+    def __str__(self):
+        return f"{self.source_intervention_name} → {self.target_intervention_name} ({self.effect_value})"
+
+
 # NEW
 class Metrics(models.Model):
     """
@@ -98,3 +129,10 @@ class Metrics(models.Model):
 
     def __str__(self):
         return f"Metrics #{self.id} – {self.building_type or 'Building'}"
+
+    def update_from_dict(self, data: dict):
+        # handy when merging both pages into one row
+        for k, v in (data or {}).items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+

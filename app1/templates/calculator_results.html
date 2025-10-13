@@ -1,38 +1,120 @@
-{% load static %}
+{% load static %}{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Carbon Calculator · Interventions</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT: '#0ea5e9', 600: '#0891b2', 700: '#0e7490' } },
-          borderRadius: { '2xl': '1rem' }
-        }
+<meta charset="UTF-8" />
+<title>Carbon Calculator · Interventions</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { brand: { DEFAULT:'#0ea5e9', 600:'#0891b2', 700:'#0e7490' } },
+        borderRadius: { '2xl': '1rem' }
       }
     }
-  </script>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  }
+</script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
-  <div class="flex min-h-screen">
-    <!-- Sidebar -->
-    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-      <div class="px-5 py-6 border-b">
-        <div class="flex items-center gap-3">
-          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-          <div>
-            <p class="text-xs text-gray-500">Welcome</p>
-            <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
-          </div>
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+    <div class="px-5 py-6 border-b flex items-center gap-3">
+      <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+      <div>
+        <p class="text-xs text-gray-500">Welcome</p>
+        <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
+      </div>
+    </div>
+    <nav class="px-3 py-4 space-y-1">
+      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <span class="material-icons text-[18px]">dashboard</span> Dashboard
+      </a>
+      <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <span class="material-icons text-[18px]">folder</span> Projects
+      </a>
+      <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
+        <span class="material-icons text-[18px]">build</span> Interventions
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1">
+    <header class="bg-white border-b">
+      <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold">Carbon Calculator</h1>
+          <p class="text-sm text-gray-600">Compare interventions, costs, and synergies to meet your targets</p>
+        </div>
+        <button id="saveBtn" class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-white font-medium shadow-sm hover:bg-brand-600">
+          <span class="material-icons text-base">save</span> Save
+        </button>
+      </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
+      <!-- Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="text-sm text-gray-700">Select Class</label>
+          <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+            <option value="all">All</option>
+            {% for c in classes %}
+              <option value="{{ c.key|escape }}">{{ c.label|escape }}</option>
+            {% endfor %}
+          </select>
+
+          <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
+
+          <label class="text-sm text-gray-700">Sort</label>
+          <select id="orderSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+            <option value="best" selected>Best value (rating ÷ cost)</option>
+            <option value="impact">Highest ranking</option>
+            <option value="cost">Lowest cost</option>
+            <option value="theme">Original order (by theme)</option>
+          </select>
+        </div>
+
+        <div class="relative w-full sm:w-96">
+          <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
+          <input id="searchBox" type="text" placeholder="Search interventions…"
+                 class="w-full rounded-full border pl-9 pr-10 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                 autocomplete="off" />
+          <button id="clearSearch"
+                  class="hidden material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[18px]">close</button>
+        </div>
+
+        <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
+          <span class="text-gray-500">Cost Tracker:</span>
+          <span id="costTracker" class="font-semibold ml-1">$0</span>
         </div>
       </div>
 
+<<<<<<< HEAD
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Table -->
+        <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div class="col-span-6 px-4 py-3">Intervention</div>
+            <div class="col-span-2 px-4 py-3 text-center">Cost</div>
+            <div class="col-span-2 px-4 py-3 text-center">Rating</div>
+            <div class="col-span-2 px-4 py-3 text-center">Updated Rating</div>
+            <div class="col-span-2 px-4 py-3 text-center">Select</div>
+          </div>
+
+          <div id="rows">
+            {% for theme, items in interventions.items %}
+              <!-- Theme Header -->
+              <div class="grid grid-cols-12 theme-header" data-theme="{{ theme|escape }}">
+                <div class="col-span-12 px-4 py-2 bg-gradient-to-r from-brand to-brand-700 text-white text-sm font-semibold">
+                  {{ theme }}
+=======
       <nav class="px-3 py-4 space-y-1">
         <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">dashboard</span> Dashboard</a>
         <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"><span class="material-icons text-[18px]">folder</span> Projects</a>
@@ -115,24 +197,84 @@
                     </thead>
                     <tbody id="scoreTable" class="divide-y"></tbody>
                   </table>
+>>>>>>> origin/master
                 </div>
               </div>
-            </div>
 
-            <div class="bg-white border rounded-2xl shadow-sm">
-              <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
-              <div class="p-4 space-y-4" id="progressBars"></div>
+              <!-- Interventions under the theme -->
+              {% for item in items %}
+                <div class="grid grid-cols-12 items-center border-t hover:bg-gray-50 intervention-row"
+                     data-id="{{ item.id|escape }}"
+                     data-name="{{ item.name|striptags|escape }}"
+                     data-class="{{ item.class_name|default:''|lower|escape }}"
+                     data-cost="{{ item.cost_level|default:0 }}"
+                     data-rating="{{ item.intervention_rating|default:0 }}"
+                     data-stage="{{ item.stage|default:''|escape }}"
+                     data-description="{{ item.description|default:''|striptags|escape }}"
+                     data-dependencies='{{ item.dependencies|default:"[]"|safe }}'>
+                  <div class="col-span-6 px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <div class="font-medium intervention-name">{{ item.name }}</div>
+                      {% if item.stage %}
+                        <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage {{ item.stage }}</span>
+                      {% endif %}
+                    </div>
+                    <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">expand_more</button>
+                  </div>
+                  <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level|default:0 }}</div>
+                  <div class="col-span-2 px-4 py-3 text-center original-rating">{{ item.intervention_rating|default:0 }}</div>
+                  <div class="col-span-2 px-4 py-3 text-center updated-rating">
+                    {{ item.intervention_rating|default:0 }}
+                    <div class="effect-notes text-xs text-gray-500 mt-1"></div>
+                  </div>
+                  <div class="col-span-2 px-4 py-3 text-center">
+                    <input type="checkbox" class="select-intervention accent-brand" data-id="{{ item.id|escape }}">
+                  </div>
+                </div>
+
+                <!-- Description row -->
+                <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">
+                  {{ item.description|default:"No description available." }}
+                </div>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        </section>
+
+        <!-- Sidebar summary -->
+        <aside class="space-y-6">
+          <div class="bg-white border rounded-2xl shadow-sm">
+            <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
+            <div class="p-4 space-y-2 text-sm text-gray-700">
+              <div class="flex justify-between"><span>Selected items</span><span id="selCount">0</span></div>
+              <div class="flex justify-between"><span>Total cost</span><span id="totalCost">0</span></div>
             </div>
-          </aside>
-        </div>
+          </div>
+        </aside>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
+</div>
 
-  <!-- JS -->
-  <script>
-  const CAP_HIGH = 300000;
+<script>
+(async () => {
+  const qs  = s => document.querySelector(s);
+  const qsa = s => Array.from(document.querySelectorAll(s));
+  const RAW = [];
 
+<<<<<<< HEAD
+  // Initialize interventions from DOM
+  qsa('.intervention-row').forEach(el => {
+    RAW.push({
+      id: el.dataset.id,
+      name: el.dataset.name,
+      cost: Number(el.dataset.cost || 0),
+      rating: Number(el.dataset.rating || 0),
+      currentRating: Number(el.dataset.rating || 0),
+      classKey: el.dataset.class || 'all',
+      theme: el.dataset.theme || '',
+      activeNotes: []
+=======
   // safe HTML
   const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
 
@@ -382,8 +524,93 @@
     document.getElementById('saveBtn').addEventListener('click', ()=>{
       const payload = { selected:[...state.selected], class: state.activeClass };
       console.log('SAVE', payload);
+>>>>>>> origin/master
     });
   });
-  </script>
+
+  const state = { selected: new Set(), query:'', activeClass:'all', sort:'best' };
+  const ROWS = qs('#rows');
+
+  async function getEffects(intervention){
+    try{
+      const res = await fetch(`/get_intervention_effects/?source=${encodeURIComponent(intervention.name)}`);
+      const data = await res.json();
+      return data.effects || [];
+    }catch(err){ console.error(err); return []; }
+  }
+
+  async function recalcRatings(){
+    RAW.forEach(r=>{ r.currentRating=r.rating; r.activeNotes=[]; });
+    for(const selId of state.selected){
+      const sel=RAW.find(r=>r.id===selId);
+      const effects = await getEffects(sel);
+      effects.forEach(effect=>{
+        const target=RAW.find(r=>r.name===effect.target);
+        if(target){
+          target.currentRating=Math.max(1, Math.min(10, target.currentRating + effect.effect));
+          if(effect.note) target.activeNotes.push(`${sel.name}: ${effect.note}`);
+        }
+      });
+    }
+    renderRatings();
+    updateStats();
+  }
+
+  function renderRatings(){
+    RAW.forEach(r=>{
+      const row = qs(`.intervention-row[data-id="${r.id}"]`);
+      if(!row) return;
+      const updatedEl=row.querySelector('.updated-rating');
+      updatedEl.firstChild.textContent = r.currentRating.toFixed(1);
+      updatedEl.classList.remove('bg-green-100','bg-red-100');
+      if(r.currentRating>r.rating) updatedEl.classList.add('bg-green-100');
+      else if(r.currentRating<r.rating) updatedEl.classList.add('bg-red-100');
+      row.querySelector('.effect-notes').innerHTML=r.activeNotes.join('<br>')||'';
+    });
+  }
+
+  function updateStats(){
+    qs('#selCount').textContent=state.selected.size;
+    const total=[...state.selected].reduce((a,id)=>a + (RAW.find(r=>r.id===id)?.cost||0),0);
+    qs('#totalCost').textContent=total;
+    qs('#costTracker').textContent=`$${total}`;
+  }
+
+  function filterRows(){
+    RAW.forEach(r=>{
+      const row = qs(`.intervention-row[data-id="${r.id}"]`);
+      const desc = row.nextElementSibling;
+      const matchesQuery = r.name.toLowerCase().includes(state.query.toLowerCase());
+      const matchesClass = state.activeClass==='all'||r.classKey===state.activeClass;
+      const visible = matchesQuery && matchesClass;
+      row.style.display = visible?'':'none';
+      if(desc) desc.style.display = visible?'':'none';
+    });
+  }
+
+  // Event listeners
+  qs('#classSelect').addEventListener('change',e=>{ state.activeClass=e.target.value; filterRows(); });
+  qs('#searchBox').addEventListener('input',e=>{ state.query=e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden',!state.query); });
+  qs('#clearSearch').addEventListener('click',e=>{ state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
+  qs('#resetBtn').addEventListener('click',e=>{ state.selected.clear(); qsa('.select-intervention').forEach(c=>c.checked=false); recalcRatings(); });
+  qsa('.select-intervention').forEach(cb=>{
+    cb.addEventListener('change',async e=>{
+      if(cb.checked) state.selected.add(cb.dataset.id);
+      else state.selected.delete(cb.dataset.id);
+      await recalcRatings();
+    });
+  });
+  qsa('.toggle-desc').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      const desc = btn.closest('.intervention-row').nextElementSibling;
+      if(desc) desc.classList.toggle('hidden');
+      btn.textContent = desc && !desc.classList.contains('hidden')?'expand_less':'expand_more';
+    });
+  });
+
+  // Initial render
+  filterRows();
+})();
+</script>
 </body>
 </html>

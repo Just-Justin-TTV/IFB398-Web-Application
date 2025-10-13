@@ -101,6 +101,48 @@
               </tr>
             </thead>
             <tbody id="projectRows" class="divide-y">
+<<<<<<< HEAD
+              {% for p in projects %}
+              <tr class="hover:bg-gray-50" data-name="{{ p.project_name|default_if_none:'' }}">
+                <td class="px-5 py-3 font-medium">
+                  <!-- Title links to READ-ONLY view -->
+                  <a href="{% url 'project_detail' p.id %}" class="hover:underline">
+                    {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
+                  </a>
+                </td>
+
+                <td class="px-5 py-3">
+                  {% if p.updated_at %}{{ p.updated_at|date:"Y" }}
+                  {% elif p.created_at %}{{ p.created_at|date:"Y" }}
+                  {% else %}—{% endif %}
+                </td>
+
+                <td class="px-5 py-3">
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
+                    {{ p.location|default:"—" }}
+                  </span>
+                </td>
+
+                <td class="px-5 py-3">—</td>
+
+                <td class="px-5 py-3">
+                  {% if p.estimated_auto_budget_aud %}
+                    ${{ p.estimated_auto_budget_aud|floatformat:0|intcomma }}
+                  {% else %}—{% endif %}
+                </td>
+
+                <td class="px-5 py-3">
+                  {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y" }}
+                  {% elif p.created_at %}{{ p.created_at|date:"d/m/Y" }}
+                  {% else %}—{% endif %}
+                </td>
+
+                <td class="px-5 py-3 space-x-3 text-right">
+                  <!-- OPEN = read-only -->
+                  <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
+                  <!-- EDIT = editable (query flag edit=1) -->
+                  <a href="{% url 'project_detail' p.id %}?edit=1" class="text-gray-700 hover:text-gray-900">Edit</a>
+=======
               <!-- Example rows; replace with your loop -->
               <tr class="hover:bg-gray-50" data-name="Pinecrest Logistics">
                 <td class="px-5 py-3 font-medium">Pinecrest Logistics</td>
@@ -112,6 +154,7 @@
                 <td class="px-5 py-3 text-right">
                   <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
                   <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+>>>>>>> origin/master
                 </td>
               </tr>
 
