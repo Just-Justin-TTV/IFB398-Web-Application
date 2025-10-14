@@ -317,15 +317,15 @@ def calculator(request: HttpRequest):
 
 def intervention_effects(metric, interventions, selected_ids: Optional[List[int]] = None):
     """
-    Adjust intervention ratings dynamically based on metric values and selected interventions.
-    Ratings are only increased for interventions after selection.
+    Adjust intervention ratings dynamically based only on selection.
+    Ratings are only increased for interventions that are selected.
     """
     grouped_interventions = {}
 
     for i in interventions:
         include = True
 
-        # Check dependencies for metric thresholds
+        # Check dependencies for metric thresholds (keep if you still need them)
         deps = InterventionDependencies.objects.filter(intervention_id=i.id)
         for dep in deps:
             val = getattr(metric, dep.metric_name, None)
@@ -343,23 +343,22 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
         if not include:
             continue
 
-        base_rating = float(i.intervention_rating or 0)
-        adjusted_rating = base_rating
+        # Base rating from DB
+        adjusted_rating = float(i.intervention_rating or 0)
 
-        # Metric-based adjustment (example: scale by roof area)
-        if getattr(metric, "roof_area_m2", 0):
-            adjusted_rating *= 1 + float(metric.roof_area_m2 or 0) / 1000
-
-        # Only apply selection multiplier if this intervention is selected
+        # Apply only selection multiplier
         if selected_ids and i.id in selected_ids:
             adjusted_rating *= 1.1  # +10% rating for selection
+
+        # Optional: round to 2 decimals
+        adjusted_rating = round(adjusted_rating, 2)
 
         cls = i.theme or "Other"
         grouped_interventions.setdefault(cls, []).append({
             "id": str(i.id),
             "name": i.name or f"Intervention #{i.id}",
             "cost_level": float(i.cost_level or 0),
-            "intervention_rating": round(adjusted_rating, 2),
+            "intervention_rating": adjusted_rating,
             "description": i.description or "No description available",
             "stage": getattr(i, "stage", ""),
             "class_name": getattr(i, "class_name", ""),
@@ -367,6 +366,7 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
         })
 
     return grouped_interventions
+
 
 
 

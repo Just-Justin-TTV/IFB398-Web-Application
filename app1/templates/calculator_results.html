@@ -131,7 +131,9 @@
                     <div>
                       <div class="font-medium intervention-name">{{ item.name }}</div>
                       {% if item.stage %}
-                        <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">Stage {{ item.stage }}</span>
+                        <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">
+                          Stage {{ item.stage }}
+                        </span>
                       {% endif %}
                     </div>
                     <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">expand_more</button>
@@ -175,6 +177,7 @@
 (async () => {
   const qs  = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
+  const ROWS = qs('#rows');
   const RAW = [];
 
   // Initialize interventions from DOM
@@ -186,32 +189,51 @@
       rating: Number(el.dataset.rating || 0),
       currentRating: Number(el.dataset.rating || 0),
       classKey: el.dataset.class || 'all',
-      theme: el.dataset.theme || '',
-      activeNotes: []
+      theme: el.closest('.theme-header')?.dataset.theme || '',
+      stage: el.dataset.stage || '',
+      activeNotes: [],
+      originalIndex: RAW.length
     });
   });
 
-  const state = { selected: new Set(), query:'', activeClass:'all', sort:'best' };
-  const ROWS = qs('#rows');
+  const state = { selected: new Set(), query: '', activeClass: 'all', sort: 'best' };
 
-  async function getEffects(intervention){
-    try{
+  // ===== Helpers =====
+  async function getEffects(intervention) {
+    try {
       const res = await fetch(`/get_intervention_effects/?source=${encodeURIComponent(intervention.name)}`);
       const data = await res.json();
       return data.effects || [];
-    }catch(err){ console.error(err); return []; }
+    } catch (err) { console.error(err); return []; }
   }
 
-  async function recalcRatings(){
-    RAW.forEach(r=>{ r.currentRating=r.rating; r.activeNotes=[]; });
-    for(const selId of state.selected){
-      const sel=RAW.find(r=>r.id===selId);
+  function stageFromStr(stageStr) {
+    if (!stageStr) return null;
+    const romanMap = { i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10 };
+    const romanMatch = stageStr.match(/stage\s*(i{1,3}|iv|v|vi{0,3}|ix|x)/i);
+    if (romanMatch) return romanMap[romanMatch[1].toLowerCase()] || null;
+    const numMatch = stageStr.match(/stage\s*0*([1-9]\d*)/i);
+    if (numMatch) return parseInt(numMatch[1],10);
+    return null;
+  }
+
+  function familyFromName(name) {
+    if (!name) return '';
+    return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  }
+
+  // ===== Ratings =====
+  async function recalcRatings() {
+    RAW.forEach(r => { r.currentRating = r.rating; r.activeNotes = []; });
+    for (const selId of state.selected) {
+      const sel = RAW.find(r => r.id === selId);
+      if (!sel) continue;
       const effects = await getEffects(sel);
-      effects.forEach(effect=>{
-        const target=RAW.find(r=>r.name===effect.target);
-        if(target){
-          target.currentRating=Math.max(1, Math.min(10, target.currentRating + effect.effect));
-          if(effect.note) target.activeNotes.push(`${sel.name}: ${effect.note}`);
+      effects.forEach(effect => {
+        const target = RAW.find(r => r.name === effect.target);
+        if (target) {
+          target.currentRating = Math.max(1, Math.min(10, target.currentRating + effect.effect));
+          if (effect.note) target.activeNotes.push(`${sel.name}: ${effect.note}`);
         }
       });
     }
@@ -219,61 +241,150 @@
     updateStats();
   }
 
-  function renderRatings(){
-    RAW.forEach(r=>{
+  function renderRatings() {
+    RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
-      if(!row) return;
-      const updatedEl=row.querySelector('.updated-rating');
-      updatedEl.firstChild.textContent = r.currentRating.toFixed(1);
-      updatedEl.classList.remove('bg-green-100','bg-red-100');
-      if(r.currentRating>r.rating) updatedEl.classList.add('bg-green-100');
-      else if(r.currentRating<r.rating) updatedEl.classList.add('bg-red-100');
-      row.querySelector('.effect-notes').innerHTML=r.activeNotes.join('<br>')||'';
+      if (!row) return;
+      const updatedEl = row.querySelector('.updated-rating');
+      if (updatedEl?.firstChild) updatedEl.firstChild.textContent = r.currentRating.toFixed(1);
+      updatedEl?.classList.remove('bg-green-100','bg-red-100');
+      if (updatedEl) {
+        if (r.currentRating > r.rating) updatedEl.classList.add('bg-green-100');
+        else if (r.currentRating < r.rating) updatedEl.classList.add('bg-red-100');
+      }
+      const notesEl = row.querySelector('.effect-notes');
+      if (notesEl) notesEl.innerHTML = r.activeNotes.join('<br>') || '';
     });
   }
 
-  function updateStats(){
-    qs('#selCount').textContent=state.selected.size;
-    const total=[...state.selected].reduce((a,id)=>a + (RAW.find(r=>r.id===id)?.cost||0),0);
-    qs('#totalCost').textContent=total;
-    qs('#costTracker').textContent=`$${total}`;
+  function updateStats() {
+    qs('#selCount').textContent = state.selected.size;
+    const total = [...state.selected].reduce((a,id)=>a + (RAW.find(r=>r.id===id)?.cost||0),0);
+    qs('#totalCost').textContent = total;
+    qs('#costTracker').textContent = `$${total}`;
   }
 
-  function filterRows(){
-    RAW.forEach(r=>{
+  // ===== Filtering & Sorting =====
+  function filterRows() {
+    RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
       const desc = row.nextElementSibling;
       const matchesQuery = r.name.toLowerCase().includes(state.query.toLowerCase());
-      const matchesClass = state.activeClass==='all'||r.classKey===state.activeClass;
+      const matchesClass = state.activeClass==='all' || r.classKey===state.activeClass;
       const visible = matchesQuery && matchesClass;
-      row.style.display = visible?'':'none';
-      if(desc) desc.style.display = visible?'':'none';
+      row.style.display = visible ? '' : 'none';
+      if (desc) desc.style.display = visible ? '' : 'none';
+    });
+    renderSorted();
+  }
+
+  function renderSorted() {
+    let sorted = [...RAW];
+    switch(state.sort){
+      case 'best': sorted.sort((a,b)=> (b.currentRating/(b.cost||1)) - (a.currentRating/(a.cost||1))); break;
+      case 'impact': sorted.sort((a,b)=> b.currentRating - a.currentRating); break;
+      case 'cost': sorted.sort((a,b)=> a.cost - b.cost); break;
+      case 'theme': sorted.sort((a,b)=> a.originalIndex - b.originalIndex); break;
+    }
+
+    qsa('.theme-header').forEach(th => th.style.display = 'none');
+
+    sorted.forEach(r => {
+      const row = qs(`.intervention-row[data-id="${r.id}"]`);
+      const desc = row.nextElementSibling;
+      if (row.style.display !== 'none') {
+        ROWS.appendChild(row);
+        if(desc) ROWS.appendChild(desc);
+        if (state.sort === 'theme') {
+          const header = qs(`.theme-header[data-theme="${r.theme}"]`);
+          if(header) header.style.display = '';
+        }
+      }
+    });
+
+    applyStageConstraints(); // enforce stages last
+  }
+
+  // ===== Stage Constraints =====
+  function applyStageConstraints() {
+    const maxSel = {};
+    RAW.forEach(r => {
+      r._stage = stageFromStr(r.stage);
+      r._family = familyFromName(r.name);
+      if (state.selected.has(r.id) && r._stage != null) {
+        if (!maxSel[r._family] || r._stage > maxSel[r._family]) maxSel[r._family] = r._stage;
+      }
+    });
+
+    qsa('.intervention-row').forEach(el => {
+      const r = RAW.find(x => x.id === el.dataset.id);
+      if (!r) return;
+      const cb = el.querySelector('.select-intervention');
+      const top = maxSel[r._family] ?? null;
+      const disable = r._stage != null && top != null && r._stage < top;
+      cb.disabled = disable;
+      if (disable) {
+        cb.checked = false;
+        state.selected.delete(r.id);
+        el.classList.add('opacity-60','bg-gray-50');
+        if (!el.querySelector('.stage-disabled-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'stage-disabled-badge ml-2 inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700';
+          badge.textContent = `Disabled by Stage ${top}`;
+          el.querySelector('.intervention-name').appendChild(badge);
+        }
+      } else {
+        el.classList.remove('opacity-60','bg-gray-50');
+        const badge = el.querySelector('.stage-disabled-badge');
+        if (badge) badge.remove();
+      }
     });
   }
 
-  // Event listeners
-  qs('#classSelect').addEventListener('change',e=>{ state.activeClass=e.target.value; filterRows(); });
-  qs('#searchBox').addEventListener('input',e=>{ state.query=e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden',!state.query); });
-  qs('#clearSearch').addEventListener('click',e=>{ state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
-  qs('#resetBtn').addEventListener('click',e=>{ state.selected.clear(); qsa('.select-intervention').forEach(c=>c.checked=false); recalcRatings(); });
-  qsa('.select-intervention').forEach(cb=>{
-    cb.addEventListener('change',async e=>{
+  // ===== Recalc all =====
+  async function recalcAll() {
+    await recalcRatings();
+    renderSorted();
+    applyStageConstraints();
+  }
+
+  // ===== Event Listeners =====
+  qs('#classSelect').addEventListener('change', e => { state.activeClass = e.target.value; filterRows(); });
+  qs('#searchBox').addEventListener('input', e => { state.query = e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden', !state.query); });
+  qs('#clearSearch').addEventListener('click', e => { state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
+  qs('#orderSelect').addEventListener('change', e => { state.sort = e.target.value; renderSorted(); });
+  qs('#resetBtn').addEventListener('click', async e => { state.selected.clear(); qsa('.select-intervention').forEach(c => c.checked=false); await recalcAll(); });
+
+  qsa('.select-intervention').forEach(cb => {
+    cb.addEventListener('change', async () => {
       if(cb.checked) state.selected.add(cb.dataset.id);
       else state.selected.delete(cb.dataset.id);
-      await recalcRatings();
-    });
-  });
-  qsa('.toggle-desc').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      const desc = btn.closest('.intervention-row').nextElementSibling;
-      if(desc) desc.classList.toggle('hidden');
-      btn.textContent = desc && !desc.classList.contains('hidden')?'expand_less':'expand_more';
+      await recalcAll();
     });
   });
 
-  // Initial render
-  filterRows();
+  qsa('.toggle-desc').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const desc = btn.closest('.intervention-row').nextElementSibling;
+      if(desc) desc.classList.toggle('hidden');
+      btn.textContent = desc && !desc.classList.contains('hidden') ? 'expand_less' : 'expand_more';
+    });
+  });
+
+  // ===== Initial render =====
+  await recalcAll();
+
+  // MutationObserver to re-apply stage constraints if rows change
+  const observer = new MutationObserver(() => applyStageConstraints());
+  observer.observe(ROWS, { childList:true, subtree:true });
+
 })();
 </script>
+
+
+
+
+
+
 </body>
 </html>
