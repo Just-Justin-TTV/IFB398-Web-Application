@@ -1,5 +1,8 @@
 import json
+# app1/views.py
+from django.shortcuts import render, get_object_or_404   # <-- add get_object_or_404
 import logging
+from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Any, Dict
 from .models import MetricsSelection
@@ -176,41 +179,80 @@ def report_view(request):
 
 
 
-def report_pdf(request):
-    """
-    GET /report/pdf/ — return a PDF of the same report.
-    Requires WeasyPrint: pip install weasyprint
-    """
-    metrics_id = request.session.get("metrics_id")
-    m = Metrics.objects.filter(id=metrics_id).first()
+def _load_context(request):
+    # Pick metrics from ?mid= or last saved in session
+    mid = request.GET.get("mid") or request.session.get("metrics_id")
+    metrics = get_object_or_404(Metrics, pk=mid)
 
-    selected = (
-        Interventions.objects
-        .filter(metricsselection__metrics=m)
-        .values("id", "name", "theme", "description", "cost_level", "intervention_rating")
-        .order_by("theme", "name")
-    )
+    # Selections joined to interventions
+    sels = (MetricsSelection.objects
+            .filter(metrics=metrics)
+            .select_related("intervention"))
 
-    context = {
-        "metrics": m,
-        "selected": selected,
-        "generated_at": now(),
-        "as_pdf": True,  # minor template tweaks if you want
+    selected_rows = []
+    total_cost_level = 0
+    for s in sels:
+        iv = s.intervention
+        selected_rows.append({
+            "theme": iv.theme or "Other",
+            "name": iv.name,
+            "stage": getattr(s, "stage", None),
+            "rating": getattr(iv, "intervention_rating", 0) or 0,
+            "cost": getattr(iv, "cost_level", 0) or 0,
+            "desc": iv.description or "",
+        })
+        total_cost_level += getattr(iv, "cost_level", 0) or 0
+
+    # Simple class summary (tweak to your schema)
+    class_targets = [
+        {"key":"carbon","label":"Carbon","target":80},
+        {"key":"health","label":"Health & Wellbeing","target":60},
+        {"key":"water","label":"Water Use","target":30},
+        {"key":"circular","label":"Circular Economy","target":40},
+        {"key":"resilience","label":"Resilience","target":60},
+        {"key":"value","label":"Value & Cost","target":10},
+        {"key":"biodiversity","label":"Biodiversity","target":20},
+    ]
+    achieved = {c["key"]: 0 for c in class_targets}
+    for s in sels:
+        k = getattr(s.intervention, "class_key", None)
+        if k in achieved:
+            achieved[k] += (getattr(s.intervention, "intervention_rating", 0) or 0)
+
+    return {
+        "now": timezone.now(),
+        "metrics": metrics,
+        "rows": selected_rows,
+        "total_cost_level": total_cost_level,
+        "class_targets": class_targets,
+        "achieved": achieved,
     }
 
-    html = render_to_string("report.html", context, request=request)
+def report_pdf(request):
+    ctx = _load_context(request)
 
+    # Render HTML → PDF (WeasyPrint)
     try:
-        from weasyprint import HTML
-    except Exception:
-        return HttpResponseBadRequest("WeasyPrint not installed. Run: pip install weasyprint")
+        from weasyprint import HTML, CSS
+        html_string = render(request, "report.html", ctx).content.decode("utf-8")
 
-    pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
-    resp = HttpResponse(pdf, content_type="application/pdf")
-    filename = f"project-report-{metrics_id}.pdf"
-    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
-    return resp
+        pdf_bytes = HTML(
+            string=html_string,
+            base_url=request.build_absolute_uri("/")  # lets Weasy resolve images/fonts if you add any
+        ).write_pdf(
+            stylesheets=[CSS(string="""
+                @page { size: A4; margin: 18mm; }
+                /* You can add print-specific tweaks here if needed */
+            """)]
+        )
 
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp['Content-Disposition'] = 'attachment; filename="Project_Report.pdf"'
+        return resp
+
+    except Exception as e:
+        # Graceful fallback: show HTML so you at least see the report
+        return render(request, "report.html", {**ctx, "weasy_error": str(e)})
 
 @require_GET
 def interventions_api(request):
