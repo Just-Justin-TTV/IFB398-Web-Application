@@ -280,20 +280,39 @@ def carbon_view(request):
     })
 
 
+@login_required
 def get_intervention_effects(request):
     source_name = request.GET.get('source')
     if not source_name:
         return JsonResponse({'error': 'No source provided'}, status=400)
 
     effects = InterventionEffects.objects.filter(source_intervention_name=source_name)
-    data = [
-        {
+    data = []
+
+    for e in effects:
+        target = Interventions.objects.filter(name=e.target_intervention_name).first()
+        if not target:
+            continue
+
+        base_rating = float(target.intervention_rating or 0)
+
+        # Apply granular effect: effect_value in range -10 to 10
+        # Scale it so that a +/-10 effect modifies rating by +/- 20% max (adjustable)
+        max_effect_percent = 0.2  # 20% max increase/decrease
+        if e.effect_value is not None:
+            effect_factor = float(e.effect_value) / 10 * max_effect_percent  # e.g. 5 -> 0.1 (10% increase)
+            adjusted_rating = base_rating * (1 + effect_factor)
+        else:
+            adjusted_rating = base_rating
+
+        adjusted_rating = round(adjusted_rating, 2)
+
+        data.append({
             'target': e.target_intervention_name,
-            'effect': e.effect_value,
+            'effect': adjusted_rating,
             'note': e.note
-        }
-        for e in effects
-    ]
+        })
+
     return JsonResponse({'effects': data})
 
 
@@ -317,40 +336,34 @@ def calculator(request: HttpRequest):
 
 def intervention_effects(metric, interventions, selected_ids: Optional[List[int]] = None):
     """
-    Adjust intervention ratings dynamically based only on selection.
-    Ratings are only increased for interventions that are selected.
+    Adjust intervention ratings dynamically based on selection and stages.
+    Interventions with a lower stage than the highest selected stage are blocked out.
     """
     grouped_interventions = {}
 
+    # 1) Determine highest stage among selected interventions
+    max_stage = 0
+    if selected_ids:
+        for i in interventions:
+            if i.id in selected_ids:
+                stage_val = getattr(i, "stage", 0) or 0
+                max_stage = max(max_stage, int(stage_val))
+
+    # 2) Filter and adjust interventions
     for i in interventions:
-        include = True
+        stage_val = getattr(i, "stage", 0) or 0
 
-        # Check dependencies for metric thresholds (keep if you still need them)
-        deps = InterventionDependencies.objects.filter(intervention_id=i.id)
-        for dep in deps:
-            val = getattr(metric, dep.metric_name, None)
-            if val is None:
-                continue
-            try:
-                val = Decimal(val)
-            except Exception:
-                continue
-            if (dep.min_value is not None and val < dep.min_value) or \
-               (dep.max_value is not None and val > dep.max_value):
-                include = False
-                break
-
-        if not include:
+        # Skip interventions below the highest selected stage
+        if selected_ids and stage_val < max_stage:
             continue
 
-        # Base rating from DB
+        # Base rating
         adjusted_rating = float(i.intervention_rating or 0)
 
-        # Apply only selection multiplier
+        # Apply selection multiplier
         if selected_ids and i.id in selected_ids:
             adjusted_rating *= 1.1  # +10% rating for selection
 
-        # Optional: round to 2 decimals
         adjusted_rating = round(adjusted_rating, 2)
 
         cls = i.theme or "Other"
@@ -360,7 +373,7 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
             "cost_level": float(i.cost_level or 0),
             "intervention_rating": adjusted_rating,
             "description": i.description or "No description available",
-            "stage": getattr(i, "stage", ""),
+            "stage": stage_val,
             "class_name": getattr(i, "class_name", ""),
             "theme": cls
         })
@@ -375,83 +388,58 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
 
 def _process_calculator_post(request: HttpRequest) -> HttpResponse:
     """
-    Internal helper to process POST requests from the calculator.
-    If there's no corresponding AppUser row for the logged-in Django User,
-    create one on-the-fly so downstream queries (Metrics.user) work.
+    Processes POST requests from the calculator.
+    Applies stage logic to block lower-stage interventions.
     """
     import json
     from django.db import IntegrityError
 
-    # 1) Resolve AppUser or create one if missing (Option 1)
+    # Resolve AppUser
     app_user = _resolve_app_user(request)
     if not app_user:
-        # If the visitor is not authenticated, we can't create an AppUser for them.
         if not getattr(request, "user", None) or not getattr(request.user, "is_authenticated", False):
             return JsonResponse({"error": "Must be authenticated to run calculator."}, status=401)
 
-        # Try to get_or_create an AppUser for the currently logged-in Django user.
         dj_user = request.user
         username = getattr(dj_user, "username", None) or f"user_{dj_user.id}"
         email = getattr(dj_user, "email", "") or ""
+        app_user, _ = AppUser.objects.get_or_create(username=username, defaults={"email": email})
 
-        try:
-            app_user, created = AppUser.objects.get_or_create(
-                username=username,
-                defaults={"email": email}
-            )
-            if created:
-                logger.info("Created AppUser on-the-fly for Django user %s (username=%s)", dj_user.id, username)
-        except IntegrityError:
-            # In case of a race/uniqueness issue, try a safe fallback lookup by email then username
-            app_user = None
-            if email:
-                app_user = AppUser.objects.filter(email=email).first()
-            if not app_user:
-                app_user = AppUser.objects.filter(username=username).first()
-            if not app_user:
-                logger.exception("Failed to create/find an AppUser for Django user %s", getattr(dj_user, "id", "unknown"))
-                return JsonResponse({"error": "Unable to ensure AppUser for this login."}, status=500)
-
-    # 2) Retrieve or create a Metrics row for this AppUser
+    # Retrieve or create Metrics row
     metric = Metrics.objects.filter(user=app_user).order_by("-created_at").first()
     if not metric:
         metric = Metrics.objects.create(user=app_user)
-        logger.info("Created Metrics row id=%s for AppUser id=%s", metric.id, app_user.id)
 
-    # 3) Read selected intervention ids from POST (works for form or AJAX form-encoded)
-    # Accept either form field 'selected_ids' repeated, or a comma-separated string, or JSON body.
+    # Read selected intervention IDs
     selected_ids = []
-    # Try typical form list (e.g. request.POST.getlist)
     try:
         selected_ids = request.POST.getlist("selected_ids") or []
     except Exception:
-        selected_ids = []
-
-    # If nothing, try JSON body (some clients send JSON)
+        pass
     if not selected_ids:
         try:
             payload = json.loads(request.body.decode("utf-8") or "{}")
-            if isinstance(payload, dict) and "selected_ids" in payload:
-                selected_ids = payload.get("selected_ids") or []
+            selected_ids = payload.get("selected_ids") or []
         except Exception:
-            # ignore parse errors; we'll fallback to empty
             selected_ids = []
 
     # Normalize to ints
-    try:
-        selected_ids = [int(x) for x in selected_ids if str(x).strip().isdigit()]
-    except Exception:
-        selected_ids = []
+    selected_ids = [int(x) for x in selected_ids if str(x).strip().isdigit()]
 
-    # 4) Query interventions and compute effects using your helper
-    interventions_qs = Interventions.objects.all()
+    # Query interventions
+    interventions_qs = list(Interventions.objects.all())
+
+    # Apply stage-based filtering before computing effects
+    if selected_ids:
+        max_stage = max([getattr(i, "stage", 0) or 0 for i in interventions_qs if i.id in selected_ids])
+        interventions_qs = [i for i in interventions_qs if (getattr(i, "stage", 0) or 0) >= max_stage]
+
+    # Compute effects
     grouped_interventions = intervention_effects(metric, interventions_qs, selected_ids)
 
-    # 5) Render results page (adapt keys to your template)
     return render(request, "calculator_results.html", {
         "interventions": grouped_interventions,
         "interventions_json": json.dumps(grouped_interventions),
-        # keep the same classes/caps used elsewhere
         "classes": [
             {"key": "carbon", "label": "Carbon", "target": 80},
             {"key": "health", "label": "Health & Wellbeing", "target": 60},
