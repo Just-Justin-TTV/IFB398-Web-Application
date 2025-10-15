@@ -147,37 +147,53 @@
                 </tr>
               </thead>
               <tbody class="divide-y">
+                {% for p in latest_projects %}
                 <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Horizon Heights</td>
-                  <td class="px-5 py-3">20/07/2025</td>
+                  <td class="px-5 py-3 font-medium">
+                    {% if p.project_name %}
+                      {{ p.project_name }}
+                    {% else %}
+                      Project #{{ p.id }}
+                    {% endif %}
+                  </td>
+
                   <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2.5 py-0.5">Incomplete</span>
+                    {% if p.updated_at %}
+                      {{ p.updated_at|date:"d/m/Y" }}
+                    {% elif p.created_at %}
+                      {{ p.created_at|date:"d/m/Y" }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center rounded-full 
+                      {% if p.status == 'Complete' %} bg-green-50 text-green-700
+                      {% elif p.status == 'In Progress' %} bg-orange-50 text-orange-700
+                      {% else %} bg-red-50 text-red-700
+                      {% endif %}
+                      px-2.5 py-0.5">
+                      {{ p.status|default:"Incomplete" }}
+                    </span>
+                  </td>
+
+                  <td class="px-5 py-3 text-right">
+                    <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
                   </td>
                   <td class="px-5 py-3 text-right">
-                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
+                    <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Edit</a>
                   </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Riverbend</td>
-                  <td class="px-5 py-3">03/07/2025</td>
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full bg-orange-50 text-orange-700 px-2.5 py-0.5">In Progress</span>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="px-5 py-6 text-gray-500 text-center">
+                    No recent projects found.
                   </td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3">Pinecrest Logistics</td>
-                  <td class="px-5 py-3">12/06/2025</td>
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full bg-green-50 text-green-700 px-2.5 py-0.5">Complete</span>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700">Open</a>
-                  </td>
-                </tr>
+                {% endfor %}
               </tbody>
+
             </table>
           </div>
         </section>

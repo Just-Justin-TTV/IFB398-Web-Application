@@ -111,7 +111,12 @@ class Metrics(models.Model):
     # Optional computed outputs
     estimated_auto_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
 
-    # Housekeeping
+    # app/models.py  (inside class Metrics)
+
+    project_name = models.CharField(max_length=255, null=True, blank=True)
+    location     = models.CharField(max_length=255, null=True, blank=True)
+
+        # Housekeeping
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

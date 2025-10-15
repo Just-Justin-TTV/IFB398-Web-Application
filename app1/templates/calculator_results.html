@@ -9,45 +9,41 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 <style>
 /* Selected row highlight */
-.intervention-row.selected {
-  border-left: 4px solid #0ea5e9;
-  background-color: #e0f7ff;
-}
-
-/* Disabled or duplicate rows */
+.intervention-row.selected { border-left: 4px solid #0ea5e9; background-color: #e0f7ff; }
+/* Disabled / duplicate */
 .intervention-row.stage-disabled,
-.intervention-row.duplicate-blocked {
-  opacity: 0.5;
-  pointer-events: none;
-  user-select: none;
-  cursor: not-allowed;
-}
-
-/* Badge styles */
-.stage-disabled-badge, .duplicate-badge {
-  font-size: 10px;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-}
-.stage-disabled-badge { background-color: #e5e7eb; color: #374151; margin-left: 0.5rem; }
-.duplicate-badge { background-color: #fee2e2; color: #b91c1c; position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); }
-
-/* Theme header */
-.theme-header > div { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-
+.intervention-row.duplicate-blocked { opacity:.5; pointer-events:none; user-select:none; cursor:not-allowed; }
+/* Badges */
+.stage-disabled-badge,.duplicate-badge { font-size:10px; padding:.125rem .5rem; border-radius:9999px; }
+.stage-disabled-badge { background:#e5e7eb; color:#374151; margin-left:.5rem; }
+.duplicate-badge { background:#fee2e2; color:#b91c1c; }
+/* Headers */
+.theme-header > div { font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+.category-header > div { font-weight:600; }
 /* Description row */
-.description-row { font-size: 0.875rem; color: #4b5563; }
+.description-row { font-size:.875rem; color:#4b5563; }
+/* Toggle icon rotation */
+.material-icons.rot-180 { transform: rotate(180deg); }
 
-/* Duplicate blocked rows styling */
-.intervention-row.duplicate-blocked {
-  border-left: 4px solid #f87171;  /* red left border */
-  background-color: #fee2e2;        /* light red background */
-}
+/* Name cell: left-align + wrap */
+.name-cell { align-items:flex-start; }
+.name-title { display:block; white-space:normal; word-break:break-word; text-align:left; }
 
-/* Show badge when duplicate-blocked */
-.intervention-row.duplicate-blocked .duplicate-badge {
-  display: inline-block;
+/* Stage chip (warning) — injected by JS */
+.stage-chip{
+  display:inline-flex; align-items:center; gap:.25rem;
+  padding:.125rem .5rem; border-radius:9999px;
+  background:#fef3c7; color:#92400e; border:1px solid #fde68a; /* amber */
+  font-size:11px; line-height:1; margin-left:.375rem;
 }
+.stage-chip .material-icons{ font-size:14px; line-height:1; }
+
+/* Updated rating cell */
+.updated-rating { background:#f0fdf4; }              /* soft green */
+.updated-rating .updated-big { font-weight:700; }
+
+/* Rightmost select column */
+.select-cell { position:relative; }
 </style>
 </head>
 
@@ -82,7 +78,7 @@
       <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-semibold">Carbon Calculator</h1>
-          <p class="text-sm text-gray-600">Compare interventions, costs, and synergies</p>
+          <p class="text-sm text-gray-600">Compare interventions, costs, and synergies to meet your targets</p>
         </div>
         <button id="saveBtn" class="inline-flex items-center gap-2 rounded-full bg-blue-500 px-5 py-2.5 text-white font-medium shadow hover:bg-blue-600">
           <span class="material-icons text-base">save</span> Save
@@ -94,7 +90,7 @@
       <!-- Controls -->
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-3">
-          <label class="text-sm text-gray-700">Class</label>
+          <label class="text-sm text-gray-700">Select Class</label>
           <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
             <option value="all">All</option>
             {% for c in classes %}
@@ -106,8 +102,8 @@
 
           <label class="text-sm text-gray-700">Sort</label>
           <select id="orderSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-            <option value="best" selected>Best value</option>
-            <option value="impact">Highest rating</option>
+            <option value="best">Best value (rating ÷ cost)</option>
+            <option value="impact" selected>Highest ranking</option>
             <option value="cost">Lowest cost</option>
             <option value="theme">Original order</option>
           </select>
@@ -122,7 +118,7 @@
         </div>
 
         <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
-          <span class="text-gray-500">Cost:</span>
+          <span class="text-gray-500">Cost Tracker:</span>
           <span id="costTracker" class="font-semibold ml-1">$0</span>
         </div>
       </div>
@@ -130,12 +126,12 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Interventions Table -->
         <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <!-- HEADER (12 columns): 6 + 2 + 3 + 1 -->
           <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            <div class="col-span-6 px-4 py-3">Intervention</div>
+            <div class="col-span-6 px-4 py-3 text-left">Intervention</div>
             <div class="col-span-2 px-4 py-3 text-center">Cost</div>
-            <div class="col-span-2 px-4 py-3 text-center">Rating</div>
-            <div class="col-span-2 px-4 py-3 text-center">Updated Rating</div>
-            <div class="col-span-2 px-4 py-3 text-center">Select</div>
+            <div class="col-span-3 px-4 py-3 text-center">Updated Rating <span class="lowercase text-gray-400">(orig)</span></div>
+            <div class="col-span-1 px-4 py-3 text-center">Select</div>
           </div>
 
           <div id="rows">
@@ -143,33 +139,47 @@
               <div class="grid grid-cols-12 theme-header" data-theme="{{ theme|escape }}">
                 <div class="col-span-12 px-4 py-2 bg-blue-500 text-white text-sm font-semibold">{{ theme }}</div>
               </div>
+
               {% for item in items %}
-                <div class="grid grid-cols-12 items-center border-t relative hover:bg-gray-50 intervention-row"
-                     data-id="{{ item.id|escape }}" data-name="{{ item.name|striptags|escape }}"
-                     data-class="{{ item.class_name|default:''|lower|escape }}" data-cost="{{ item.cost_level|default:0 }}"
-                     data-rating="{{ item.intervention_rating|default:0 }}" data-stage="{{ item.stage|default:''|escape }}"
-                     data-description="{{ item.description|default:''|striptags|escape }}" data-dependencies='{{ item.dependencies|default:"[]"|safe }}'>
-                  <div class="col-span-6 px-4 py-3 flex items-center justify-between">
-                    <div class="intervention-name font-medium">{{ item.name }}</div>
-                    {% if item.stage %}
-                      <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-[11px] border border-blue-100">
-                        Stage {{ item.stage }}
-                      </span>
-                    {% endif %}
-                    <button class="toggle-desc text-gray-400 hover:text-gray-600 material-icons text-base ml-2">expand_more</button>
-                  </div>
-                  <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level|default:0 }}</div>
-                  <div class="col-span-2 px-4 py-3 text-center original-rating">{{ item.intervention_rating|default:0 }}</div>
-                  <div class="col-span-2 px-4 py-3 text-center updated-rating">{{ item.intervention_rating|default:0 }}
-                    <div class="effect-notes text-xs text-gray-500 mt-1"></div>
-                  </div>
-                  <div class="col-span-2 px-4 py-3 text-center">
-                    <input type="checkbox" class="select-intervention accent-blue-500" data-id="{{ item.id|escape }}">
-                  </div>
+              <!-- ROW -->
+              <div class="grid grid-cols-12 items-center border-t relative hover:bg-gray-50 intervention-row"
+                   data-id="{{ item.id|escape }}"
+                   data-name="{{ item.name|striptags|escape }}"
+                   data-class="{{ item.class_name|default:''|lower|escape }}"
+                   data-category="{{ item.intervention_category|default:'Uncategorized'|escape }}"
+                   data-cost="{{ item.cost_level|default:0 }}"
+                   data-rating="{{ item.intervention_rating|default:0 }}"
+                   data-stage="{{ item.stage|default:''|escape }}"
+                   data-description="{{ item.description|default:''|striptags|escape }}"
+                   data-dependencies='{{ item.dependencies|default:"[]"|safe }}'>
+
+                <!-- Name + Toggle (left aligned, wraps); stage chip is injected by JS -->
+                <div class="col-span-6 px-4 py-3 flex name-cell gap-3">
+                  <button class="toggle-desc flex items-start gap-2 text-gray-600 hover:text-gray-800" type="button" aria-label="Toggle description">
+                    <span class="material-icons text-base">expand_more</span>
+                    <span class="intervention-name name-title font-medium text-gray-900">{{ item.name }}</span>
+                  </button>
                 </div>
-                <div class="col-span-12 px-4 py-2 bg-gray-50 text-sm text-gray-700 description-row hidden">
-                  {{ item.description|default:"No description available." }}
+
+                <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level|default:0 }}</div>
+
+                <!-- Combined rating cell -->
+                <div class="col-span-3 px-4 py-3 text-center updated-rating">
+                  <div class="updated-big text-lg">{{ item.intervention_rating|default:0 }}</div>
+                  <div class="text-[11px] text-gray-500">(orig: {{ item.intervention_rating|default:0 }})</div>
+                  <div class="effect-notes text-xs text-gray-600 mt-1"></div>
                 </div>
+
+                <!-- RIGHTMOST SELECT -->
+                <div class="col-span-1 px-4 py-3 text-center select-cell">
+                  <input type="checkbox" class="select-intervention accent-blue-500" data-id="{{ item.id|escape }}">
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="col-span-12 px-6 py-3 bg-gray-50 text-sm text-gray-700 description-row hidden">
+                {{ item.description|default:"No description available." }}
+              </div>
               {% endfor %}
             {% endfor %}
           </div>
@@ -197,6 +207,7 @@
   const ROWS = qs('#rows');
   const RAW = [];
 
+  // Build RAW from DOM
   qsa('.intervention-row').forEach(el => {
     RAW.push({
       id: el.dataset.id,
@@ -204,23 +215,54 @@
       cost: Number(el.dataset.cost || 0),
       rating: Number(el.dataset.rating || 0),
       currentRating: Number(el.dataset.rating || 0),
-      classKey: el.dataset.class || 'all',
-      theme: el.closest('.theme-header')?.dataset.theme || '',
+      classKey: (el.dataset.class || 'all'),
+      theme: el.previousElementSibling?.dataset?.theme || el.closest('.theme-header')?.dataset?.theme || '',
+      category: el.dataset.category || 'Uncategorized',
       stage: el.dataset.stage || '',
+      description: el.dataset.description || '',
       activeNotes: [],
       originalIndex: RAW.length
     });
   });
 
-  const state = { selected: new Set(), query: '', activeClass: 'all', sort: 'best' };
+  const state = { selected: new Set(), query: '', activeClass: 'all', sort: 'impact' };
 
-  function stageFromStr(stageStr) {
-    if (!stageStr) return null;
+  /* Parse "Stage" strings: roman or numeric, with/without extra text */
+  function stageFromStr(s) {
+    if (!s) return null;
+    s = String(s);
     const romanMap = { i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10 };
-    const romanMatch = stageStr.match(/stage\s*(i{1,3}|iv|v|vi{0,3}|ix|x)/i);
-    if (romanMatch) return romanMap[romanMatch[1].toLowerCase()] || null;
-    const numMatch = stageStr.match(/stage\s*0*([1-9]\d*)/i);
-    return numMatch ? parseInt(numMatch[1],10) : null;
+    const r1 = s.match(/stage\s*(i{1,3}|iv|v|vi{0,3}|ix|x)\b/i);
+    if (r1) return romanMap[r1[1].toLowerCase()] || null;
+    const r2 = s.match(/stage[^0-9]*([0-9]{1,2})/i);
+    if (r2) return parseInt(r2[1],10);
+    return null;
+  }
+
+  /* Inject/refresh Stage chips (uses data-stage or parses description) */
+  function ensureStageChips(scope = document) {
+    scope.querySelectorAll('.intervention-row').forEach(row => {
+      const nameCell = row.querySelector('.name-cell');
+      if (!nameCell) return;
+
+      const rawStage = row.getAttribute('data-stage') || '';
+      const descText = row.getAttribute('data-description') || '';
+      const n = stageFromStr(rawStage) ?? stageFromStr(descText);
+
+      let chip = nameCell.querySelector('.stage-chip');
+      if (n) {
+        if (!chip) {
+          chip = document.createElement('span');
+          chip.className = 'stage-chip';
+          chip.innerHTML = `<span class="material-icons">warning</span><span class="stage-text"></span>`;
+          nameCell.appendChild(chip);
+        }
+        chip.title = rawStage || (descText.slice(0,120) + (descText.length > 120 ? '…' : ''));
+        chip.querySelector('.stage-text').textContent = `Stage ${n}`;
+      } else if (chip) {
+        chip.remove();
+      }
+    });
   }
 
   function familyFromName(name) {
@@ -234,22 +276,17 @@
       const r = RAW.find(x => x.id === el.dataset.id);
       if (!r) return;
 
-      // remove old badge
-      const oldBadge = el.querySelector('.duplicate-badge');
-      if (oldBadge) oldBadge.remove();
+      const old = el.querySelector('.duplicate-badge'); if (old) old.remove();
 
-      // determine if duplicate
       const isDuplicate = selectedNames.includes(r.name) && !state.selected.has(r.id);
       cb.disabled = cb.disabled || isDuplicate;
       el.classList.toggle('duplicate-blocked', isDuplicate);
 
       if (isDuplicate) {
         const badge = document.createElement('span');
-        badge.className = 'duplicate-badge absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full';
+        badge.className = 'duplicate-badge text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full';
         badge.textContent = 'Already selected';
-        // append to the last column (select checkbox)
-        const lastCol = el.querySelector('.col-span-2:last-child');
-        if(lastCol) lastCol.appendChild(badge);
+        el.querySelector('.select-cell')?.appendChild(badge);
       }
     });
   }
@@ -280,7 +317,7 @@
         });
 
         sel.currentRating = +(sel.currentRating * 1.1).toFixed(1);
-      } catch (err) { console.error("Error fetching effects:", err); }
+      } catch (err) { console.error("effects fetch failed", err); }
     }
 
     renderRatings();
@@ -293,9 +330,9 @@
     RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
       if (!row) return;
-      const updatedEl = row.querySelector('.updated-rating');
+      const updatedBig = row.querySelector('.updated-big');
       const notesEl = row.querySelector('.effect-notes');
-      if (updatedEl) updatedEl.firstChild.textContent = r.currentRating.toFixed(1);
+      if (updatedBig) updatedBig.textContent = r.currentRating.toFixed(1);
       if (notesEl) notesEl.innerHTML = r.activeNotes.join('<br>') || '';
     });
   }
@@ -320,30 +357,51 @@
     renderSorted();
   }
 
+  /* Render with Theme → Category → Items grouping */
   function renderSorted() {
-    const sorted = [...RAW];
-    switch(state.sort) {
-      case 'best': sorted.sort((a,b)=> (b.currentRating/(b.cost||1)) - (a.currentRating/(a.cost||1))); break;
-      case 'impact': sorted.sort((a,b)=> b.currentRating - a.currentRating); break;
-      case 'cost': sorted.sort((a,b)=> a.cost - b.cost); break;
-      case 'theme': sorted.sort((a,b)=> a.originalIndex - b.originalIndex); break;
-    }
-
-    qsa('.theme-header').forEach(th => th.style.display = 'none');
-
-    sorted.forEach(r => {
+    const items = RAW.filter(r=>{
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
-      const desc = row?.nextElementSibling;
-      if (row && row.style.display !== 'none') {
-        ROWS.appendChild(row);
-        if (desc) ROWS.appendChild(desc);
-        if (state.sort === 'theme') {
-          const header = qs(`.theme-header[data-theme="${r.theme}"]`);
-          if (header) header.style.display = '';
-        }
-      }
+      return row && row.style.display !== 'none';
     });
 
+    switch(state.sort) {
+      case 'best':   items.sort((a,b)=> (b.currentRating/(b.cost||1)) - (a.currentRating/(a.cost||1))); break;
+      case 'impact': items.sort((a,b)=> b.currentRating - a.currentRating); break;
+      case 'cost':   items.sort((a,b)=> a.cost - b.cost); break;
+      case 'theme':  items.sort((a,b)=> a.originalIndex - b.originalIndex); break;
+    }
+
+    // Hide theme headers; remove existing category headers
+    qsa('.theme-header').forEach(th => th.style.display = 'none');
+    qsa('.category-header').forEach(ch => ch.remove());
+
+    const order = [];
+    const seen = new Set();
+    items.forEach(r=>{
+      const key = `${r.theme}|||${r.category}`;
+      if(!seen.has(key)){ seen.add(key); order.push([r.theme, r.category]); }
+    });
+
+    order.forEach(([theme,cat])=>{
+      const themeHeader = qs(`.theme-header[data-theme="${CSS.escape(theme)}"]`);
+      if (themeHeader) { themeHeader.style.display = ''; ROWS.appendChild(themeHeader); }
+
+      const catHdr = document.createElement('div');
+      catHdr.className = 'grid grid-cols-12 category-header';
+      catHdr.setAttribute('data-theme', theme);
+      catHdr.setAttribute('data-category', cat);
+      catHdr.innerHTML = `<div class="col-span-12 px-4 py-2 bg-gray-100 text-gray-700 text-sm">${cat}</div>`;
+      ROWS.appendChild(catHdr);
+
+      items.filter(r=>r.theme===theme && r.category===cat).forEach(r=>{
+        const row = qs(`.intervention-row[data-id="${r.id}"]`);
+        const desc = row?.nextElementSibling;
+        if (row) ROWS.appendChild(row);
+        if (desc) ROWS.appendChild(desc);
+      });
+    });
+
+    ensureStageChips(ROWS);   // add/update stage chips
     applyStageConstraints();
     updateDuplicateBlocking();
   }
@@ -351,7 +409,7 @@
   function applyStageConstraints() {
     const maxSel = {};
     RAW.forEach(r => {
-      r._stage = stageFromStr(r.stage);
+      r._stage = stageFromStr(r.stage) ?? stageFromStr(r.description);
       r._family = familyFromName(r.name);
       if (state.selected.has(r.id) && r._stage != null) {
         if (!maxSel[r._family] || r._stage > maxSel[r._family]) maxSel[r._family] = r._stage;
@@ -367,40 +425,37 @@
 
       cb.disabled = disable;
       el.classList.toggle('stage-disabled', disable);
-      el.classList.toggle('duplicate-blocked', false); // reset duplicate first
-
+      el.classList.toggle('duplicate-blocked', false);
       el.classList.toggle('selected', state.selected.has(r.id));
 
-      const prevBadge = el.querySelector('.stage-disabled-badge');
-      if (prevBadge) prevBadge.remove();
-
+      const prevBadge = el.querySelector('.stage-disabled-badge'); if (prevBadge) prevBadge.remove();
       if (disable) {
         const badge = document.createElement('span');
         badge.className = 'stage-disabled-badge ml-2 inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-[11px] text-gray-700';
         badge.textContent = `Blocked by Stage ${top}`;
-        el.querySelector('.intervention-name').appendChild(badge);
+        el.querySelector('.intervention-name')?.appendChild(badge);
       }
     });
   }
 
+  // Controls
   qs('#classSelect').addEventListener('change', e => { state.activeClass = e.target.value; filterRows(); });
   qs('#searchBox').addEventListener('input', e => { state.query = e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden', !state.query); });
   qs('#clearSearch').addEventListener('click', e => { state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
   qs('#orderSelect').addEventListener('change', e => { state.sort = e.target.value; renderSorted(); });
-  qs('#resetBtn').addEventListener('click', async () => { 
-    state.selected.clear(); 
-    qsa('.select-intervention').forEach(c => c.checked=false); 
-    await recalcRatings(); 
-    renderSorted(); 
+  qs('#resetBtn').addEventListener('click', async () => {
+    state.selected.clear();
+    qsa('.select-intervention').forEach(c => c.checked=false);
+    await recalcRatings();
+    renderSorted();
   });
 
+  // Checkbox selection
   qsa('.select-intervention').forEach(cb => cb.addEventListener('change', async () => {
     if(cb.checked) {
-      const duplicate = RAW.find(r => r.id===cb.dataset.id) && Array.from(state.selected).map(id => RAW.find(r=>r.id===id)?.name).includes(RAW.find(r=>r.id===cb.dataset.id)?.name);
-      if (duplicate) {
-        cb.checked = false;
-        return;
-      }
+      const r = RAW.find(x => x.id===cb.dataset.id);
+      const duplicate = r && Array.from(state.selected).map(id => RAW.find(rr=>rr.id===id)?.name).includes(r.name);
+      if (duplicate) { cb.checked = false; return; }
       state.selected.add(cb.dataset.id);
     } else {
       state.selected.delete(cb.dataset.id);
@@ -408,16 +463,20 @@
     await recalcRatings();
   }));
 
+  // Description toggle
   qsa('.toggle-desc').forEach(btn => btn.addEventListener('click', e => {
-    const desc = btn.closest('.intervention-row').nextElementSibling;
-    if(desc) desc.classList.toggle('hidden');
-    btn.textContent = desc && !desc.classList.contains('hidden') ? '▲' : '▼';
+    const row = btn.closest('.intervention-row');
+    const desc = row?.nextElementSibling;
+    if (!desc) return;
+    desc.classList.toggle('hidden');
+    btn.querySelector('.material-icons')?.classList.toggle('rot-180');
   }));
 
+  // Initial render
+  ensureStageChips(document);
   filterRows();
 })();
 </script>
-
 
 </body>
 </html>
