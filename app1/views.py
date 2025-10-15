@@ -383,6 +383,8 @@ def calculator(request: HttpRequest):
 def intervention_effects(metric, interventions, selected_ids: Optional[List[int]] = None):
     grouped_interventions = {}
     max_stage = 0
+
+    # Determine max stage among selected interventions
     if selected_ids:
         for i in interventions:
             if i.id in selected_ids:
@@ -390,24 +392,44 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
                 max_stage = max(max_stage, int(stage_val))
 
     for i in interventions:
+        # Stage filter: skip interventions below max_stage if selection exists
         stage_val = getattr(i, "stage", 0) or 0
         if selected_ids and stage_val < max_stage:
             continue
 
-        adjusted = float(i.intervention_rating or 0)
+        # Dependency check: skip if metric thresholds not met
+        include = True
+        deps = InterventionDependencies.objects.filter(intervention_id=i.id)
+        for dep in deps:
+            val = getattr(metric, dep.metric_name, None)
+            if val is None:
+                continue
+            try:
+                val = Decimal(val)
+            except Exception:
+                continue
+            if (dep.min_value is not None and val < dep.min_value) or \
+               (dep.max_value is not None and val > dep.max_value):
+                include = False
+                break
+        if not include:
+            continue
+
+        # Base rating logic (same as broken version)
+        adjusted_rating = float(i.intervention_rating or 0)
         if selected_ids and i.id in selected_ids:
-            adjusted *= 1.1  # +10% if selected
+            adjusted_rating *= 1.1  # +10% rating for selected interventions
 
         cls = i.theme or "Other"
         grouped_interventions.setdefault(cls, []).append({
             "id": str(i.id),
             "name": i.name or f"Intervention #{i.id}",
             "cost_level": float(i.cost_level or 0),
-            "intervention_rating": round(adjusted, 2),
+            "intervention_rating": round(adjusted_rating, 2),
             "description": i.description or "No description available",
             "stage": stage_val,
             "class_name": getattr(i, "class_name", ""),
-            "theme": cls,
+            "theme": cls
         })
 
     return grouped_interventions
