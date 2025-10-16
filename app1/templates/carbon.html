@@ -234,21 +234,7 @@
       document.getElementById('combined_line').textContent = `Total Units: ${a+k+w}`;
     }
 
-    function recalc(){
-      const roof = Number(document.getElementById('roof_area').value)||0;
-      const gifa = Number(document.getElementById('gifa_input').value)||6000;
-      const basement = Number(document.getElementById('basement_area').value)||0;
-      const footprint = Number(document.getElementById('footprint_input').value)||1500;
-      const openings = Number(document.getElementById('openings_input').value)||0;
-      const wall = Number(document.getElementById('wall_area_input').value)||2200;
-      const levels = Number(document.getElementById('levels_input')?.value)||4;
-
-      const roofPct = gifa ? (roof/gifa*100).toFixed(1) : '—';
-      const basementPct = gifa ? (basement/gifa*100).toFixed(1) : '—';
-
-      document.getElementById('roof_pct').textContent = `${roofPct} %`;
-      document.getElementById('basement_pct').textContent = `${basementPct} %`;
-
+    
       const metricsDiv = document.getElementById('metrics_display');
       metricsDiv.innerHTML = `
         <div>Roof % of GIFA: ${roofPct}%</div>
@@ -262,7 +248,7 @@
       metricsDiv.innerHTML += `<div class="mt-1 font-semibold text-green-600">
         Estimated Auto Budget: <span id="autoBudget">$${autoBudget.toLocaleString()}</span>
       </div>`;
-    }
+    
 
     // initial paint
     toggleBasement();
