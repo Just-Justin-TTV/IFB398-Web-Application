@@ -226,16 +226,16 @@
           Cancel
         </a>
 
-        {% if can_edit and request.GET.saved %}
-          <a href="{% url 'calculator_results' %}"
-             class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+        {% if request.GET.saved or not can_edit %}
+        <form action="{% url 'calculator' %}" method="post" class="mt-6 text-right">
+          {% csrf_token %}
+          <input type="hidden" name="metrics_id" value="{{ p.id }}">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+            <span class="material-icons text-[18px]">bolt</span>
             Choose Interventions
-            <span class="material-icons text-[18px]">arrow_forward</span>
-          </a>
-          <script>
-            // After a successful save, scroll to show the new CTA
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-          </script>
+          </button>
+        </form>
         {% endif %}
       </div>
     </div>

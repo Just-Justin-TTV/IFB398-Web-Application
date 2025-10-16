@@ -434,27 +434,41 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
 
     return grouped_interventions
 
+def _get_current_metric(request) -> Metrics:
+    """
+    Resolve which Metrics row the calculator should use.
+    Priority:
+      1) metrics_id passed in POST/GET
+      2) metrics_id stored in session
+      3) latest project for this AppUser (fallback)
+    """
+    app_user = _resolve_app_user(request)
+    metrics_id = (
+        request.POST.get("metrics_id")
+        or request.GET.get("metrics_id")
+        or request.session.get("metrics_id")
+    )
+
+    m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
+    if not m and app_user:
+        m = Metrics.objects.filter(user=app_user).order_by("-updated_at", "-created_at").first()
+    if not m:
+        m = Metrics.objects.create(user=app_user if app_user else None)
+
+    request.session["metrics_id"] = m.id  # keep everyone in sync
+    request.session.modified = True
+    return m
+
 
 def _process_calculator_post(request: HttpRequest) -> HttpResponse:
-    app_user = _resolve_app_user(request)
-    if not app_user:
-        if not getattr(request, "user", None) or not getattr(request.user, "is_authenticated", False):
-            return JsonResponse({"error": "Must be authenticated to run calculator."}, status=401)
-        dj_user = request.user
-        username = getattr(dj_user, "username", None) or f"user_{dj_user.id}"
-        email = getattr(dj_user, "email", "") or ""
-        app_user, _ = AppUser.objects.get_or_create(username=username, defaults={"email": email})
-
-    metric = Metrics.objects.filter(user=app_user).order_by("-created_at").first()
-    if not metric:
-        metric = Metrics.objects.create(user=app_user)
+    # Use the current/edited project instead of "latest for this user"
+    metric = _get_current_metric(request)
 
     # read selected ids from form/json
-    selected_ids = []
     try:
         selected_ids = request.POST.getlist("selected_ids") or []
     except Exception:
-        pass
+        selected_ids = []
     if not selected_ids:
         try:
             payload = json.loads(request.body.decode("utf-8") or "{}")
