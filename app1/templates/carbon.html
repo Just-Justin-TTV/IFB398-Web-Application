@@ -35,20 +35,30 @@
       </div>
       <nav class="flex-1 px-4 py-4">
         <ul class="space-y-2">
-          <li><a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border 
-             {% if 'dashboard' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% else %} border-gray-200 hover:bg-gray-50 {% endif %}">
-             <span class="material-icons">dashboard</span><span class="font-medium">Dashboard</span></a></li>
-          <li><a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border
-             {% if 'projects' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% else %} border-gray-200 hover:bg-gray-50 {% endif %}">
-             <span class="material-icons">folder</span><span class="font-medium">Projects</span></a></li>
-          <li><a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand text-white shadow hover:bg-brand-dark">
-             <span class="material-icons">build</span><span class="font-medium">Interventions</span></a></li>
+          <li>
+            <a href="{% url 'dashboard' %}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl border {% if 'dashboard' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% else %} border-gray-200 hover:bg-gray-50 {% endif %}">
+              <span class="material-icons">dashboard</span><span class="font-medium">Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'projects' %}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl border {% if 'projects' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% else %} border-gray-200 hover:bg-gray-50 {% endif %}">
+              <span class="material-icons">folder</span><span class="font-medium">Projects</span>
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'carbon' %}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-brand text-white shadow hover:bg-brand-dark">
+              <span class="material-icons">build</span><span class="font-medium">Interventions</span>
+            </a>
+          </li>
           <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">
-             <span class="material-icons">calculate</span><span class="font-medium">Cost Matrix</span></a></li>
+            <span class="material-icons">calculate</span><span class="font-medium">Cost Matrix</span></a></li>
           <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">
-             <span class="material-icons">description</span><span class="font-medium">Reports</span></a></li>
+            <span class="material-icons">description</span><span class="font-medium">Reports</span></a></li>
           <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">
-             <span class="material-icons">settings</span><span class="font-medium">Settings</span></a></li>
+            <span class="material-icons">settings</span><span class="font-medium">Settings</span></a></li>
         </ul>
       </nav>
     </aside>
@@ -151,6 +161,7 @@
               </div>
             </div>
 
+            <!-- Keep container (we clear it in JS so nothing shows here) -->
             <div class="grid grid-cols-12">
               <div class="col-span-12 px-6 py-3 space-y-2" id="metrics_display"></div>
             </div>
@@ -168,7 +179,6 @@
           <!-- Interventions Budget + Targets -->
           <div>
             <h2 class="font-semibold mb-2">Set Target Impact Ratings and Global Budget</h2>
-            <!-- This form posts your targets to /calculator/ -->
             <form id="targetsForm" action="/calculator/" method="post" class="space-y-2">
               {% csrf_token %}
               <label for="global_budget"><strong>Total Budget (AUD):</strong></label>
@@ -181,7 +191,6 @@
                 </div>
               {% endfor %}
 
-              <!-- Hidden slot for metrics_id (filled after save) -->
               <input type="hidden" name="metrics_id" id="metrics_id">
 
               <input id="generateBtn" type="submit" value="Generate Interventions"
@@ -234,21 +243,21 @@
       document.getElementById('combined_line').textContent = `Total Units: ${a+k+w}`;
     }
 
-    
-      const metricsDiv = document.getElementById('metrics_display');
-      metricsDiv.innerHTML = `
-        <div>Roof % of GIFA: ${roofPct}%</div>
-        <div>Basement % of GIFA: ${basementPct}%</div>
-        <div>Footprint % of GIFA: ${(footprint/gifa*100).toFixed(1)}%</div>
-        <div>Openings % of facade: ${(openings/wall*100).toFixed(1)}%</div>
-        <div>Wall:Floor %: ${(wall/(gifa*levels)*100).toFixed(1)}%</div>
-      `;
+    // Update just the % labels; clear on-page summary
+    function recalc(){
+      const roof = Number(document.getElementById('roof_area').value)||0;
+      const gifa = Number(document.getElementById('gifa_input').value)||0;
+      const basement = Number(document.getElementById('basement_area').value)||0;
 
-      const autoBudget = roof*10 + basement*12 + footprint*8 + wall*15 + openings*5;
-      metricsDiv.innerHTML += `<div class="mt-1 font-semibold text-green-600">
-        Estimated Auto Budget: <span id="autoBudget">$${autoBudget.toLocaleString()}</span>
-      </div>`;
-    
+      const roofPct = gifa ? (roof/gifa*100).toFixed(1) : '—';
+      const basementPct = gifa ? (basement/gifa*100).toFixed(1) : '—';
+
+      document.getElementById('roof_pct').textContent = `${roofPct} %`;
+      document.getElementById('basement_pct').textContent = `${basementPct} %`;
+
+      const metricsDiv = document.getElementById('metrics_display');
+      if (metricsDiv) metricsDiv.innerHTML = '';
+    }
 
     // initial paint
     toggleBasement();
@@ -278,7 +287,6 @@
       const wall       = Number(document.getElementById('wall_area_input').value) || 0;
       const openings   = Number(document.getElementById('openings_input').value) || 0;
       const footprint  = Number(document.getElementById('footprint_input').value) || 0;
-      const levels     = Number(document.getElementById('levels_input')?.value) || 4;
 
       const roofPct     = gifa ? (roofArea / gifa * 100) : null;
       const basementPct = gifa ? (basement / gifa * 100) : null;
@@ -355,7 +363,7 @@
       document.getElementById('confirmList').innerHTML = html;
     }
 
-    // Wire the bottom form flow: save -> show modal -> on OK submit
+    // Save → show modal → OK submits the /calculator/ form
     (function wireGenerate() {
       const form = document.getElementById('targetsForm');
       if (!form) return;
@@ -369,20 +377,17 @@
           const data = await saveMetrics(payload);
           if (data?.metrics_id) {
             metricsId = String(data.metrics_id);
-            // store for later pages if needed
             sessionStorage.setItem('metrics_id', metricsId);
           }
         } catch (err) {
           console.error(err);
           alert('Could not save building metrics. Check console/logs.');
-          return; // stop here on failure
+          return;
         }
 
-        // show confirmation
         renderConfirmation(payload);
         showModal();
 
-        // on OK -> inject metrics_id to the form and submit
         const okBtn = document.getElementById('confirmOkBtn');
         const metricsInput = document.getElementById('metrics_id');
         const onOk = () => {
