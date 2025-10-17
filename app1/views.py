@@ -12,6 +12,8 @@ import json
 from decimal import Decimal, InvalidOperation
 from .models import Metrics, User as AppUser
 from django.db import connection
+from django.contrib.auth.models import User
+
 
 
 # Home page
@@ -320,3 +322,63 @@ def calculator(request):
             'global_budget': global_budget,
             'targets': targets
         })
+
+# PUBLIC VIEWS
+def home(request):
+    return render(request, "home.html")
+
+def login_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect("dashboard")
+        else:
+            messages.error(request, "Invalid username or password.")
+    return render(request, "login.html")
+
+def register(request):
+    # Your existing register logic here
+    return render(request, "register.html")
+
+def register_success(request):
+    return render(request, "register_success.html")
+
+
+# PROTECTED VIEWS (require login)
+@login_required(login_url="login")
+def dashboard(request):
+    return render(request, "dashboard.html")
+
+@login_required(login_url="login")
+def projects(request):
+    return render(request, "projects.html")
+
+@login_required(login_url="login")
+def calculator(request):
+    return render(request, "calculator.html")
+
+@login_required(login_url="login")
+def carbon(request):
+    return render(request, "carbon.html")
+
+@login_required(login_url="login")
+def carbon_2(request):
+    return render(request, "carbon_2.html")
+
+@login_required(login_url="login")
+def calculator_results(request):
+    return render(request, "calculator_results.html")
+
+@login_required(login_url="login")
+def create_project(request):
+    return render(request, "create_project.html")
+
+
+# LOGOUT
+@login_required(login_url="login")
+def logout_view(request):
+    logout(request)
+    return redirect("home")

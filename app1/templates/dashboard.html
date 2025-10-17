@@ -71,7 +71,40 @@
           </div>
           <div class="flex items-center gap-3">
             <div class="hidden md:flex items-center gap-2 text-sm text-gray-600">
-              <span class="material-icons text-[18px] text-gray-500">person</span>
+              <!-- Profile Icon with Logout Dropdown -->
+              <div class="relative ml-auto">
+                <button id="profileButton"
+                  class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition">
+                  <span class="material-icons text-gray-600">person</span>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div id="profileDropdown"
+                  class="absolute right-0 mt-2 w-36 bg-white rounded-lg shadow-lg border border-gray-100 hidden z-50">
+                  <form method="post" action="{% url 'logout' %}" class="border-t border-gray-100">
+                    {% csrf_token %}
+                    <button type="submit"
+                      class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                      Logout
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <script>
+                const profileButton = document.getElementById("profileButton");
+                const profileDropdown = document.getElementById("profileDropdown");
+
+                profileButton.addEventListener("click", () => {
+                  profileDropdown.classList.toggle("hidden");
+                });
+
+                document.addEventListener("click", (e) => {
+                  if (!profileButton.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    profileDropdown.classList.add("hidden");
+                  }
+                });
+              </script>
               <span>{{ request.session.user_name|default:"" }}</span>
             </div>
             <a href="{% url 'projects' %}"
