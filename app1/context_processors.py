@@ -1,6 +1,4 @@
 # app1/context_processors.py
-from django.conf import settings
-
 def theme_context(request):
     """
     Add theme context to all templates
@@ -8,7 +6,8 @@ def theme_context(request):
     current_theme = request.session.get('user_theme', 'light')
     return {
         'current_theme': current_theme,
-        'user_theme': current_theme,  
+        'user_theme': current_theme,
+    }  # ✅ ADD THE CLOSING BRACE!
 
 def accessibility_settings(request):
     """
