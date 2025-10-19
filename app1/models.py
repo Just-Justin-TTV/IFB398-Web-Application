@@ -1,5 +1,17 @@
 from django.db import models
 
+class User(models.Model):
+    id = models.AutoField(primary_key=True)
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+
+    class Meta:
+        db_table = 'User'
+
+    def __str__(self):
+        return self.username
+
 class ClassTargets(models.Model):
     class_name = models.CharField(max_length=100, primary_key=True)
     target_rating = models.FloatField()
@@ -9,7 +21,6 @@ class ClassTargets(models.Model):
 
     def __str__(self):
         return self.class_name
-
 
 class Interventions(models.Model):
     id = models.AutoField(primary_key=True)
@@ -40,26 +51,6 @@ class InterventionDependencies(models.Model):
         unique_together = (('intervention_id', 'metric_name'),)
         managed = False  # Django won't create or alter this table
 
-
-
-
-
-
-
-
-
-class User(models.Model):
-    id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=150, unique=True)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
-
-    class Meta:
-        db_table = 'User'
-
-    def __str__(self):
-        return self.username
-
 class InterventionEffects(models.Model):
     source_intervention_name = models.CharField(max_length=255, db_column='source_intervention_name')
     target_intervention_name = models.CharField(max_length=255, db_column='target_intervention_name')
@@ -72,8 +63,6 @@ class InterventionEffects(models.Model):
     def __str__(self):
         return f"{self.source_intervention_name} → {self.target_intervention_name} ({self.effect_value})"
 
-
-# NEW
 class Metrics(models.Model):
     """
     Stores the values entered on the Building Metrics step.
@@ -111,12 +100,11 @@ class Metrics(models.Model):
     # Optional computed outputs
     estimated_auto_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
 
-    # app/models.py  (inside class Metrics)
-
+    # Project info
     project_name = models.CharField(max_length=255, null=True, blank=True)
-    location     = models.CharField(max_length=255, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
 
-        # Housekeeping
+    # Housekeeping
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -141,3 +129,13 @@ class Metrics(models.Model):
             if hasattr(self, k):
                 setattr(self, k, v)
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    theme = models.CharField(max_length=20, default='light')
+    text_size = models.CharField(max_length=20, default='normal')
+    
+    class Meta:
+        db_table = 'UserProfile'
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"

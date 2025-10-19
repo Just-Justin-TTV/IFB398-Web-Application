@@ -1,176 +1,96 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Create Project</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
-          borderRadius: { "2xl": "1rem" }
-        }
-      }
-    }
-  </script>
+{% block title %}Create Project - Carbon Management{% endblock %}
 
-  <!-- Material Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
+{% block page_title %}Create New Project{% endblock %}
+{% block page_subtitle %}Add a project name, location, and type to get started{% endblock %}
 
-<body class="min-h-screen bg-gray-50 text-gray-900">
-<div class="flex min-h-screen">
-
-  <!-- Sidebar -->
-  <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-    <div class="px-5 py-6 border-b">
-      <div class="flex items-center gap-3">
-        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-        <div>
-          <p class="text-xs text-gray-500">Welcome</p>
-          <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+{% block content %}
+<div class="max-w-4xl">
+    <!-- Django messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-lg px-4 py-3 text-sm
+                    {% if message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200
+                    {% elif message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200
+                    {% else %} bg-blue-50 text-blue-700 border border-blue-200 {% endif %}">
+            {{ message }}
         </div>
-      </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
-    <nav class="px-3 py-4 space-y-1">
-      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">dashboard</span> Dashboard
-      </a>
-
-      <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow">
-        <span class="material-icons text-[18px]">folder</span> Projects
-      </a>
-
-      <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">build</span> Interventions
-      </a>
-
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">calculate</span> Cost Matrix
-      </a>
-
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">description</span> Reports
-      </a>
-
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">settings</span> Settings
-      </a>
-    </nav>
-  </aside>
-
-  <!-- Main -->
-  <main class="flex-1">
-    <!-- Top header -->
-    <header class="bg-white border-b">
-      <div class="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold">Create New Project</h1>
-          <p class="text-sm text-gray-600">Add a project name, location, and type to get started.</p>
-        </div>
-        <a href="{% url 'projects' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-          <span class="material-icons text-[18px]">arrow_back</span>
-          Back to Projects
-        </a>
-      </div>
-    </header>
-
-    <div class="max-w-4xl mx-auto px-6 py-8">
-
-      <!-- Django messages -->
-      {% if messages %}
-        <div class="mb-4 space-y-2">
-          {% for message in messages %}
-            <div class="rounded-lg px-4 py-2 text-sm
-                        {% if message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200
-                        {% elif message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200
-                        {% else %} bg-blue-50 text-blue-700 border border-blue-200 {% endif %}">
-              {{ message }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <!-- Form card -->
-      <form id="projectForm" method="post" action="{% url 'create_project' %}" class="bg-white border rounded-2xl shadow-sm p-6 md:p-8">
+    <!-- Form card -->
+    <form id="projectForm" method="post" action="{% url 'create_project' %}" class="bg-white border rounded-2xl shadow-sm p-8">
         {% csrf_token %}
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="md:col-span-2">
-            <label for="project_name" class="block text-sm font-medium text-gray-700 mb-1">Project Name <span class="text-red-500">*</span></label>
-            <input id="project_name" name="project_name" type="text" required
-                   placeholder="e.g. Pinecrest Logistics Hub"
-                   class="w-full rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-          </div>
+            <div class="md:col-span-2">
+                <label for="project_name" class="block text-sm font-medium text-gray-700 mb-2">Project Name <span class="text-red-500">*</span></label>
+                <input id="project_name" name="project_name" type="text" required
+                       placeholder="e.g. Pinecrest Logistics Hub"
+                       class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+            </div>
 
-          <div>
-            <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <input id="location" name="location" type="text" placeholder="e.g. Sydney, NSW"
-                   class="w-full rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-          </div>
+            <div>
+                <label for="location" class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <input id="location" name="location" type="text" placeholder="e.g. Sydney, NSW"
+                       class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+            </div>
 
-          <div>
-            <label for="project_type" class="block text-sm font-medium text-gray-700 mb-1">Project Type <span class="text-red-500">*</span></label>
-            <select id="project_type" name="project_type" required
-                    class="w-full rounded-xl border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-              <option value="" selected disabled>Select a type</option>
-              <option value="Residential">Residential</option>
-              <option value="Commercial">Commercial</option>
-              <option value="Industrial">Industrial</option>
-              <option value="Infrastructure">Infrastructure</option>
-              <option value="Mixed Use">Mixed Use</option>
-            </select>
-          </div>
+            <div>
+                <label for="project_type" class="block text-sm font-medium text-gray-700 mb-2">Project Type <span class="text-red-500">*</span></label>
+                <select id="project_type" name="project_type" required
+                        class="w-full rounded-xl border border-gray-300 px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                    <option value="" selected disabled>Select a type</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Industrial">Industrial</option>
+                    <option value="Infrastructure">Infrastructure</option>
+                    <option value="Mixed Use">Mixed Use</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Sticky action bar -->
-        <div class="sticky bottom-0 -mx-6 md:-mx-8 mt-8 bg-white/90 backdrop-blur border-t px-6 md:px-8 py-4 rounded-b-2xl">
-          <div class="flex justify-end gap-3">
+        <!-- Action buttons -->
+        <div class="flex justify-end gap-3 mt-8 pt-6 border-t">
             <a href="{% url 'projects' %}"
-               class="inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm hover:bg-gray-50">
-              Cancel
+               class="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3 text-sm font-medium hover:bg-gray-50 transition-colors">
+                Cancel
             </a>
 
             <button type="submit" id="nextBtn"
-                    class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed">
-              <span class="material-icons text-[18px]">arrow_forward</span>
-              Next
+                    class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-white text-sm font-medium shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <span class="material-icons text-[18px]">arrow_forward</span>
+                Next
             </button>
-          </div>
         </div>
-      </form>
-    </div>
-  </main>
+    </form>
 </div>
 
 <script>
-  // Simple client-side validation to enable/disable Next button
-  (function () {
-    const form = document.getElementById('projectForm');
-    const nameEl = document.getElementById('project_name');
-    const typeEl = document.getElementById('project_type');
-    const nextBtn = document.getElementById('nextBtn');
+    // Simple client-side validation to enable/disable Next button
+    (function () {
+        const form = document.getElementById('projectForm');
+        const nameEl = document.getElementById('project_name');
+        const typeEl = document.getElementById('project_type');
+        const nextBtn = document.getElementById('nextBtn');
 
-    function validate() {
-      const ok = nameEl.value.trim().length > 0 && typeEl.value.trim().length > 0;
-      nextBtn.disabled = !ok;
-    }
-    nameEl.addEventListener('input', validate);
-    typeEl.addEventListener('change', validate);
-    validate();
+        function validate() {
+            const ok = nameEl.value.trim().length > 0 && typeEl.value.trim().length > 0;
+            nextBtn.disabled = !ok;
+        }
+        nameEl.addEventListener('input', validate);
+        typeEl.addEventListener('change', validate);
+        validate();
 
-    // Prevent double submit
-    form.addEventListener('submit', function () {
-      nextBtn.disabled = true;
-      nextBtn.classList.add('opacity-60');
-    });
-  })();
+        // Prevent double submit
+        form.addEventListener('submit', function () {
+            nextBtn.disabled = true;
+            nextBtn.classList.add('opacity-60');
+        });
+    })();
 </script>
-</body>
-</html>
+{% endblock %}

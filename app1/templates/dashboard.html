@@ -1,228 +1,150 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
-          borderRadius: { "2xl": "1rem" }
-        }
-      }
-    }
-  </script>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
 
-<body class="min-h-screen bg-gray-50 text-gray-900">
-  <div class="flex min-h-screen">
+{% block title %}Dashboard - Carbon Management{% endblock %}
 
-    <!-- ============ Sidebar ============ -->
-    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-      <div class="px-5 py-6 border-b">
-        <div class="flex items-center gap-3">
-          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-          <div>
-            <p class="text-xs text-gray-500">Welcome</p>
-            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
-          </div>
-        </div>
-      </div>
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of projects & emissions{% endblock %}
 
-      <nav class="px-3 py-4 space-y-1">
-        <a href="{% url 'dashboard' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">dashboard</span> Dashboard
-        </a>
-        <a href="{% url 'projects' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">folder</span> Projects
-        </a>
-        <a href="{% url 'carbon' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">build</span> Interventions
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">description</span> Reports
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">settings</span> Settings
-        </a>
-      </nav>
-    </aside>
-    <!-- ============ End Sidebar ============ -->
-
-    <!-- ============ Main ============ -->
-    <main class="flex-1">
-      <!-- Header -->
-      <header class="bg-white border-b">
-        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-semibold">Dashboard</h1>
-            <p class="text-sm text-gray-600">Overview of projects & emissions</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="hidden md:flex items-center gap-2 text-sm text-gray-600">
-              <span class="material-icons text-[18px] text-gray-500">person</span>
-              <span>{{ request.session.user_name|default:"" }}</span>
-            </div>
-            <a href="{% url 'projects' %}"
-               class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
-              <span class="material-icons text-[18px]">add</span> New Project
-            </a>
-          </div>
-        </div>
-      </header>
-
-      <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        <!-- Stat cards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+{% block content %}
+<div class="space-y-6">
+    <!-- Stat cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Total CO₂ Emitted</h3>
-              <span class="material-icons text-brand">cloud</span>
+                <h3 class="text-sm font-medium text-gray-500">Total CO₂ Emitted</h3>
+                <span class="material-icons text-blue-600">cloud</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">2,032 <span class="text-sm font-normal text-gray-500">tons</span></p>
+            <p class="mt-2 text-3xl font-bold tracking-tight">2,032 <span class="text-sm font-normal text-gray-500">tons</span></p>
             <p class="mt-1 text-xs text-gray-500">FY to date</p>
-          </article>
+        </div>
 
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Projects</h3>
-              <span class="material-icons text-brand">folder_open</span>
+                <h3 class="text-sm font-medium text-gray-500">Projects</h3>
+                <span class="material-icons text-green-600">folder_open</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">40 <span class="text-xs font-medium text-green-600 align-middle">+5%</span></p>
+            <p class="mt-2 text-3xl font-bold tracking-tight">40 <span class="text-xs font-medium text-green-600 align-middle">+5%</span></p>
             <p class="mt-1 text-xs text-gray-500">vs last month</p>
-          </article>
+        </div>
 
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Open Actions</h3>
-              <span class="material-icons text-brand">checklist</span>
+                <h3 class="text-sm font-medium text-gray-500">Open Actions</h3>
+                <span class="material-icons text-orange-600">checklist</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">18</p>
+            <p class="mt-2 text-3xl font-bold tracking-tight">18</p>
             <p class="mt-1 text-xs text-gray-500">Across all projects</p>
-          </article>
+        </div>
 
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Avg. Reduction</h3>
-              <span class="material-icons text-brand">trending_down</span>
+                <h3 class="text-sm font-medium text-gray-500">Avg. Reduction</h3>
+                <span class="material-icons text-purple-600">trending_down</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">23%</p>
+            <p class="mt-2 text-3xl font-bold tracking-tight">23%</p>
             <p class="mt-1 text-xs text-gray-500">From interventions</p>
-          </article>
-        </section>
+        </div>
+    </section>
 
-        <!-- Project summary -->
-        <section class="bg-white border rounded-2xl shadow-sm">
-          <div class="px-5 py-4 border-b flex items-center justify-between">
-            <h2 class="text-lg font-semibold">Project Summary</h2>
+    <!-- Project summary -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-900">Project Summary</h2>
             <div class="flex items-center gap-3">
-              <label class="text-sm text-gray-600">Filter</label>
-              <select class="appearance-none rounded-full border px-4 py-2 pr-8 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-                <option>All Projects</option>
-                <option>Active</option>
-                <option>Completed</option>
-              </select>
+                <label class="text-sm text-gray-600">Filter</label>
+                <select class="rounded-lg border border-gray-300 px-4 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option>All Projects</option>
+                    <option>Active</option>
+                    <option>Completed</option>
+                </select>
             </div>
-          </div>
+        </div>
 
-          <div class="overflow-x-auto">
+        <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-              <thead class="bg-gray-50 text-gray-600">
-                <tr>
-                  <th class="text-left px-5 py-3">Name</th>
-                  <th class="text-left px-5 py-3">Due</th>
-                  <th class="text-left px-5 py-3">Status</th>
-                  <th class="text-right px-5 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y">
-                {% for p in latest_projects %}
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 font-medium">
-                    {% if p.project_name %}
-                      {{ p.project_name }}
-                    {% else %}
-                      Project #{{ p.id }}
-                    {% endif %}
-                  </td>
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-6 py-3 font-medium text-gray-700">Name</th>
+                        <th class="text-left px-6 py-3 font-medium text-gray-700">Due</th>
+                        <th class="text-left px-6 py-3 font-medium text-gray-700">Status</th>
+                        <th class="text-right px-6 py-3 font-medium text-gray-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for p in latest_projects %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">
+                            {% if p.project_name %}
+                                {{ p.project_name }}
+                            {% else %}
+                                Project #{{ p.id }}
+                            {% endif %}
+                        </td>
 
-                  <td class="px-5 py-3">
-                    {% if p.updated_at %}
-                      {{ p.updated_at|date:"d/m/Y" }}
-                    {% elif p.created_at %}
-                      {{ p.created_at|date:"d/m/Y" }}
-                    {% else %}
-                      —
-                    {% endif %}
-                  </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {% if p.updated_at %}
+                                {{ p.updated_at|date:"d/m/Y" }}
+                            {% elif p.created_at %}
+                                {{ p.created_at|date:"d/m/Y" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
 
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full 
-                      {% if p.status == 'Complete' %} bg-green-50 text-green-700
-                      {% elif p.status == 'In Progress' %} bg-orange-50 text-orange-700
-                      {% else %} bg-red-50 text-red-700
-                      {% endif %}
-                      px-2.5 py-0.5">
-                      {{ p.status|default:"Incomplete" }}
-                    </span>
-                  </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center rounded-full 
+                                {% if p.status == 'Complete' %} bg-green-100 text-green-800
+                                {% elif p.status == 'In Progress' %} bg-orange-100 text-orange-800
+                                {% else %} bg-red-100 text-red-800
+                                {% endif %}
+                                px-3 py-1 text-xs font-medium">
+                                {{ p.status|default:"Incomplete" }}
+                            </span>
+                        </td>
 
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Edit</a>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="4" class="px-5 py-6 text-gray-500 text-center">
-                    No recent projects found.
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'project_detail' p.id %}" class="text-blue-600 hover:text-blue-800 font-medium text-sm">View Details</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-gray-500 text-center">
+                            No recent projects found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
-          </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Simple bars / mini chart -->
-        <section>
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Year-to-Year Emissions</h2>
+    <!-- Emissions Chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-semibold text-gray-900">Year-to-Year Emissions</h2>
             <p class="text-sm text-gray-500">Synthetic preview</p>
-          </div>
-          <div class="bg-white border rounded-2xl shadow-sm p-5">
-            <div class="h-40 flex items-end justify-between gap-2">
-              <div class="w-7 bg-brand/30 rounded" style="height:25%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:45%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:70%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:55%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:72%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:68%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:58%"></div>
-              <div class="w-7 bg-brand rounded"    style="height:76%"></div>
+        </div>
+        <div class="h-48 flex items-end justify-between gap-3">
+            <div class="w-8 bg-blue-200 rounded-t" style="height:25%"></div>
+            <div class="w-8 bg-blue-200 rounded-t" style="height:45%"></div>
+            <div class="w-8 bg-blue-200 rounded-t" style="height:70%"></div>
+            <div class="w-8 bg-blue-200 rounded-t" style="height:55%"></div>
+            <div class="w-8 bg-blue-200 rounded-t" style="height:72%"></div>
+            <div class="w-8 bg-blue-200 rounded-t" style="height:68%"></div>
+            <div class="w-8 bg-blue-200 rounded-t" style="height:58%"></div>
+            <div class="w-8 bg-blue-600 rounded-t" style="height:76%"></div>
+        </div>
+        <div class="mt-4 flex items-center gap-4 text-sm text-gray-600">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-3 h-3 bg-blue-200 rounded"></span>
+                Prior years
             </div>
-            <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
-              <span class="inline-block w-3 h-3 bg-brand/30 rounded"></span> Prior years
-              <span class="inline-block w-3 h-3 bg-brand rounded ml-4"></span> Current year
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-3 h-3 bg-blue-600 rounded"></span>
+                Current year
             </div>
-          </div>
-        </section>
-      </div>
-    </main>
-  </div>
-</body>
-</html>
+        </div>
+    </div>
+</div>
+{% endblock %}
