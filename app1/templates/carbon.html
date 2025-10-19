@@ -80,7 +80,7 @@
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Roof Area / % GIFA</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3 flex items-center gap-2">
-                <input id="roof_area" name="roof_area" type="number" value="{{ roof_area|default:'1500' }}" class="w-44 rounded-xl border-gray-300 px-3 py-2">
+                <input id="roof_area" name="roof_area" type="number" value="{{ roof_area|default:'0' }}" class="w-44 rounded-xl border-gray-300 px-3 py-2">
                 <span>m² /</span><span id="roof_pct">— %</span>
               </div>
             </div>
@@ -113,7 +113,7 @@
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Basement Size / % GIFA</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3 flex items-center gap-2">
-                <input id="basement_area" name="basement_area" type="number" value="{{ basement_area|default:'1000' }}" class="w-44 rounded-xl border-gray-300 px-3 py-2">
+                <input id="basement_area" name="basement_area" type="number" value="{{ basement_area|default:'0' }}" class="w-44 rounded-xl border-gray-300 px-3 py-2">
                 <span>m² /</span><span id="basement_pct">— %</span>
               </div>
             </div>
@@ -122,9 +122,9 @@
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">No of Apartments / Keys / WCS</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3 grid grid-cols-3 gap-4">
-                <input id="apartments" name="apartments" type="number" value="{{ apartments|default:'40' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
-                <input id="keys" name="keys" type="number" value="{{ keys|default:'40' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
-                <input id="wcs" name="wcs" type="number" value="{{ wcs|default:'80' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
+                <input id="apartments" name="apartments" type="number" value="{{ apartments|default:'0' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
+                <input id="keys" name="keys" type="number" value="{{ keys|default:'0' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
+                <input id="wcs" name="wcs" type="number" value="{{ wcs|default:'0' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
               </div>
             </div>
             <div class="px-6 py-2 text-sm text-gray-600" id="combined_line"></div>
@@ -136,28 +136,28 @@
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-5 px-6 py-3">GIFA (m²)</div>
               <div class="col-span-7 px-6 py-3">
-                <input id="gifa_input" name="gifa" type="number" value="{{ GIFA|default:'6000' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
+                <input id="gifa_input" name="gifa" type="number" value="{{ GIFA|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
               </div>
             </div>
 
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-5 px-6 py-3">External Wall Area (m²)</div>
               <div class="col-span-7 px-6 py-3">
-                <input id="wall_area_input" name="external_wall_area" type="number" value="{{ external_wall_area|default:'2200' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
+                <input id="wall_area_input" name="external_wall_area" type="number" value="{{ external_wall_area|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
               </div>
             </div>
 
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-5 px-6 py-3">External Openings (m²)</div>
               <div class="col-span-7 px-6 py-3">
-                <input id="openings_input" name="external_openings" type="number" value="{{ external_openings|default:'320' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
+                <input id="openings_input" name="external_openings" type="number" value="{{ external_openings|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
               </div>
             </div>
 
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-5 px-6 py-3">Building Footprint (m²)</div>
               <div class="col-span-7 px-6 py-3">
-                <input id="footprint_input" name="building_footprint" type="number" value="{{ building_footprint|default:'1500' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
+                <input id="footprint_input" name="building_footprint" type="number" value="{{ building_footprint|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border-gray-300 px-3 py-2">
               </div>
             </div>
 
@@ -170,11 +170,7 @@
       </section>
 
       <!-- Sticky Bottom Action Bar -->
-      <div class="sticky bottom-0 bg-white/90 backdrop-blur border-t px-6 py-4">
-        <div class="max-w-7xl ml-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <a href="{% url 'carbon_2' %}" class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-white font-medium shadow-sm hover:bg-brand-dark">
-            Next <span class="material-icons text-base">arrow_forward</span>
-          </a>
+
 
           <!-- Interventions Budget + Targets -->
           <div>
@@ -182,7 +178,7 @@
             <form id="targetsForm" action="/calculator/" method="post" class="space-y-2">
               {% csrf_token %}
               <label for="global_budget"><strong>Total Budget (AUD):</strong></label>
-              <input type="number" name="global_budget" value="1000000" min="0" class="w-full md:w-72 rounded-xl border-gray-300 px-3 py-2">
+              <input type="number" name="global_budget" value="0" min="0" class="w-full md:w-72 rounded-xl border-gray-300 px-3 py-2">
 
               {% for entry in class_targets %}
                 <div>
@@ -243,7 +239,6 @@
       document.getElementById('combined_line').textContent = `Total Units: ${a+k+w}`;
     }
 
-    // Update just the % labels; clear on-page summary
     function recalc(){
       const roof = Number(document.getElementById('roof_area').value)||0;
       const gifa = Number(document.getElementById('gifa_input').value)||0;
@@ -259,12 +254,12 @@
       if (metricsDiv) metricsDiv.innerHTML = '';
     }
 
-    // initial paint
+    // Initial render
     toggleBasement();
     combineLine();
     recalc();
 
-    /* ---------- Confirmation modal helpers ---------- */
+    /* ---------- Modal helpers ---------- */
     function showModal() {
       document.getElementById('confirmModal').classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
@@ -279,7 +274,7 @@
       return m ? m.pop() : '';
     }
 
-    /* ---------- Build payload & save ---------- */
+    /* ---------- Build payload ---------- */
     function buildPayload() {
       const roofArea   = Number(document.getElementById('roof_area').value) || 0;
       const gifa       = Number(document.getElementById('gifa_input').value) || 0;
@@ -290,7 +285,7 @@
 
       const roofPct     = gifa ? (roofArea / gifa * 100) : null;
       const basementPct = gifa ? (basement / gifa * 100) : null;
-      const autoBudget  = roofArea*10 + basement*12 + footprint*8 + wall*15 + openings*5;
+      const globalBudget = Number(document.querySelector('input[name="global_budget"]').value) || 0;
 
       return {
         building_type: document.getElementById('building_type').value,
@@ -311,7 +306,7 @@
         external_openings_m2: openings,
         building_footprint_m2: footprint,
 
-        estimated_auto_budget_aud: autoBudget
+        global_budget: globalBudget  // ✅ use total budget instead of autoBudget
       };
     }
 
@@ -332,6 +327,7 @@
       return res.json(); // { ok: true, metrics_id: ... }
     }
 
+    /* ---------- Confirmation modal ---------- */
     function renderConfirmation(payload) {
       const fmt   = (n, unit='') => (n == null || isNaN(n)) ? '—' : `${Number(n).toLocaleString()}${unit}`;
       const pct   = (n) => (n == null || isNaN(n)) ? '—' : `${Number(n).toFixed(1)}%`;
@@ -357,7 +353,9 @@
           <div class="text-gray-500">External Openings</div><div class="font-medium">${fmt(payload.external_openings_m2, ' m²')}</div>
           <div class="text-gray-500">Building Footprint</div><div class="font-medium">${fmt(payload.building_footprint_m2, ' m²')}</div>
 
-          <div class="text-gray-500">Estimated Auto Budget</div><div class="font-semibold text-green-700">${money(payload.estimated_auto_budget_aud)}</div>
+          <!-- ✅ Fixed label and value -->
+          <div class="text-gray-500">Total Budget (AUD)</div>
+          <div class="font-semibold text-green-700">${money(payload.global_budget)}</div>
         </div>
       `;
       document.getElementById('confirmList').innerHTML = html;
@@ -400,5 +398,3 @@
       });
     })();
   </script>
-</body>
-</html>
