@@ -1,90 +1,204 @@
-{% load static tailwind_tags %}
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="{% if request.session.theme == 'dark' %}dark{% elif request.session.theme == 'high-contrast' %}high-contrast{% endif %}">
 <head>
-  <title>Django Tailwind</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  {% tailwind_css %}
-  
-  <!-- Google Fonts: Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-  
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  
-  <style>
-    /* Apply Inter globally */
-    body {
-      font-family: 'Inter', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.6;
-      letter-spacing: 0.01em;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Carbon Management System{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { 
+                        brand: { 
+                            DEFAULT:"#0ea5e9", 
+                            600:"#0891b2", 
+                            700:"#0e7490" 
+                        } 
+                    },
+                    borderRadius: { "2xl": "1rem" }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- High Contrast Mode Styles -->
+    <style>
+        .high-contrast {
+            --tw-bg-opacity: 1;
+            background-color: rgb(0 0 0) !important;
+            color: rgb(255 255 255) !important;
+        }
 
-  {% block head %}{% endblock %}
+        .high-contrast .bg-white {
+            background-color: rgb(0 0 0) !important;
+            color: rgb(255 255 255) !important;
+            border-color: rgb(255 255 255) !important;
+        }
+
+        .high-contrast .bg-gray-50 {
+            background-color: rgb(0 0 0) !important;
+        }
+
+        .high-contrast .text-gray-900,
+        .high-contrast .text-gray-800,
+        .high-contrast .text-gray-700,
+        .high-contrast .text-gray-600,
+        .high-contrast .text-gray-500 {
+            color: rgb(255 255 255) !important;
+        }
+
+        .high-contrast .border-gray-200,
+        .high-contrast .border-gray-300 {
+            border-color: rgb(255 255 255) !important;
+        }
+
+        .high-contrast input,
+        .high-contrast select,
+        .high-contrast textarea {
+            background-color: rgb(0 0 0) !important;
+            color: rgb(255 255 255) !important;
+            border-color: rgb(255 255 255) !important;
+        }
+
+        /* Ensure dark mode styles don't override high contrast */
+        .high-contrast .dark\:bg-gray-800 {
+            background-color: rgb(0 0 0) !important;
+        }
+
+        .high-contrast .dark\:text-white,
+        .high-contrast .dark\:text-gray-300 {
+            color: rgb(255 255 255) !important;
+        }
+
+        .high-contrast .dark\:border-gray-700 {
+            border-color: rgb(255 255 255) !important;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 text-gray-900 
-    {% if current_theme == 'dark' %}theme-dark{% endif %}
-    {% if current_theme == 'high-contrast' %}high-contrast{% endif %}"
-    data-theme="{{ current_theme }}">
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-200">
+    
+    <!-- Enhanced Top Navigation - HIDDEN on login/register pages -->
+    {% if not 'login' in request.path and not 'register' in request.path %}
+    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Left: Logo & Main Nav -->
+                <div class="flex items-center gap-8">
+                    <!-- Logo -->
+                    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-8 h-8 rounded-full object-cover">
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">CarbonTrack</span>
+                    </a>
+                    
+                    <!-- Main Navigation -->
+                    <div class="hidden md:flex items-center gap-1">
+                        <a href="{% url 'dashboard' %}" 
+                           class="px-4 py-2 text-sm font-medium rounded-lg transition-all {% if 'dashboard' in request.path %}bg-blue-50 dark:bg-blue-900/30 text-brand border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+                            📊 Dashboard
+                        </a>
+                        <a href="{% url 'projects' %}" 
+                           class="px-4 py-2 text-sm font-medium rounded-lg transition-all {% if 'projects' in request.path %}bg-blue-50 dark:bg-blue-900/30 text-brand border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+                            🏗️ Projects
+                        </a>
+                        <a href="{% url 'carbon' %}" 
+                           class="px-4 py-2 text-sm font-medium rounded-lg transition-all {% if 'carbon' in request.path %}bg-blue-50 dark:bg-blue-900/30 text-brand border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+                            💡 Interventions
+                        </a>
+                        <a href="{% url 'reports' %}" 
+                           class="px-4 py-2 text-sm font-medium rounded-lg transition-all {% if 'reports' in request.path %}bg-blue-50 dark:bg-blue-900/30 text-brand border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+                            📄 Reports
+                        </a>
+                    </div>
+                </div>
 
- <!-- Navigation Bar -->
-<nav class="px-4 py-2 {% if current_theme == 'dark' %}bg-[black] text-white{% else %}bg-white text-gray-900 border-b{% endif %}">
-    <div class="flex items-center max-w-7xl mx-auto space-x-4">
+                <!-- Right: User Menu & Actions -->
+                <div class="flex items-center gap-4">
+                    {% if user.is_authenticated %}
+                    <!-- User Profile Dropdown -->
+                    <div class="relative group">
+                        <button class="flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all shadow-sm">
+                            <div class="w-8 h-8 bg-gradient-to-br from-brand to-brand-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                {{ user.username|first|upper }}
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ user.username }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ user.email }}</div>
+                            </div>
+                            <span class="material-icons text-gray-400 dark:text-gray-300 text-lg">expand_more</span>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ user.get_full_name|default:user.username }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</div>
+                            </div>
+                            
+                            <div class="p-2">
+                                <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                    <span class="material-icons text-gray-400 dark:text-gray-300 text-lg">settings</span>
+                                    Account Settings
+                                </a>
+                            </div>
+                            
+                            <div class="p-2 border-t border-gray-100 dark:border-gray-700">
+                                <form method="post" action="{% url 'logout' %}" class="w-full">
+                                    {% csrf_token %}
+                                    <button type="submit" class="flex items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full">
+                                        <span class="material-icons text-lg">logout</span>
+                                        Sign Out
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
 
-      <!-- Auth Links -->
-      {% if not request.user.is_authenticated %}
-        <a href="{% url 'login' %}" 
-           class="flex items-center px-6 h-10 border-l border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition">
-          <span class="material-icons mr-2">account_circle</span>Sign In
-        </a>
-      {% else %}
-        <form method="post" action="{% url 'logout' %}" class="inline">
-          {% csrf_token %}
-          <button type="submit"
-            class="flex items-center px-6 h-10 border-l border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition cursor-pointer select-none">
-            <span class="material-icons mr-2">logout</span>
-            <span>Logout</span>
-          </button>
-        </form>
-      {% endif %}
+                    <!-- New Project Button -->
+                    <a href="{% url 'create_project' %}"
+                       class="bg-gradient-to-r from-brand to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2">
+                        <span class="material-icons text-lg">add</span>
+                        New Project
+                    </a>
+                    {% else %}
+                    <!-- Login/Signup when not authenticated -->
+                    <div class="flex items-center gap-3">
+                        <a href="{% url 'login' %}" 
+                           class="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors font-medium">
+                            Sign In
+                        </a>
+                        <a href="{% url 'register' %}"
+                           class="bg-brand hover:bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors">
+                            Get Started
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
 
-      <!-- Menu Links -->
-      <div class="flex space-x-0">
-        <a href="{% url 'register' %}" 
-           class="px-6 h-10 flex items-center border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition">Sign Up</a>
-        <a href="{% url 'dashboard' %}" 
-           class="px-6 h-10 flex items-center border-r {% if current_theme == 'dark' %}border-gray-600 bg-[black] text-white{% else %}border-gray-300 bg-white text-gray-900{% endif %} font-semibold hover:bg-gray-900 hover:text-white transition">Dashboard</a>
-      </div>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mt-2">{% block page_subtitle %}Overview of projects & emissions{% endblock %}</p>
+        </div>
 
-      <!-- Search -->
-      <form class="flex items-center ml-auto {% if current_theme == 'dark' %}bg-[black] border-[black]{% else %}bg-white border-gray-300{% endif %} rounded border overflow-hidden h-10 w-64">
-        <input type="text" class="flex-1 px-4 py-1 focus:outline-none {% if current_theme == 'dark' %}bg-[black] text-white{% else %}bg-white text-gray-900{% endif %}" placeholder="Search" />
-        <button type="submit" class="px-3">
-          <span class="material-icons {% if current_theme == 'dark' %}text-red-400{% else %}text-red-600{% endif %}">search</span>
-        </button>
-      </form>
+        <!-- Page Content -->
+        {% block content %}
+        <!-- Content will be injected here -->
+        {% endblock %}
+    </main>
 
-    </div>
-</nav>
-
-  <!-- Page Content -->
-  <div class="container mx-auto mt-6 px-4">
-    {% block content %}
-    <h1 class="text-3xl font-extrabold mb-4 text-gray-900">Welcome to the Dashboard</h1>
-    <p class="text-lg leading-relaxed text-gray-700 max-w-prose">
-      This is a test paragraph with readable text. The font is now cleaner and more modern.
-    </p>
-    <a href="/calculator/" 
-       class="inline-block px-6 py-3 bg-[black] text-[white] text-lg font-semibold rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-white transition">
-      Go to Calculator
-    </a>
-    {% endblock %}
-  </div>
-
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

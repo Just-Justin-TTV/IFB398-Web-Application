@@ -29,6 +29,8 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+from django.utils import timezone
+
 from .models import (
     Metrics,
     ClassTargets,
@@ -647,58 +649,103 @@ def register_view(request: HttpRequest):
     return render(request, "register.html")
 
 
-@login_required(login_url='login')
-def settings_view(request: HttpRequest):
+## settings page
+@login_required
+def settings_view(request):
     user = request.user
-    current_theme = request.session.get("theme", "light")
+    current_theme = request.session.get('theme', 'light')
 
-    if request.method == "POST":
+    if request.method == 'POST':
         try:
-            if "theme" in request.POST:
-                new_theme = request.POST.get("theme", "light")
-                request.session["theme"] = new_theme
+            # -------------------------
+            # Theme change - UPDATED TO INCLUDE HIGH CONTRAST
+            # -------------------------
+            if 'theme_select' in request.POST:  # This matches your select name
+                new_theme = request.POST.get('theme_select', 'light')
+                request.session['theme'] = new_theme
                 request.session.modified = True
                 messages.success(request, f"Theme changed to {new_theme} mode!")
+                return redirect('settings')
 
-            elif "update_profile" in request.POST:
-                new_username = request.POST.get("username")
-                new_email = request.POST.get("email")
+            # -------------------------
+            # Profile info update
+            # -------------------------
+            if 'update_profile' in request.POST:
+                new_username = request.POST.get('username')
+                new_email = request.POST.get('email')
+
                 if not new_username or not new_email:
                     raise ValueError("Username and email cannot be blank.")
+
+                # Check if username/email already exists
                 if User.objects.filter(username=new_username).exclude(id=user.id).exists():
                     raise ValueError("Username already exists.")
                 if User.objects.filter(email=new_email).exclude(id=user.id).exists():
                     raise ValueError("Email already exists.")
+
+                # Save updates
                 user.username = new_username
                 user.email = new_email
                 user.save()
                 messages.success(request, "Profile updated successfully!")
 
-            elif "change_password" in request.POST:
-                current_password = request.POST.get("current_password")
-                new_password = request.POST.get("new_password")
-                confirm_password = request.POST.get("confirm_password")
-                if not all([current_password, new_password, confirm_password]):
+            # -------------------------
+            # Password change
+            # -------------------------
+            if 'change_password' in request.POST:
+                current_password = request.POST.get('current_password')
+                new_password = request.POST.get('new_password')
+                confirm_password = request.POST.get('confirm_password')
+
+                if not current_password or not new_password or not confirm_password:
                     raise ValueError("All password fields are required.")
+
                 if new_password != confirm_password:
                     raise ValueError("New passwords do not match.")
+
                 if not user.check_password(current_password):
                     raise ValueError("Current password is incorrect.")
+
+                # Set new password and keep user logged in
                 user.set_password(new_password)
                 user.save()
+                from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, user)
                 messages.success(request, "Password changed successfully!")
 
         except ValueError as ve:
+            # Caught logical/user errors
             messages.error(request, f"Error: {ve}")
-        except Exception:
+        except Exception as e:
+            # Catch unexpected errors
             messages.error(request, "Unexpected error occurred. Please try again later.")
-            logger.exception("Settings update failed")
+            # Optional: log the error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Settings update failed: {e}")
 
-        return redirect("settings")
+        return redirect('settings')
 
-    return render(request, "settings.html", {"user": user, "current_theme": current_theme})
+    # GET request
+    context = {
+        'user': user,
+        'current_theme': current_theme
+    }
+    return render(request, 'settings.html', context)
 
+
+@login_required
+def update_theme(request):
+    """
+    Handle theme updates from navigation dropdown
+    """
+    if request.method == 'POST':
+        theme = request.POST.get('theme', 'light')
+        request.session['user_theme'] = theme
+        request.session.modified = True
+    
+    # Redirect back to the previous page
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required(login_url='login')
 def home(request):
@@ -798,3 +845,95 @@ def dashboard_view(request: HttpRequest):
 @login_required(login_url='login')
 def carbon_2_view(request):
     return render(request, 'carbon_2.html')
+
+# =========================
+# Reports Views
+# =========================
+
+@login_required(login_url='login')
+def reports_page(request: HttpRequest):
+    """
+    Reports overview page - shows all projects that can generate reports
+    """
+    # Get all projects for the current user
+    user = _resolve_app_user(request)
+    if user:
+        projects = Metrics.objects.filter(user=user).order_by("-updated_at", "-created_at")
+    else:
+        # Fallback to session projects
+        session_ids = request.session.get("my_project_ids", [])
+        projects = Metrics.objects.filter(id__in=session_ids).order_by("-updated_at", "-created_at")
+    
+    return render(request, "reports.html", {
+        "projects": projects
+    })
+
+@login_required(login_url='login')
+def generate_report(request: HttpRequest, project_id: int):
+    """
+    Generate a report for a specific project
+    """
+    project = get_object_or_404(Metrics, id=project_id)
+    
+    # Check if user has access to this project
+    user = _resolve_app_user(request)
+    if user and project.user != user:
+        session_ids = request.session.get("my_project_ids", [])
+        if project.id not in session_ids:
+            return redirect("reports")
+    
+    download_format = request.GET.get('download')
+    
+    if download_format == 'pdf':
+        return _generate_pdf_report(project)
+    elif download_format == 'word':
+        return _generate_word_report(project)
+    else:
+
+        return _generate_html_report(request, project)
+
+def _generate_html_report(request: HttpRequest, project: Metrics):
+    """
+    Generate HTML report preview
+    """
+
+    total_impact = 0
+    estimated_savings = 0
+
+    if project.estimated_auto_budget_aud:
+        estimated_savings = float(project.estimated_auto_budget_aud) * 0.15  # Example: 15% savings
+    
+    context = {
+        'project': project,
+        'generated_date': timezone.now(),
+        'total_impact': total_impact,
+        'estimated_savings': estimated_savings,
+        'carbon_reduction': 23,  # Example data
+        'water_savings': 15,     # Example data
+        'health_improvement': 18, # Example data
+    }
+    
+    return render(request, "report_template.html", context)
+
+def _generate_pdf_report(project: Metrics):
+    """
+    Generate PDF report (placeholder - you'll need to implement PDF generation)
+    """
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.pdf"'
+    
+    # Placeholder - using weasyprint
+    response.write(b'PDF report generation would go here')
+    return response
+
+def _generate_word_report(project: Metrics):
+    """
+    Generate Word document report (placeholder)
+    """
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.docx"'
+    
+    # Placeholder 
+    response.write(b'Word report generation would go here')
+    return response
+

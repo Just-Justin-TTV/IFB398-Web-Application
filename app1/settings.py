@@ -80,7 +80,6 @@ TEMPLATES = [
             os.path.join(BASE_DIR, 'app1/templates'),
             os.path.join(BASE_DIR, 'theme/templates'),
         ],
-
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -89,7 +88,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'app1.context_processors.theme_context', 
-              #  'app1.context_processors.accessibility_settings',
+                #'app1.context_processors.accessibility_settings',
             ],
         },
     },
