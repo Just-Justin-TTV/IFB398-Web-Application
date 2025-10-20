@@ -216,29 +216,82 @@
           </div>
         </section>
 
-        <!-- Simple bars / mini chart -->
+        <!-- Year-to-Year Project Creations -->
         <section>
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Year-to-Year Emissions</h2>
-            <p class="text-sm text-gray-500">Synthetic preview</p>
+            <h2 class="text-lg font-semibold">Year-to-Year Project Creations</h2>
+            <p class="text-sm text-gray-500">Counts per year</p>
           </div>
+
           <div class="bg-white border rounded-2xl shadow-sm p-5">
-            <div class="h-40 flex items-end justify-between gap-2">
-              <div class="w-7 bg-brand/30 rounded" style="height:25%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:45%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:70%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:55%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:72%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:68%"></div>
-              <div class="w-7 bg-brand/30 rounded" style="height:58%"></div>
-              <div class="w-7 bg-brand rounded"    style="height:76%"></div>
+            <div class="h-40">
+              <canvas id="yoyProjectsChart" height="120" aria-label="Projects created per year" role="img"></canvas>
             </div>
-            <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
-              <span class="inline-block w-3 h-3 bg-brand/30 rounded"></span> Prior years
-              <span class="inline-block w-3 h-3 bg-brand rounded ml-4"></span> Current year
+
+            <div class="mt-3 flex items-center gap-4 text-xs text-gray-500">
+              <span class="inline-flex items-center gap-1">
+                <span class="w-3 h-3 inline-block rounded opacity-40 bg-sky-500"></span> Prior years
+              </span>
+              <span class="inline-flex items-center gap-1">
+                <span class="w-3 h-3 inline-block rounded bg-sky-500"></span> Current year
+              </span>
             </div>
           </div>
         </section>
+
+        <!-- Chart.js CDN (only include once on the page) -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+          (function () {
+            const labels = {{ yoy_labels_json|safe }};
+            const counts = {{ yoy_counts_json|safe }};
+            const currentYear = {{ current_year|default:0 }};
+
+            // light bars for prior years; solid bar for current year
+            const barColors = labels.map(y => (parseInt(y) === currentYear)
+              ? 'rgba(14, 165, 233, 1)'     // sky-500 solid
+              : 'rgba(14, 165, 233, 0.35)'  // sky-500 @ 35% opacity
+            );
+
+            const ctx = document.getElementById('yoyProjectsChart').getContext('2d');
+            new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels,
+                datasets: [{
+                  label: 'Projects created',
+                  data: counts,
+                  backgroundColor: barColors,
+                  borderColor: barColors,
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => {
+                        const n = ctx.parsed.y ?? 0;
+                        return `${n} project${n === 1 ? '' : 's'}`;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  x: { grid: { display: false } },
+                  y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 } // whole numbers
+                  }
+                }
+              }
+            });
+          })();
+        </script>
+
       </div>
     </main>
   </div>

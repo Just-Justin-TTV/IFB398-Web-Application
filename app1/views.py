@@ -13,7 +13,8 @@ from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
 )
-from django.db.models import Sum, F, Avg
+from django.db.models.functions import ExtractYear
+from django.db.models import Sum, F, Avg, Count
 from django.db.models.functions import Coalesce
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
@@ -738,18 +739,20 @@ def calculator_results(request):
 
 @login_required(login_url='login')
 def dashboard_view(request: HttpRequest):
+    # --- Projects / budgets ---
     latest_projects = Metrics.objects.order_by("-updated_at", "-created_at")[:3]
     total_projects = Metrics.objects.count()
 
-    # Average of user-entered total budgets (ignores NULLs)
-    avg_budget = Metrics.objects.aggregate(
-        avg_budget=Avg("total_budget_aud")
-    )["avg_budget"] or Decimal("0")
+    avg_budget = (
+        Metrics.objects.aggregate(avg_budget=Avg("total_budget_aud"))["avg_budget"]
+        or Decimal("0")
+    )
 
-     # Intervention stats
-    avg_intervention_rating = Interventions.objects.aggregate(
-        avg_rating=Avg("intervention_rating")
-    )["avg_rating"] or 0
+    # --- Intervention stats ---
+    avg_intervention_rating = (
+        Interventions.objects.aggregate(avg_rating=Avg("intervention_rating"))["avg_rating"]
+        or 0
+    )
 
     top_theme_data = (
         Interventions.objects.values("theme")
@@ -760,15 +763,37 @@ def dashboard_view(request: HttpRequest):
     top_theme = top_theme_data["theme"] if top_theme_data else "N/A"
     top_theme_rating = round(top_theme_data["avg_rating"], 2) if top_theme_data else 0
 
+    # --- YoY: number of projects created per year (last 6 years incl. current) ---
+    now = timezone.now()
+    start_year = now.year - 5
 
-    return render(request, "dashboard.html", {
+    yoy_raw = (
+        Metrics.objects
+        .annotate(y=ExtractYear("created_at"))
+        .filter(y__gte=start_year, y__lte=now.year)
+        .values("y")
+        .annotate(n=Count("id"))
+        .order_by("y")
+    )
+
+    yoy_map = {row["y"]: int(row["n"]) for row in yoy_raw}
+    yoy_labels = [str(y) for y in range(start_year, now.year + 1)]
+    yoy_counts = [yoy_map.get(int(lbl), 0) for lbl in yoy_labels]
+
+    # --- Build context once ---
+    context = {
         "latest_projects": latest_projects,
         "total_projects": total_projects,
-        "avg_budget": avg_budget,   # ← pass this instead of total_co2
+        "avg_budget": avg_budget,
         "avg_intervention_rating": avg_intervention_rating,
         "top_theme": top_theme,
         "top_theme_rating": top_theme_rating,
-    })
+        "yoy_labels_json": json.dumps(yoy_labels),
+        "yoy_counts_json": json.dumps(yoy_counts),
+        "current_year": now.year,
+    }
+
+    return render(request, "dashboard.html", context)
 
 @login_required(login_url='login')
 def carbon_2_view(request):
