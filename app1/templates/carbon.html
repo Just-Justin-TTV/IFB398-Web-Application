@@ -286,7 +286,7 @@
       const roofPct     = gifa ? (roofArea / gifa * 100) : null;
       const basementPct = gifa ? (basement / gifa * 100) : null;
       const globalBudget = Number(document.querySelector('input[name="global_budget"]').value) || 0;
-
+      sessionStorage.setItem('global_budget', String(globalBudget));
       return {
         building_type: document.getElementById('building_type').value,
 

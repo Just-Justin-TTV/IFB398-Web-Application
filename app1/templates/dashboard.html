@@ -1,4 +1,5 @@
 {% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,42 +85,57 @@
 
       <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
         <!-- Stat cards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- Total CO2 Emitted -->
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Total CO₂ Emitted</h3>
-              <span class="material-icons text-brand">cloud</span>
+              <p class="text-sm text-gray-600">Total CO₂ Emitted</p>
+              <span class="material-icons text-sky-500">cloud</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">2,032 <span class="text-sm font-normal text-gray-500">tons</span></p>
-            <p class="mt-1 text-xs text-gray-500">FY to date</p>
-          </article>
+            <div class="mt-2 text-3xl font-semibold">
+              {{ total_co2|intcomma }}
+              <span class="ml-1 text-base font-normal text-gray-500">tCO₂e</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">FY to date</p>
+          </div>
 
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+          <!-- Projects -->
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Projects</h3>
-              <span class="material-icons text-brand">folder_open</span>
+              <p class="text-sm text-gray-600">Projects</p>
+              <span class="material-icons text-sky-500">folder</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">40 <span class="text-xs font-medium text-green-600 align-middle">+5%</span></p>
-            <p class="mt-1 text-xs text-gray-500">vs last month</p>
-          </article>
+            <div class="mt-2 text-3xl font-semibold">{{ total_projects|intcomma }}</div>
+            <p class="text-xs mt-1">
+              {% if projects_mom >= 0 %}
+                <span class="text-emerald-600">+{{ projects_mom }}%</span>
+                <span class="text-gray-400"> vs last month</span>
+              {% else %}
+                <span class="text-rose-600">{{ projects_mom }}%</span>
+                <span class="text-gray-400"> vs last month</span>
+              {% endif %}
+            </p>
+          </div>
 
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+          <!-- Open Actions -->
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Open Actions</h3>
-              <span class="material-icons text-brand">checklist</span>
+              <p class="text-sm text-gray-600">Open Actions</p>
+              <span class="material-icons text-sky-500">checklist</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">18</p>
-            <p class="mt-1 text-xs text-gray-500">Across all projects</p>
-          </article>
+            <div class="mt-2 text-3xl font-semibold">{{ open_actions|intcomma }}</div>
+            <p class="text-xs text-gray-400 mt-1">Across all projects</p>
+          </div>
 
-          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+          <!-- Avg. Reduction -->
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm text-gray-500">Avg. Reduction</h3>
-              <span class="material-icons text-brand">trending_down</span>
+              <p class="text-sm text-gray-600">Avg. Reduction</p>
+              <span class="material-icons text-sky-500">trending_down</span>
             </div>
-            <p class="mt-2 text-3xl font-semibold tracking-tight">23%</p>
-            <p class="mt-1 text-xs text-gray-500">From interventions</p>
-          </article>
+            <div class="mt-2 text-3xl font-semibold">{{ avg_reduction }}<span class="text-base font-normal">%</span></div>
+            <p class="text-xs text-gray-400 mt-1">From interventions</p>
+          </div>
         </section>
 
         <!-- Project summary -->

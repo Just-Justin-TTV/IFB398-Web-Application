@@ -19,6 +19,11 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.models import User
+from django.db.models import Sum, F
+from django.db.models.functions import Coalesce
+from django.utils import timezone
+from datetime import timedelta
+
 
 from .models import (
     Metrics,
