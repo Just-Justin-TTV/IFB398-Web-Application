@@ -98,7 +98,7 @@ class Metrics(models.Model):
     building_footprint_m2 = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
     # Optional computed outputs
-    estimated_auto_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
+    total_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
 
     # Project info
     project_name = models.CharField(max_length=255, null=True, blank=True)
