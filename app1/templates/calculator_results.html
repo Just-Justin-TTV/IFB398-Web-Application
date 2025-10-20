@@ -97,10 +97,7 @@
         <div class="flex flex-wrap items-center gap-3">
           <label class="text-sm text-gray-700">Select Class</label>
           <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-            <option value="all">All</option>
-            {% for c in classes %}
-              <option value="{{ c.key|escape }}">{{ c.label|escape }}</option>
-            {% endfor %}
+            <option value="all" selected>All</option>
           </select>
 
           <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>

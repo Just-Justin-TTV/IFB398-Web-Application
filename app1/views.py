@@ -13,6 +13,9 @@ from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
 )
+from django.db.models import Sum, F, Avg
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
@@ -735,26 +738,36 @@ def calculator_results(request):
 
 @login_required(login_url='login')
 def dashboard_view(request: HttpRequest):
-    """
-    Dashboard overview — shows recent projects and key stats.
-    """
-    from app1.models import Metrics
-
-    # Fetch the 3 most recently updated or created projects
     latest_projects = Metrics.objects.order_by("-updated_at", "-created_at")[:3]
-
-    # Optional: count projects, calculate fake stats if needed
     total_projects = Metrics.objects.count()
-    total_co2 = 2032  # Replace with a calculation later if available
-    open_actions = 18
-    avg_reduction = 23
+
+    # Average of user-entered total budgets (ignores NULLs)
+    avg_budget = Metrics.objects.aggregate(
+        avg_budget=Avg("total_budget_aud")
+    )["avg_budget"] or Decimal("0")
+
+     # Intervention stats
+    avg_intervention_rating = Interventions.objects.aggregate(
+        avg_rating=Avg("intervention_rating")
+    )["avg_rating"] or 0
+
+    top_theme_data = (
+        Interventions.objects.values("theme")
+        .annotate(avg_rating=Avg("intervention_rating"))
+        .order_by("-avg_rating")
+        .first()
+    )
+    top_theme = top_theme_data["theme"] if top_theme_data else "N/A"
+    top_theme_rating = round(top_theme_data["avg_rating"], 2) if top_theme_data else 0
+
 
     return render(request, "dashboard.html", {
         "latest_projects": latest_projects,
         "total_projects": total_projects,
-        "total_co2": total_co2,
-        "open_actions": open_actions,
-        "avg_reduction": avg_reduction,
+        "avg_budget": avg_budget,   # ← pass this instead of total_co2
+        "avg_intervention_rating": avg_intervention_rating,
+        "top_theme": top_theme,
+        "top_theme_rating": top_theme_rating,
     })
 
 @login_required(login_url='login')

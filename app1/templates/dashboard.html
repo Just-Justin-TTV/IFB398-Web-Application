@@ -86,17 +86,18 @@
       <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
         <!-- Stat cards -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <!-- Total CO2 Emitted -->
+
+          <!-- Avg. Project Budget -->
           <div class="bg-white border rounded-2xl shadow-sm p-5">
             <div class="flex items-center justify-between">
-              <p class="text-sm text-gray-600">Total CO₂ Emitted</p>
-              <span class="material-icons text-sky-500">cloud</span>
+              <p class="text-sm text-gray-600">Avg. Project Budget</p>
+              <span class="material-icons text-sky-500">payments</span>
             </div>
             <div class="mt-2 text-3xl font-semibold">
-              {{ total_co2|intcomma }}
-              <span class="ml-1 text-base font-normal text-gray-500">tCO₂e</span>
+              ${{ avg_budget|floatformat:0|intcomma }}
+              <span class="ml-1 text-base font-normal text-gray-500">AUD</span>
             </div>
-            <p class="text-xs text-gray-400 mt-1">FY to date</p>
+            <p class="text-xs text-gray-400 mt-1">Across all projects</p>
           </div>
 
           <!-- Projects -->
@@ -117,26 +118,34 @@
             </p>
           </div>
 
-          <!-- Open Actions -->
-          <div class="bg-white border rounded-2xl shadow-sm p-5">
-            <div class="flex items-center justify-between">
-              <p class="text-sm text-gray-600">Open Actions</p>
-              <span class="material-icons text-sky-500">checklist</span>
-            </div>
-            <div class="mt-2 text-3xl font-semibold">{{ open_actions|intcomma }}</div>
-            <p class="text-xs text-gray-400 mt-1">Across all projects</p>
+          <!-- Avg. Intervention Rating -->
+        <div class="bg-white border rounded-2xl shadow-sm p-5">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-gray-600">Avg. Intervention Rating</p>
+            <span class="material-icons text-sky-500">star_half</span>
           </div>
+          <div class="mt-2 text-3xl font-semibold">
+            {{ avg_intervention_rating|floatformat:2 }}
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Across all interventions</p>
+        </div>
 
-          <!-- Avg. Reduction -->
-          <div class="bg-white border rounded-2xl shadow-sm p-5">
-            <div class="flex items-center justify-between">
-              <p class="text-sm text-gray-600">Avg. Reduction</p>
-              <span class="material-icons text-sky-500">trending_down</span>
-            </div>
-            <div class="mt-2 text-3xl font-semibold">{{ avg_reduction }}<span class="text-base font-normal">%</span></div>
-            <p class="text-xs text-gray-400 mt-1">From interventions</p>
+        <!-- Top Performing Theme -->
+        <div class="bg-white border rounded-2xl shadow-sm p-5">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-gray-600">Top Performing Theme</p>
+            <span class="material-icons text-sky-500">leaderboard</span>
           </div>
+          <div class="mt-2 text-2xl font-semibold text-gray-900">
+            {{ top_theme|title }}
+          </div>
+          <p class="text-xs text-gray-400 mt-1">
+            Avg. Rating: <span class="font-semibold">{{ top_theme_rating|floatformat:2 }}</span>
+          </p>
+        </div>
+
         </section>
+      </div>
 
         <!-- Project summary -->
         <section class="bg-white border rounded-2xl shadow-sm">
