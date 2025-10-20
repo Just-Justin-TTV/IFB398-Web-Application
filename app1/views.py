@@ -13,12 +13,21 @@ from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
 )
+from django.db.models.functions import ExtractYear
+from django.db.models import Sum, F, Avg, Count
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.models import User
+from django.db.models import Sum, F
+from django.db.models.functions import Coalesce
+from django.utils import timezone
+from datetime import timedelta
+
 
 from django.utils import timezone
 
@@ -150,35 +159,23 @@ def create_project(request: HttpRequest):
 def metrics_edit(request, pk: int):
     """
     Edit basic project info stored in Metrics (project_name, location, building_type).
-    GET  -> renders the same form as create, prefilled
-    POST -> saves and redirects to a detail page (or Projects if you prefer)
+    GET -> renders the same form as create, prefilled
+    POST -> saves and redirects to Projects (or wherever you like)
     """
     m = get_object_or_404(Metrics, pk=pk)
 
-    # only owner or projects created in this session
-    session_ids = set(request.session.get("my_project_ids", []))
-    is_owner = (m.user_id == getattr(_resolve_app_user(request), "id", None))
-    if not is_owner and m.id not in session_ids:
-        return redirect("projects")
-
     if request.method == "POST":
-        m.project_name = (request.POST.get("project_name") or m.project_name or "").strip()
-        m.location     = (request.POST.get("location") or m.location or "").strip()
-        # store select in building_type for now
+        m.project_name  = (request.POST.get("project_name") or m.project_name or "").strip()
+        m.location      = (request.POST.get("location") or m.location or "").strip()
         m.building_type = (request.POST.get("project_type") or m.building_type or "").strip()
         m.save()
 
-        # keep active in session
+        # keep active in session for calculator/interventions
         request.session["metrics_id"] = m.id
-        ids = set(request.session.get("my_project_ids", []))
-        ids.add(m.id)
-        request.session["my_project_ids"] = list(ids)
         request.session.modified = True
 
-        # If you have a detail view, redirect there; otherwise back to projects
         return redirect("projects")
 
-    # GET: reuse the create form, prefilled
     return render(request, "create_project.html", {"m": m, "is_edit": True})
 
 
@@ -268,35 +265,65 @@ def interventions_api(request):
 @require_POST
 @login_required(login_url='login')
 def save_metrics(request: HttpRequest) -> JsonResponse:
+    """
+    Save building metrics for the current project.
+    Stores the manually entered Total Budget (global_budget) into total_budget_aud.
+    """
     try:
-        payload = json.loads(request.body.decode("utf-8"))
+        payload = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
         return HttpResponseBadRequest("Invalid JSON")
 
+    # Find or create Metrics instance
     metrics_id = payload.get("metrics_id") or request.session.get("metrics_id")
     m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
     if not m:
         m = Metrics(user=_resolve_app_user(request))
 
-    numeric_fields = [
-        "roof_area_m2", "roof_percent_gifa", "basement_size_m2", "basement_percent_gifa",
-        "num_apartments", "num_keys", "num_wcs", "gifa_m2", "external_wall_area_m2",
-        "external_openings_m2", "building_footprint_m2", "estimated_auto_budget_aud"
+    # --- Numeric fields ---
+    decimal_fields = [
+        "gifa_m2",
+        "external_wall_area_m2",
+        "external_openings_m2",
+        "building_footprint_m2",
+        "roof_area_m2",
+        "roof_percent_gifa",
+        "basement_size_m2",
+        "basement_percent_gifa",
     ]
-    for field in numeric_fields:
+    for field in decimal_fields:
         if hasattr(m, field):
             setattr(m, field, _to_dec(payload.get(field)))
 
-    if hasattr(m, "building_type"):
-        m.building_type = payload.get("building_type") or getattr(m, "building_type", None)
+    # --- Integer fields ---
+    if hasattr(m, "num_apartments"):
+        m.num_apartments = _to_int(payload.get("num_apartments"))
+    if hasattr(m, "num_keys"):
+        m.num_keys = _to_int(payload.get("num_keys"))
+    if hasattr(m, "num_wcs"):
+        m.num_wcs = _to_int(payload.get("num_wcs"))
+
+    # --- Boolean & string fields ---
     if hasattr(m, "basement_present"):
         m.basement_present = bool(payload.get("basement_present"))
+    if hasattr(m, "building_type"):
+        m.building_type = payload.get("building_type") or getattr(m, "building_type", None)
 
+    # --- Total budget logic ---
+    global_budget = payload.get("global_budget")
+    if hasattr(m, "total_budget_aud"):
+        m.total_budget_aud = _to_dec(global_budget if global_budget not in (None, "", "null") else 0)
+
+    # --- Ensure user ownership ---
     if not m.user:
         m.user = _resolve_app_user(request)
 
     m.save()
+
+    # Persist session
     request.session["metrics_id"] = m.id
+    request.session.modified = True
+
     return JsonResponse({"ok": True, "metrics_id": m.id})
 
 
@@ -436,27 +463,41 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
 
     return grouped_interventions
 
+def _get_current_metric(request) -> Metrics:
+    """
+    Resolve which Metrics row the calculator should use.
+    Priority:
+      1) metrics_id passed in POST/GET
+      2) metrics_id stored in session
+      3) latest project for this AppUser (fallback)
+    """
+    app_user = _resolve_app_user(request)
+    metrics_id = (
+        request.POST.get("metrics_id")
+        or request.GET.get("metrics_id")
+        or request.session.get("metrics_id")
+    )
+
+    m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
+    if not m and app_user:
+        m = Metrics.objects.filter(user=app_user).order_by("-updated_at", "-created_at").first()
+    if not m:
+        m = Metrics.objects.create(user=app_user if app_user else None)
+
+    request.session["metrics_id"] = m.id  # keep everyone in sync
+    request.session.modified = True
+    return m
+
 
 def _process_calculator_post(request: HttpRequest) -> HttpResponse:
-    app_user = _resolve_app_user(request)
-    if not app_user:
-        if not getattr(request, "user", None) or not getattr(request.user, "is_authenticated", False):
-            return JsonResponse({"error": "Must be authenticated to run calculator."}, status=401)
-        dj_user = request.user
-        username = getattr(dj_user, "username", None) or f"user_{dj_user.id}"
-        email = getattr(dj_user, "email", "") or ""
-        app_user, _ = AppUser.objects.get_or_create(username=username, defaults={"email": email})
-
-    metric = Metrics.objects.filter(user=app_user).order_by("-created_at").first()
-    if not metric:
-        metric = Metrics.objects.create(user=app_user)
+    # Use the current/edited project instead of "latest for this user"
+    metric = _get_current_metric(request)
 
     # read selected ids from form/json
-    selected_ids = []
     try:
         selected_ids = request.POST.getlist("selected_ids") or []
     except Exception:
-        pass
+        selected_ids = []
     if not selected_ids:
         try:
             payload = json.loads(request.body.decode("utf-8") or "{}")
@@ -516,15 +557,11 @@ from django.contrib import messages
 
 @login_required(login_url='login')
 def project_detail_view(request, pk: int):
-    p = Metrics.objects.filter(id=pk).first()
-    if not p:
-        return redirect("projects")
-
-    session_ids = set(request.session.get("my_project_ids", []))
-    owner_id = getattr(_resolve_app_user(request), "id", None)
-    is_owner = (p.user_id == owner_id)
-    if not is_owner and pk not in session_ids:
-        return redirect("projects")
+    """
+    View or edit a project's full details. Anyone logged in can edit.
+    Use ?edit=1 to toggle editable mode (GET). POST saves changes.
+    """
+    p = get_object_or_404(Metrics, id=pk)
 
     if request.method == "POST":
         # strings
@@ -542,21 +579,22 @@ def project_detail_view(request, pk: int):
                 setattr(p, f, _to_dec(request.POST.get(f)))
 
         # ints + bool
-        p.num_apartments = _to_int(request.POST.get("num_apartments"))
-        p.num_keys       = _to_int(request.POST.get("num_keys"))
-        p.num_wcs        = _to_int(request.POST.get("num_wcs"))
+        p.num_apartments   = _to_int(request.POST.get("num_apartments"))
+        p.num_keys         = _to_int(request.POST.get("num_keys"))
+        p.num_wcs          = _to_int(request.POST.get("num_wcs"))
         p.basement_present = bool(request.POST.get("basement_present"))
 
         p.save()
 
+        # keep this project “active” for interventions page
         request.session["metrics_id"] = p.id
         request.session.modified = True
 
-        # if user clicked the hidden fast-path button (optional)
         if request.POST.get("next") == "interventions":
             return redirect("carbon")
 
-        # normal save → reload in edit mode with saved flag
+        # stay in edit mode and show the “saved” banner
+        from django.urls import reverse
         return redirect(f"{reverse('project_detail', args=[p.id])}?edit=1&saved=1")
 
     # GET
@@ -564,7 +602,6 @@ def project_detail_view(request, pk: int):
     request.session["metrics_id"] = p.id
     request.session.modified = True
     return render(request, "project_detail.html", {"p": p, "can_edit": can_edit})
-
 # =========================
 # Authentication + Settings
 # =========================
@@ -749,27 +786,61 @@ def calculator_results(request):
 
 @login_required(login_url='login')
 def dashboard_view(request: HttpRequest):
-    """
-    Dashboard overview — shows recent projects and key stats.
-    """
-    from app1.models import Metrics
-
-    # Fetch the 3 most recently updated or created projects
+    # --- Projects / budgets ---
     latest_projects = Metrics.objects.order_by("-updated_at", "-created_at")[:3]
-
-    # Optional: count projects, calculate fake stats if needed
     total_projects = Metrics.objects.count()
-    total_co2 = 2032  # Replace with a calculation later if available
-    open_actions = 18
-    avg_reduction = 23
 
-    return render(request, "dashboard.html", {
+    avg_budget = (
+        Metrics.objects.aggregate(avg_budget=Avg("total_budget_aud"))["avg_budget"]
+        or Decimal("0")
+    )
+
+    # --- Intervention stats ---
+    avg_intervention_rating = (
+        Interventions.objects.aggregate(avg_rating=Avg("intervention_rating"))["avg_rating"]
+        or 0
+    )
+
+    top_theme_data = (
+        Interventions.objects.values("theme")
+        .annotate(avg_rating=Avg("intervention_rating"))
+        .order_by("-avg_rating")
+        .first()
+    )
+    top_theme = top_theme_data["theme"] if top_theme_data else "N/A"
+    top_theme_rating = round(top_theme_data["avg_rating"], 2) if top_theme_data else 0
+
+    # --- YoY: number of projects created per year (last 6 years incl. current) ---
+    now = timezone.now()
+    start_year = now.year - 5
+
+    yoy_raw = (
+        Metrics.objects
+        .annotate(y=ExtractYear("created_at"))
+        .filter(y__gte=start_year, y__lte=now.year)
+        .values("y")
+        .annotate(n=Count("id"))
+        .order_by("y")
+    )
+
+    yoy_map = {row["y"]: int(row["n"]) for row in yoy_raw}
+    yoy_labels = [str(y) for y in range(start_year, now.year + 1)]
+    yoy_counts = [yoy_map.get(int(lbl), 0) for lbl in yoy_labels]
+
+    # --- Build context once ---
+    context = {
         "latest_projects": latest_projects,
         "total_projects": total_projects,
-        "total_co2": total_co2,
-        "open_actions": open_actions,
-        "avg_reduction": avg_reduction,
-    })
+        "avg_budget": avg_budget,
+        "avg_intervention_rating": avg_intervention_rating,
+        "top_theme": top_theme,
+        "top_theme_rating": top_theme_rating,
+        "yoy_labels_json": json.dumps(yoy_labels),
+        "yoy_counts_json": json.dumps(yoy_counts),
+        "current_year": now.year,
+    }
+
+    return render(request, "dashboard.html", context)
 
 @login_required(login_url='login')
 def carbon_2_view(request):
