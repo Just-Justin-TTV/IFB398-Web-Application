@@ -162,42 +162,26 @@
             </div>
         </div>
 
-        <!-- Action buttons -->
-        <div class="flex justify-end gap-3 mt-8">
-            {% if can_edit %}
-            <a href="{% url 'project_detail' p.id %}"
-               class="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3 text-sm font-medium hover:bg-gray-50 transition-colors">
-                Cancel
-            </a>
-            <button type="submit"
-                    class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-white text-sm font-medium shadow-sm hover:bg-brand-600 transition-colors">
-                <span class="material-icons text-[18px]">save</span>
-                Save Changes
-            </button>
-            {% else %}
-            <a href="{% url 'project_detail' p.id %}?edit=1"
-               class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-white text-sm font-medium shadow-sm hover:bg-brand-600 transition-colors">
-                <span class="material-icons text-[18px]">edit</span>
-                Edit Project
-            </a>
-            {% endif %}
-        </div>
-    </form>
+    <!-- Sticky footer actions -->
+    <div class="sticky bottom-0 bg-white/90 backdrop-blur border-t">
+      <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-end gap-3">
+        <a href="{% url 'projects' %}"
+           class="inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm hover:bg-gray-50">
+          Cancel
+        </a>
 
-    <!-- Next step CTA after save -->
-    {% if can_edit and request.GET.saved %}
-    <div class="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
-        <div class="flex items-center justify-between">
-            <div>
-                <h3 class="text-lg font-semibold text-blue-900">Ready to continue?</h3>
-                <p class="text-blue-700 mt-1">Proceed to choose carbon reduction interventions for your project.</p>
-            </div>
-            <a href="{% url 'calculator_results' %}"
-               class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-white text-sm font-medium shadow-sm hover:bg-blue-700 transition-colors">
-                Choose Interventions
-                <span class="material-icons text-[18px]">arrow_forward</span>
-            </a>
-        </div>
+        {% if can_edit and request.GET.saved %}
+          <a href="{% url 'calculator_results' %}"
+             class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+            Choose Interventions
+            <span class="material-icons text-[18px]">arrow_forward</span>
+          </a>
+          <script>
+            // After a successful save, scroll to show the new CTA
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          </script>
+        {% endif %}
+      </div>
     </div>
     {% endif %}
 </div>
