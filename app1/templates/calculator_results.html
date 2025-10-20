@@ -33,17 +33,22 @@
 .stage-chip{
   display:inline-flex; align-items:center; gap:.25rem;
   padding:.125rem .5rem; border-radius:9999px;
-  background:#fef3c7; color:#92400e; border:1px solid #fde68a; /* amber */
+  background:#fef3c7; color:#92400e; border:1px solid #fde68a;
   font-size:11px; line-height:1; margin-left:.375rem;
 }
 .stage-chip .material-icons{ font-size:14px; line-height:1; }
 
 /* Updated rating cell */
-.updated-rating { background:#f0fdf4; }              /* soft green */
+.updated-rating { background:#f0fdf4; }
 .updated-rating .updated-big { font-weight:700; }
 
 /* Rightmost select column */
 .select-cell { position:relative; }
+
+/* Cost pill + warning */
+.cost-pill { border-radius:9999px; }
+#budgetWarn { display:none; }
+#budgetWarn.show { display:inline-flex; }
 </style>
 </head>
 
@@ -92,10 +97,7 @@
         <div class="flex flex-wrap items-center gap-3">
           <label class="text-sm text-gray-700">Select Class</label>
           <select id="classSelect" class="rounded-full border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-            <option value="all">All</option>
-            {% for c in classes %}
-              <option value="{{ c.key|escape }}">{{ c.label|escape }}</option>
-            {% endfor %}
+            <option value="all" selected>All</option>
           </select>
 
           <button id="resetBtn" class="rounded-full bg-gray-900 text-white text-sm px-4 py-2 hover:bg-gray-800">Reset</button>
@@ -117,9 +119,16 @@
           <button id="clearSearch" class="hidden material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[18px]">close</button>
         </div>
 
-        <div class="rounded-full bg-white border px-4 py-2 text-sm shadow-sm">
+        <!-- Cost Tracker pill -->
+        <div class="flex items-center gap-2 rounded-full bg-white border px-3 py-2 text-sm shadow-sm cost-pill">
           <span class="text-gray-500">Cost Tracker:</span>
-          <span id="costTracker" class="font-semibold ml-1">$0</span>
+          <span id="costTracker" class="font-semibold">$0</span>
+          <span class="text-gray-400">·</span>
+          <span class="text-gray-500">Budget:</span>
+          <span id="budgetDisplay" class="font-semibold">$0</span>
+          <span id="budgetWarn" class="ml-2 items-center gap-1 rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[11px]">
+            <span class="material-icons text-[14px]">warning</span> Over budget
+          </span>
         </div>
       </div>
 
@@ -147,7 +156,8 @@
                    data-name="{{ item.name|striptags|escape }}"
                    data-class="{{ item.class_name|default:''|lower|escape }}"
                    data-category="{{ item.intervention_category|default:'Uncategorized'|escape }}"
-                   data-cost="{{ item.cost_level|default:0 }}"
+                   data-cost-level="{{ item.cost_level|default:0 }}"
+                   data-cost-range="{{ item.cost_range|default:''|escape }}"
                    data-rating="{{ item.intervention_rating|default:0 }}"
                    data-stage="{{ item.stage|default:''|escape }}"
                    data-description="{{ item.description|default:''|striptags|escape }}"
@@ -161,7 +171,10 @@
                   </button>
                 </div>
 
-                <div class="col-span-2 px-4 py-3 text-center">{{ item.cost_level|default:0 }}</div>
+                <!-- Show the friendly range if present, else fallback to the level -->
+                <div class="col-span-2 px-4 py-3 text-center">
+                  {{ item.cost_range|default:item.cost_level }}
+                </div>
 
                 <!-- Combined rating cell -->
                 <div class="col-span-3 px-4 py-3 text-center updated-rating">
@@ -207,12 +220,19 @@
   const ROWS = qs('#rows');
   const RAW = [];
 
-  // Build RAW from DOM
+  /* ---------- Budget from previous page ---------- */
+  // carbon.html stores this when you clicked Generate
+  const GLOBAL_BUDGET = Number(sessionStorage.getItem('global_budget') || 0);
+  const fmtMoney = n => '$' + (Number(n)||0).toLocaleString();
+  qs('#budgetDisplay').textContent = fmtMoney(GLOBAL_BUDGET);
+
+  /* ---------- Build RAW from DOM ---------- */
   qsa('.intervention-row').forEach(el => {
     RAW.push({
       id: el.dataset.id,
       name: el.dataset.name,
-      cost: Number(el.dataset.cost || 0),
+      costLevel: Number(el.dataset.costLevel || el.dataset.cost || 0),    // fallback
+      costRange: el.dataset.costRange || '',
       rating: Number(el.dataset.rating || 0),
       currentRating: Number(el.dataset.rating || 0),
       classKey: (el.dataset.class || 'all'),
@@ -227,7 +247,41 @@
 
   const state = { selected: new Set(), query: '', activeClass: 'all', sort: 'impact' };
 
-  /* Parse "Stage" strings: roman or numeric, with/without extra text */
+  /* ---------- Cost range parsing ---------- */
+  // Accepts "25–50k AUD", "200-500k", "1–2m AUD", etc.
+  function parseCostRange(txt, fallbackLevel) {
+    if (!txt) {
+      // quick heuristic if only level (1..10) exists; tweak mapping as you like
+      const L = Number(fallbackLevel||0);
+      const table = {
+        1:[0,25000], 2:[0,50000], 3:[25000,50000], 4:[25000,50000],
+        5:[50000,100000], 6:[100000,200000], 7:[200000,500000],
+        8:[500000,1000000], 9:[1000000,2000000], 10:[2000000,3000000]
+      };
+      const [lo,hi] = table[L] || [0,0];
+      return {min:lo,max:hi,mid:(lo+hi)/2};
+    }
+    const clean = String(txt).toLowerCase().replace(/[,\s]/g,'').replace(/[–—]/g,'-');
+    // capture "a-bk" or "a-bm" or "ak-bk"
+    const m = clean.match(/(\d+(?:\.\d+)?)(k|m)?-(\d+(?:\.\d+)?)(k|m)?/i);
+    if (!m) {
+      // single number like "50k"
+      const s = clean.match(/(\d+(?:\.\d+)?)(k|m)?/i);
+      const v = s ? toNumber(s[1], s[2]) : 0;
+      return {min:v,max:v,mid:v};
+    }
+    const lo = toNumber(m[1], m[2]);
+    const hi = toNumber(m[3], m[4]);
+    return {min:lo, max:hi, mid:(lo+hi)/2};
+  }
+  function toNumber(n, unit) {
+    let v = Number(n||0);
+    if ((unit||'').toLowerCase()==='k') v*=1000;
+    if ((unit||'').toLowerCase()==='m') v*=1000000;
+    return v;
+  }
+
+  /* ---------- Stage helpers ---------- */
   function stageFromStr(s) {
     if (!s) return null;
     s = String(s);
@@ -238,17 +292,13 @@
     if (r2) return parseInt(r2[1],10);
     return null;
   }
-
-  /* Inject/refresh Stage chips (uses data-stage or parses description) */
   function ensureStageChips(scope = document) {
     scope.querySelectorAll('.intervention-row').forEach(row => {
       const nameCell = row.querySelector('.name-cell');
       if (!nameCell) return;
-
       const rawStage = row.getAttribute('data-stage') || '';
       const descText = row.getAttribute('data-description') || '';
       const n = stageFromStr(rawStage) ?? stageFromStr(descText);
-
       let chip = nameCell.querySelector('.stage-chip');
       if (n) {
         if (!chip) {
@@ -264,11 +314,11 @@
       }
     });
   }
-
   function familyFromName(name) {
     return name?.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || '';
   }
 
+  /* ---------- Duplicate + stage gating ---------- */
   function updateDuplicateBlocking() {
     const selectedNames = Array.from(state.selected).map(id => RAW.find(r=>r.id===id)?.name);
     qsa('.intervention-row').forEach(el => {
@@ -337,13 +387,29 @@
     });
   }
 
+  /* ---------- Totals + budget check ---------- */
   function updateStats() {
     qs('#selCount').textContent = state.selected.size;
-    const total = [...state.selected].reduce((a,id)=>a + (RAW.find(r=>r.id===id)?.cost||0),0);
-    qs('#totalCost').textContent = total;
-    qs('#costTracker').textContent = `$${total}`;
+
+    let sumMid = 0;
+    let sumMax = 0;
+
+    for (const id of state.selected) {
+      const r = RAW.find(x=>x.id===id);
+      const {min,max,mid} = parseCostRange(r?.costRange || '', r?.costLevel || 0);
+      sumMid += mid || 0;
+      sumMax += max || 0;
+    }
+
+    qs('#totalCost').textContent = fmtMoney(sumMid);
+    qs('#costTracker').textContent = fmtMoney(sumMid);
+
+    // warn if the conservative (max) total exceeds the budget
+    const warn = GLOBAL_BUDGET > 0 && sumMax > GLOBAL_BUDGET;
+    qs('#budgetWarn').classList.toggle('show', warn);
   }
 
+  /* ---------- Filter + sort + render ---------- */
   function filterRows() {
     RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
@@ -357,7 +423,6 @@
     renderSorted();
   }
 
-  /* Render with Theme → Category → Items grouping */
   function renderSorted() {
     const items = RAW.filter(r=>{
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
@@ -365,9 +430,9 @@
     });
 
     switch(state.sort) {
-      case 'best':   items.sort((a,b)=> (b.currentRating/(b.cost||1)) - (a.currentRating/(a.cost||1))); break;
+      case 'best':   items.sort((a,b)=> (b.currentRating/(b.costLevel||1)) - (a.currentRating/(a.costLevel||1))); break;
       case 'impact': items.sort((a,b)=> b.currentRating - a.currentRating); break;
-      case 'cost':   items.sort((a,b)=> a.cost - b.cost); break;
+      case 'cost':   items.sort((a,b)=> a.costLevel - b.costLevel); break;
       case 'theme':  items.sort((a,b)=> a.originalIndex - b.originalIndex); break;
     }
 
@@ -401,7 +466,7 @@
       });
     });
 
-    ensureStageChips(ROWS);   // add/update stage chips
+    ensureStageChips(ROWS);
     applyStageConstraints();
     updateDuplicateBlocking();
   }
@@ -438,7 +503,7 @@
     });
   }
 
-  // Controls
+  /* ---------- Controls ---------- */
   qs('#classSelect').addEventListener('change', e => { state.activeClass = e.target.value; filterRows(); });
   qs('#searchBox').addEventListener('input', e => { state.query = e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden', !state.query); });
   qs('#clearSearch').addEventListener('click', e => { state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
@@ -472,7 +537,7 @@
     btn.querySelector('.material-icons')?.classList.toggle('rot-180');
   }));
 
-  // Initial render
+  /* ---------- Initial render ---------- */
   ensureStageChips(document);
   filterRows();
 })();
