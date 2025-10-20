@@ -1,5 +1,5 @@
+{% extends 'base.html' %}
 {% load static %}
-{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,213 +85,139 @@
 
       <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
         <!-- Stat cards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-
-          <!-- Avg. Project Budget -->
-          <div class="bg-white border rounded-2xl shadow-sm p-5">
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
-              <p class="text-sm text-gray-600">Avg. Project Budget</p>
-              <span class="material-icons text-sky-500">payments</span>
+              <h3 class="text-sm text-gray-500">Total CO₂ Emitted</h3>
+              <span class="material-icons text-brand">cloud</span>
             </div>
-            <div class="mt-2 text-3xl font-semibold">
-              ${{ avg_budget|floatformat:0|intcomma }}
-              <span class="ml-1 text-base font-normal text-gray-500">AUD</span>
-            </div>
-            <p class="text-xs text-gray-400 mt-1">Across all projects</p>
-          </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">2,032 <span class="text-sm font-normal text-gray-500">tons</span></p>
+            <p class="mt-1 text-xs text-gray-500">FY to date</p>
+          </article>
 
-          <!-- Projects -->
-          <div class="bg-white border rounded-2xl shadow-sm p-5">
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between">
-              <p class="text-sm text-gray-600">Projects</p>
-              <span class="material-icons text-sky-500">folder</span>
+              <h3 class="text-sm text-gray-500">Projects</h3>
+              <span class="material-icons text-brand">folder_open</span>
             </div>
-            <div class="mt-2 text-3xl font-semibold">{{ total_projects|intcomma }}</div>
-            <p class="text-xs mt-1">
-              {% if projects_mom >= 0 %}
-                <span class="text-emerald-600">+{{ projects_mom }}%</span>
-                <span class="text-gray-400"> vs last month</span>
-              {% else %}
-                <span class="text-rose-600">{{ projects_mom }}%</span>
-                <span class="text-gray-400"> vs last month</span>
-              {% endif %}
-            </p>
-          </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">40 <span class="text-xs font-medium text-green-600 align-middle">+5%</span></p>
+            <p class="mt-1 text-xs text-gray-500">vs last month</p>
+          </article>
 
-          <!-- Avg. Intervention Rating -->
-        <div class="bg-white border rounded-2xl shadow-sm p-5">
-          <div class="flex items-center justify-between">
-            <p class="text-sm text-gray-600">Avg. Intervention Rating</p>
-            <span class="material-icons text-sky-500">star_half</span>
-          </div>
-          <div class="mt-2 text-3xl font-semibold">
-            {{ avg_intervention_rating|floatformat:2 }}
-          </div>
-          <p class="text-xs text-gray-400 mt-1">Across all interventions</p>
-        </div>
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm text-gray-500">Open Actions</h3>
+              <span class="material-icons text-brand">checklist</span>
+            </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">18</p>
+            <p class="mt-1 text-xs text-gray-500">Across all projects</p>
+          </article>
 
-        <!-- Top Performing Theme -->
-        <div class="bg-white border rounded-2xl shadow-sm p-5">
-          <div class="flex items-center justify-between">
-            <p class="text-sm text-gray-600">Top Performing Theme</p>
-            <span class="material-icons text-sky-500">leaderboard</span>
-          </div>
-          <div class="mt-2 text-2xl font-semibold text-gray-900">
-            {{ top_theme|title }}
-          </div>
-          <p class="text-xs text-gray-400 mt-1">
-            Avg. Rating: <span class="font-semibold">{{ top_theme_rating|floatformat:2 }}</span>
-          </p>
-        </div>
-
+          <article class="bg-white border rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm text-gray-500">Avg. Reduction</h3>
+              <span class="material-icons text-brand">trending_down</span>
+            </div>
+            <p class="mt-2 text-3xl font-semibold tracking-tight">23%</p>
+            <p class="mt-1 text-xs text-gray-500">From interventions</p>
+          </article>
         </section>
-      </div>
 
         <!-- Project summary -->
         <section class="bg-white border rounded-2xl shadow-sm">
           <div class="px-5 py-4 border-b flex items-center justify-between">
             <h2 class="text-lg font-semibold">Project Summary</h2>
-            
+            <div class="flex items-center gap-3">
+              <label class="text-sm text-gray-600">Filter</label>
+              <select class="appearance-none rounded-full border px-4 py-2 pr-8 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                <option>All Projects</option>
+                <option>Active</option>
+                <option>Completed</option>
+              </select>
+            </div>
           </div>
 
-          <div class="overflow-x-auto">
+        <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-              <thead class="bg-gray-50 text-gray-600">
-                <tr>
-                  <th class="text-left px-5 py-3">Name</th>
-                  <th class="text-left px-5 py-3">Due</th>
-                  <th class="text-left px-5 py-3">Status</th>
-                  <th class="text-right px-5 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y">
-                {% for p in latest_projects %}
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 font-medium">
-                    {% if p.project_name %}
-                      {{ p.project_name }}
-                    {% else %}
-                      Project #{{ p.id }}
-                    {% endif %}
-                  </td>
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-6 py-3 font-medium text-gray-700">Name</th>
+                        <th class="text-left px-6 py-3 font-medium text-gray-700">Due</th>
+                        <th class="text-left px-6 py-3 font-medium text-gray-700">Status</th>
+                        <th class="text-right px-6 py-3 font-medium text-gray-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for p in latest_projects %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">
+                            {% if p.project_name %}
+                                {{ p.project_name }}
+                            {% else %}
+                                Project #{{ p.id }}
+                            {% endif %}
+                        </td>
 
-                  <td class="px-5 py-3">
-                    {% if p.updated_at %}
-                      {{ p.updated_at|date:"d/m/Y" }}
-                    {% elif p.created_at %}
-                      {{ p.created_at|date:"d/m/Y" }}
-                    {% else %}
-                      —
-                    {% endif %}
-                  </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {% if p.updated_at %}
+                                {{ p.updated_at|date:"d/m/Y" }}
+                            {% elif p.created_at %}
+                                {{ p.created_at|date:"d/m/Y" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
 
-                  <td class="px-5 py-3">
-                    <span class="inline-flex items-center rounded-full 
-                      {% if p.status == 'Complete' %} bg-green-50 text-green-700
-                      {% elif p.status == 'In Progress' %} bg-orange-50 text-orange-700
-                      {% else %} bg-red-50 text-red-700
-                      {% endif %}
-                      px-2.5 py-0.5">
-                      {{ p.status|default:"Incomplete" }}
-                    </span>
-                  </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center rounded-full 
+                                {% if p.status == 'Complete' %} bg-green-100 text-green-800
+                                {% elif p.status == 'In Progress' %} bg-orange-100 text-orange-800
+                                {% else %} bg-red-100 text-red-800
+                                {% endif %}
+                                px-3 py-1 text-xs font-medium">
+                                {{ p.status|default:"Incomplete" }}
+                            </span>
+                        </td>
 
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Edit</a>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="4" class="px-5 py-6 text-gray-500 text-center">
-                    No recent projects found.
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'project_detail' p.id %}" class="text-blue-600 hover:text-blue-800 font-medium text-sm">View Details</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-gray-500 text-center">
+                            No recent projects found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
-          </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Year-to-Year Project Creations -->
+        <!-- Simple bars / mini chart -->
         <section>
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-lg font-semibold">Year-to-Year Project Creations</h2>
-            <p class="text-sm text-gray-500">Counts per year</p>
+            <h2 class="text-lg font-semibold">Year-to-Year Emissions</h2>
+            <p class="text-sm text-gray-500">Synthetic preview</p>
           </div>
-
           <div class="bg-white border rounded-2xl shadow-sm p-5">
-            <div class="h-40">
-              <canvas id="yoyProjectsChart" height="120" aria-label="Projects created per year" role="img"></canvas>
+            <div class="h-40 flex items-end justify-between gap-2">
+              <div class="w-7 bg-brand/30 rounded" style="height:25%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:45%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:70%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:55%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:72%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:68%"></div>
+              <div class="w-7 bg-brand/30 rounded" style="height:58%"></div>
+              <div class="w-7 bg-brand rounded"    style="height:76%"></div>
             </div>
-
-            <div class="mt-3 flex items-center gap-4 text-xs text-gray-500">
-              <span class="inline-flex items-center gap-1">
-                <span class="w-3 h-3 inline-block rounded opacity-40 bg-sky-500"></span> Prior years
-              </span>
-              <span class="inline-flex items-center gap-1">
-                <span class="w-3 h-3 inline-block rounded bg-sky-500"></span> Current year
-              </span>
+            <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
+              <span class="inline-block w-3 h-3 bg-brand/30 rounded"></span> Prior years
+              <span class="inline-block w-3 h-3 bg-brand rounded ml-4"></span> Current year
             </div>
           </div>
         </section>
-
-        <!-- Chart.js CDN (only include once on the page) -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-          (function () {
-            const labels = {{ yoy_labels_json|safe }};
-            const counts = {{ yoy_counts_json|safe }};
-            const currentYear = {{ current_year|default:0 }};
-
-            // light bars for prior years; solid bar for current year
-            const barColors = labels.map(y => (parseInt(y) === currentYear)
-              ? 'rgba(14, 165, 233, 1)'     // sky-500 solid
-              : 'rgba(14, 165, 233, 0.35)'  // sky-500 @ 35% opacity
-            );
-
-            const ctx = document.getElementById('yoyProjectsChart').getContext('2d');
-            new Chart(ctx, {
-              type: 'bar',
-              data: {
-                labels,
-                datasets: [{
-                  label: 'Projects created',
-                  data: counts,
-                  backgroundColor: barColors,
-                  borderColor: barColors,
-                  borderWidth: 1
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx) => {
-                        const n = ctx.parsed.y ?? 0;
-                        return `${n} project${n === 1 ? '' : 's'}`;
-                      }
-                    }
-                  }
-                },
-                scales: {
-                  x: { grid: { display: false } },
-                  y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 } // whole numbers
-                  }
-                }
-              }
-            });
-          })();
-        </script>
-
       </div>
     </main>
   </div>
