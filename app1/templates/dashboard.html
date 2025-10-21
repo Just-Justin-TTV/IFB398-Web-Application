@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Dashboard - Carbon Management{% endblock %}
 
@@ -75,43 +76,29 @@
                     {% for p in latest_projects %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 font-medium text-gray-900">
-                            {% if p.project_name %}
-                                {{ p.project_name }}
-                            {% else %}
-                                Project #{{ p.id }}
-                            {% endif %}
+                            {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
                         </td>
-
                         <td class="px-6 py-4 text-gray-600">
-                            {% if p.updated_at %}
-                                {{ p.updated_at|date:"d/m/Y" }}
-                            {% elif p.created_at %}
-                                {{ p.created_at|date:"d/m/Y" }}
-                            {% else %}
-                                —
-                            {% endif %}
+                            {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y" }}
+                            {% elif p.created_at %}{{ p.created_at|date:"d/m/Y" }}
+                            {% else %}—{% endif %}
                         </td>
-
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center rounded-full 
                                 {% if p.status == 'Complete' %} bg-green-100 text-green-800
                                 {% elif p.status == 'In Progress' %} bg-orange-100 text-orange-800
                                 {% else %} bg-red-100 text-red-800
-                                {% endif %}
-                                px-3 py-1 text-xs font-medium">
+                                {% endif %} px-3 py-1 text-xs font-medium">
                                 {{ p.status|default:"Incomplete" }}
                             </span>
                         </td>
-
                         <td class="px-6 py-4 text-right">
                             <a href="{% url 'project_detail' p.id %}" class="text-blue-600 hover:text-blue-800 font-medium text-sm">View Details</a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="px-6 py-8 text-gray-500 text-center">
-                            No recent projects found.
-                        </td>
+                        <td colspan="4" class="px-6 py-8 text-gray-500 text-center">No recent projects found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -119,32 +106,57 @@
         </div>
     </div>
 
-    <!-- Emissions Chart -->
+    <!-- Year-to-Year Project Creations Chart -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-semibold text-gray-900">Year-to-Year Emissions</h2>
-            <p class="text-sm text-gray-500">Synthetic preview</p>
+            <h2 class="text-xl font-semibold text-gray-900">Year-to-Year Project Creations</h2>
+            <p class="text-sm text-gray-500">Counts per year</p>
         </div>
-        <div class="h-48 flex items-end justify-between gap-3">
-            <div class="w-8 bg-blue-200 rounded-t" style="height:25%"></div>
-            <div class="w-8 bg-blue-200 rounded-t" style="height:45%"></div>
-            <div class="w-8 bg-blue-200 rounded-t" style="height:70%"></div>
-            <div class="w-8 bg-blue-200 rounded-t" style="height:55%"></div>
-            <div class="w-8 bg-blue-200 rounded-t" style="height:72%"></div>
-            <div class="w-8 bg-blue-200 rounded-t" style="height:68%"></div>
-            <div class="w-8 bg-blue-200 rounded-t" style="height:58%"></div>
-            <div class="w-8 bg-blue-600 rounded-t" style="height:76%"></div>
+        <div class="h-48">
+            <canvas id="yoyProjectsChart" height="120" aria-label="Projects created per year" role="img"></canvas>
         </div>
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-600">
-            <div class="flex items-center gap-2">
-                <span class="inline-block w-3 h-3 bg-blue-200 rounded"></span>
-                Prior years
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="inline-block w-3 h-3 bg-blue-600 rounded"></span>
-                Current year
-            </div>
+            <span class="inline-flex items-center gap-2">
+                <span class="inline-block w-3 h-3 rounded bg-blue-200"></span> Prior years
+            </span>
+            <span class="inline-flex items-center gap-2">
+                <span class="inline-block w-3 h-3 rounded bg-blue-600"></span> Current year
+            </span>
         </div>
     </div>
+
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+    const labels = {{ yoy_labels_json|safe }};
+    const counts = {{ yoy_counts_json|safe }};
+    const currentYear = {{ current_year|default:0 }};
+
+    const barColors = labels.map(y => (parseInt(y) === currentYear)
+      ? 'rgba(14, 165, 233, 1)'
+      : 'rgba(14, 165, 233, 0.35)'
+    );
+
+    const ctx = document.getElementById('yoyProjectsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ data: counts, backgroundColor: barColors, borderColor: barColors, borderWidth: 1 }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.parsed.y ?? 0} project${ctx.parsed.y === 1 ? '' : 's'}` } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}
