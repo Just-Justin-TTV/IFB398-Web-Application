@@ -8,6 +8,7 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/', views.dashboard_view, name='dashboard'),
+    
 
     # Auth
     path('login/', views.login_view, name='login'),
@@ -31,6 +32,7 @@ urlpatterns = [
     path('api/interventions/', views.interventions_api, name='interventions_api'),
     path('api/metrics/save/', views.save_metrics, name='save_metrics'),
     path('get_intervention_effects/', views.get_intervention_effects, name='get_intervention_effects'),
+    path('projects/', views.projects_view, name='projects_view'),
 
     # Dev
     path('django_browser_reload/', include('django_browser_reload.urls')),
