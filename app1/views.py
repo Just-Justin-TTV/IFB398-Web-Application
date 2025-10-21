@@ -857,3 +857,223 @@ def dashboard_view(request: HttpRequest):
 @login_required(login_url='login')
 def carbon_2_view(request):
     return render(request, "carbon_2.html")
+
+
+## settings page
+@login_required
+def settings_view(request):
+    user = request.user
+    current_theme = request.session.get('theme', 'light')
+
+    if request.method == 'POST':
+        try:
+            # -------------------------
+            # Theme change - UPDATED TO INCLUDE HIGH CONTRAST
+            # -------------------------
+            if 'theme_select' in request.POST:  # This matches your select name
+                new_theme = request.POST.get('theme_select', 'light')
+                request.session['theme'] = new_theme
+                request.session.modified = True
+                messages.success(request, f"Theme changed to {new_theme} mode!")
+                return redirect('settings')
+
+            # -------------------------
+            # Profile info update
+            # -------------------------
+            if 'update_profile' in request.POST:
+                new_username = request.POST.get('username')
+                new_email = request.POST.get('email')
+
+                if not new_username or not new_email:
+                    raise ValueError("Username and email cannot be blank.")
+
+                # Check if username/email already exists
+                if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+                    raise ValueError("Username already exists.")
+                if User.objects.filter(email=new_email).exclude(id=user.id).exists():
+                    raise ValueError("Email already exists.")
+
+                # Save updates
+                user.username = new_username
+                user.email = new_email
+                user.save()
+                messages.success(request, "Profile updated successfully!")
+
+            # -------------------------
+            # Password change
+            # -------------------------
+            if 'change_password' in request.POST:
+                current_password = request.POST.get('current_password')
+                new_password = request.POST.get('new_password')
+                confirm_password = request.POST.get('confirm_password')
+
+                if not current_password or not new_password or not confirm_password:
+                    raise ValueError("All password fields are required.")
+
+                if new_password != confirm_password:
+                    raise ValueError("New passwords do not match.")
+
+                if not user.check_password(current_password):
+                    raise ValueError("Current password is incorrect.")
+
+                # Set new password and keep user logged in
+                user.set_password(new_password)
+                user.save()
+                from django.contrib.auth import update_session_auth_hash
+                update_session_auth_hash(request, user)
+                messages.success(request, "Password changed successfully!")
+
+        except ValueError as ve:
+            # Caught logical/user errors
+            messages.error(request, f"Error: {ve}")
+        except Exception as e:
+            # Catch unexpected errors
+            messages.error(request, "Unexpected error occurred. Please try again later.")
+            # Optional: log the error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Settings update failed: {e}")
+
+        return redirect('settings')
+
+    # GET request
+    context = {
+        'user': user,
+        'current_theme': current_theme
+    }
+    return render(request, 'settings.html', context)
+
+# =========================
+# Reports Views
+# =========================
+
+@login_required(login_url='login')
+def reports_view(request: HttpRequest):
+    """
+    Main reports page showing all projects that can be reported on.
+    """
+    # Get all projects for the current user
+    app_user = _resolve_app_user(request)
+    if app_user:
+        projects = Metrics.objects.filter(user=app_user).order_by("-created_at")
+    else:
+        projects = Metrics.objects.none()
+    
+    return render(request, "reports.html", {"projects": projects})
+
+
+@login_required(login_url='login')
+def generate_report(request: HttpRequest, project_id: int):
+    """
+    Generate a detailed report for a specific project.
+    """
+    project = get_object_or_404(Metrics, id=project_id)
+    
+    # Get interventions data for this project
+    interventions = Interventions.objects.all()
+    
+    # Calculate some report statistics
+    total_budget = project.total_budget_aud or Decimal('0')
+    building_area = project.gifa_m2 or Decimal('0')
+    
+    # Get intervention statistics by theme
+    intervention_stats = (
+        Interventions.objects.values('theme')
+        .annotate(
+            count=Count('id'),
+            avg_rating=Avg('intervention_rating'),
+            avg_cost=Avg('cost_level')
+        )
+        .order_by('-avg_rating')
+    )
+    
+    # Get project metrics summary
+    metrics_summary = {
+        'building_type': project.building_type or 'Not specified',
+        'location': project.location or 'Not specified',
+        'total_area': f"{building_area} m²",
+        'total_budget': f"${total_budget:,.2f}" if total_budget else 'Not set',
+        'apartments': project.num_apartments or 0,
+        'basement': 'Yes' if project.basement_present else 'No',
+        'created_date': project.created_at.strftime("%B %d, %Y"),
+    }
+    
+    context = {
+        'project': project,
+        'interventions': interventions,
+        'intervention_stats': intervention_stats,
+        'metrics_summary': metrics_summary,
+        'report_date': timezone.now().strftime("%B %d, %Y"),
+    }
+    
+    # Check if it's a download request
+    download_type = request.GET.get('download')
+    if download_type == 'pdf':
+        return generate_pdf_report(request, project, context)
+    elif download_type == 'word':
+        return generate_word_report(request, project, context)
+    
+    return render(request, "report_template.html", context)
+
+
+def generate_pdf_report(request, project, context):
+    """
+    Generate PDF report (placeholder - you'll need to implement PDF generation)
+    """
+    # For now, return a JSON response since PDF generation requires additional libraries
+    return JsonResponse({
+        'status': 'success',
+        'message': 'PDF generation would be implemented here',
+        'project_id': project.id,
+        'project_name': project.project_name
+    })
+
+
+def generate_word_report(request, project, context):
+    """
+    Generate Word report (placeholder - you'll need to implement Word generation)
+    """
+    return JsonResponse({
+        'status': 'success', 
+        'message': 'Word document generation would be implemented here',
+        'project_id': project.id,
+        'project_name': project.project_name
+    })
+
+
+@login_required(login_url='login')
+def reports_api(request: HttpRequest, project_id: int):
+    """
+    API endpoint for generating reports
+    """
+    project = get_object_or_404(Metrics, id=project_id)
+    
+    # Get comprehensive project data
+    project_data = {
+        'id': project.id,
+        'name': project.project_name,
+        'location': project.location,
+        'building_type': project.building_type,
+        'created_at': project.created_at.isoformat(),
+        'metrics': {
+            'gifa_m2': float(project.gifa_m2 or 0),
+            'total_budget': float(project.total_budget_aud or 0),
+            'num_apartments': project.num_apartments or 0,
+            'basement_present': project.basement_present,
+            'building_footprint': float(project.building_footprint_m2 or 0),
+        }
+    }
+    
+    # Get interventions data
+    interventions = list(Interventions.objects.values(
+        'id', 'name', 'theme', 'description', 
+        'cost_level', 'intervention_rating'
+    ))
+    
+    return JsonResponse({
+        'project': project_data,
+        'interventions': interventions,
+        'generated_at': timezone.now().isoformat(),
+        'report_id': f"report_{project_id}_{int(timezone.now().timestamp())}"
+    })
+

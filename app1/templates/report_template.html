@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report - {{ project.project_name }}{% endblock %}
+
+{% block page_title %}{% endblock %}
+{% block page_subtitle %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg">
+    <!-- Report Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-t-xl">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">Sustainability Report</h1>
+                <h2 class="text-2xl font-semibold opacity-90">{{ project.project_name }}</h2>
+                <p class="text-blue-100 mt-2">{{ project.location }} • {{ project.building_type }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-blue-100">Generated on</div>
+                <div class="text-white font-semibold">{{ report_date }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="p-8 border-b">
+        <h3 class="text-2xl font-bold text-gray-900 mb-4">Executive Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-blue-50 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ metrics_summary.total_area }}</div>
+                <div class="text-gray-600">Total Area</div>
+            </div>
+            <div class="bg-green-50 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-green-600">{{ metrics_summary.total_budget }}</div>
+                <div class="text-gray-600">Total Budget</div>
+            </div>
+            <div class="bg-purple-50 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-purple-600">{{ metrics_summary.apartments }}</div>
+                <div class="text-gray-600">Apartments</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Details -->
+    <div class="p-8 border-b">
+        <h3 class="text-2xl font-bold text-gray-900 mb-4">Project Details</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="font-semibold text-gray-700 mb-2">Basic Information</h4>
+                <dl class="space-y-2">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Building Type:</dt>
+                        <dd class="font-medium">{{ metrics_summary.building_type }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Location:</dt>
+                        <dd class="font-medium">{{ metrics_summary.location }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Project Created:</dt>
+                        <dd class="font-medium">{{ metrics_summary.created_date }}</dd>
+                    </div>
+                </dl>
+            </div>
+            <div>
+                <h4 class="font-semibold text-gray-700 mb-2">Building Features</h4>
+                <dl class="space-y-2">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Basement:</dt>
+                        <dd class="font-medium">{{ metrics_summary.basement }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Total Area:</dt>
+                        <dd class="font-medium">{{ metrics_summary.total_area }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Total Budget:</dt>
+                        <dd class="font-medium">{{ metrics_summary.total_budget }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interventions Overview -->
+    <div class="p-8 border-b">
+        <h3 class="text-2xl font-bold text-gray-900 mb-4">Available Interventions</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-700">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Theme</th>
+                        <th class="px-4 py-3 font-semibold">Count</th>
+                        <th class="px-4 py-3 font-semibold">Avg Rating</th>
+                        <th class="px-4 py-3 font-semibold">Avg Cost Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in intervention_stats %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium">{{ stat.theme|default:"Other" }}</td>
+                        <td class="px-4 py-3">{{ stat.count }}</td>
+                        <td class="px-4 py-3">{{ stat.avg_rating|floatformat:1 }}</td>
+                        <td class="px-4 py-3">{{ stat.avg_cost|floatformat:1 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Interventions -->
+    <div class="p-8">
+        <h3 class="text-2xl font-bold text-gray-900 mb-4">Recommended Interventions</h3>
+        <div class="space-y-4">
+            {% for intervention in interventions|slice:":5" %}
+            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-semibold text-lg text-gray-900">{{ intervention.name }}</h4>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                {% if intervention.cost_level < 3 %}bg-green-100 text-green-800
+                                {% elif intervention.cost_level < 6 %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                        Cost Level: {{ intervention.cost_level }}
+                    </span>
+                </div>
+                <p class="text-gray-600 mb-2">{{ intervention.description|default:"No description available." }}</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">Theme: {{ intervention.theme }}</span>
+                    <span class="font-semibold text-blue-600">Rating: {{ intervention.intervention_rating }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Report Footer -->
+    <div class="bg-gray-50 p-6 rounded-b-xl text-center">
+        <p class="text-gray-600">Report generated by CarbonBalance Sustainability Platform</p>
+        <p class="text-gray-500 text-sm mt-1">{{ report_date }}</p>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="max-w-6xl mx-auto mt-6 flex justify-center space-x-4">
+    <button onclick="window.print()" 
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+        Print Report
+    </button>
+    <a href="{% url 'reports' %}" 
+       class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+        Back to Reports
+    </a>
+</div>
+
+<style>
+@media print {
+    .bg-gradient-to-r { background: #1e40af !important; }
+    button { display: none !important; }
+    a { display: none !important; }
+}
+</style>
+{% endblock %}

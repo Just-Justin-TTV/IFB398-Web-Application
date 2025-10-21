@@ -142,3 +142,13 @@ class Metrics(models.Model):
             if hasattr(self, k):
                 setattr(self, k, v)
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    theme = models.CharField(max_length=20, default='light')
+    text_size = models.CharField(max_length=20, default='normal')
+    
+    class Meta:
+        db_table = 'UserProfile'
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"

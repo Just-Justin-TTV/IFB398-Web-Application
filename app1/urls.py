@@ -36,4 +36,13 @@ urlpatterns = [
 
     # Dev
     path('django_browser_reload/', include('django_browser_reload.urls')),
+
+    # Settings
+    path('settings/', views.settings_view, name='settings'),
+
+    # Reports
+    path('reports/', views.reports_view, name='reports'),
+    path('reports/generate/<int:project_id>/', views.generate_report, name='generate_report'),
+    path('api/reports/generate/<int:project_id>/', views.reports_api, name='reports_api'),
+
 ]
