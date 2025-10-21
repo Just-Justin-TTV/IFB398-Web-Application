@@ -1,5 +1,19 @@
+# app1/context_processors.py
 def theme_context(request):
-    """Makes theme available in ALL templates"""
+    """
+    Add theme context to all templates
+    """
+    current_theme = request.session.get('user_theme', 'light')
     return {
-        'current_theme': request.session.get('theme', 'light')
+        'current_theme': current_theme,
+        'user_theme': current_theme,
+    }  # ✅ ADD THE CLOSING BRACE!
+
+def accessibility_settings(request):
+    """
+    Add accessibility settings to templates
+    """
+    return {
+        'user_theme': request.session.get('user_theme', 'light'),
+        'user_text_size': 'normal',
     }
