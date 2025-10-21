@@ -56,6 +56,18 @@
     <h2 class="text-4xl font-extrabold text-white mb-2 text-center">Create Your Account</h2>
     <p class="text-sm text-white/80 mb-6 text-center">Fill out the form below to get started</p>
 
+    <!-- Django messages -->
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="message p-3 rounded-lg mb-2 shadow-md transition duration-300
+                      {% if message.tags == 'error' %}bg-red-600 text-white border border-red-700{% elif message.tags == 'success' %}bg-green-600 text-white border border-green-700{% else %}bg-gray-200 text-black{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     <form method="POST" class="space-y-4">
       {% csrf_token %}
       <div class="input-field relative">
@@ -106,10 +118,15 @@
   </div>
 </div>
 
-<!-- GSAP animations for form inputs and buttons -->
+<!-- GSAP animations for form inputs, buttons, and messages -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
 <script>
+  // Form input animations
   gsap.from(".input-field", { opacity:0, x:-50, stagger:0.15, duration:0.7, ease:"power2.out" });
   gsap.to(".fab", { y:-8, stagger:0.1, duration:0.8, repeat:-1, yoyo:true, ease:"power1.inOut" });
+
+  // Messages fade in and fade out
+  gsap.from(".message", { opacity: 0, y: -20, stagger: 0.1, duration: 0.6, ease:"power2.out" });
+  gsap.to(".message", { opacity: 0, y: -20, delay: 5, duration: 0.6, stagger: 0.1, ease:"power2.in" });
 </script>
 {% endblock %}
