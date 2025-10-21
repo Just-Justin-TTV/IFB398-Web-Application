@@ -23,7 +23,7 @@
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Roof Area / % GIFA</div>
                     <div class="col-span-12 md:col-span-7 px-6 py-3 flex items-center gap-2">
-                        <input id="roof_area" name="roof_area" type="number" value="{{ roof_area|default:'1500' }}" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="roof_area" name="roof_area" type="number" value="{{ roof_area|default:'0' }}" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                         <span>m² /</span><span id="roof_pct">— %</span>
                     </div>
                 </div>
@@ -56,7 +56,7 @@
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Basement Size / % GIFA</div>
                     <div class="col-span-12 md:col-span-7 px-6 py-3 flex items-center gap-2">
-                        <input id="basement_area" name="basement_area" type="number" value="{{ basement_area|default:'1000' }}" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="basement_area" name="basement_area" type="number" value="{{ basement_area|default:'0' }}" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                         <span>m² /</span><span id="basement_pct">— %</span>
                     </div>
                 </div>
@@ -65,9 +65,9 @@
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">No of Apartments / Keys / WCS</div>
                     <div class="col-span-12 md:col-span-7 px-6 py-3 grid grid-cols-3 gap-4">
-                        <input id="apartments" name="apartments" type="number" value="{{ apartments|default:'40' }}" oninput="combineLine()" class="rounded-xl border border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-                        <input id="keys" name="keys" type="number" value="{{ keys|default:'40' }}" oninput="combineLine()" class="rounded-xl border border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-                        <input id="wcs" name="wcs" type="number" value="{{ wcs|default:'80' }}" oninput="combineLine()" class="rounded-xl border border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="apartments" name="apartments" type="number" value="{{ apartments|default:'0' }}" oninput="combineLine()" class="rounded-xl border border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="keys" name="keys" type="number" value="{{ keys|default:'0' }}" oninput="combineLine()" class="rounded-xl border border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="wcs" name="wcs" type="number" value="{{ wcs|default:'0' }}" oninput="combineLine()" class="rounded-xl border border-gray-300 px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                     </div>
                 </div>
                 <div class="px-6 py-2 text-sm text-gray-600" id="combined_line"></div>
@@ -79,28 +79,28 @@
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-5 px-6 py-3">GIFA (m²)</div>
                     <div class="col-span-7 px-6 py-3">
-                        <input id="gifa_input" name="gifa" type="number" value="{{ GIFA|default:'6000' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="gifa_input" name="gifa" type="number" value="{{ GIFA|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-5 px-6 py-3">External Wall Area (m²)</div>
                     <div class="col-span-7 px-6 py-3">
-                        <input id="wall_area_input" name="external_wall_area" type="number" value="{{ external_wall_area|default:'2200' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="wall_area_input" name="external_wall_area" type="number" value="{{ external_wall_area|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-5 px-6 py-3">External Openings (m²)</div>
                     <div class="col-span-7 px-6 py-3">
-                        <input id="openings_input" name="external_openings" type="number" value="{{ external_openings|default:'320' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="openings_input" name="external_openings" type="number" value="{{ external_openings|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-12 border-b">
                     <div class="col-span-5 px-6 py-3">Building Footprint (m²)</div>
                     <div class="col-span-7 px-6 py-3">
-                        <input id="footprint_input" name="building_footprint" type="number" value="{{ building_footprint|default:'1500' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                        <input id="footprint_input" name="building_footprint" type="number" value="{{ building_footprint|default:'0' }}" oninput="recalc()" class="w-44 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
                     </div>
                 </div>
 
@@ -122,7 +122,7 @@
                 <label for="global_budget" class="block text-sm font-medium text-gray-700 mb-2">
                     <strong>Total Budget (AUD):</strong>
                 </label>
-                <input type="number" name="global_budget" value="1000000" min="0" 
+                <input type="number" name="global_budget" value="0" min="0" 
                        class="w-full md:w-72 rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
             </div>
 
@@ -190,7 +190,7 @@
         const roof = Number(document.getElementById('roof_area').value)||0;
         const gifa = Number(document.getElementById('gifa_input').value)||6000;
         const basement = Number(document.getElementById('basement_area').value)||0;
-        const footprint = Number(document.getElementById('footprint_input').value)||1500;
+        const footprint = Number(document.getElementById('footprint_input').value)||0;
         const openings = Number(document.getElementById('openings_input').value)||0;
         const wall = Number(document.getElementById('wall_area_input').value)||2200;
         const levels = Number(document.getElementById('levels_input')?.value)||4;
