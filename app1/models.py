@@ -39,6 +39,7 @@ class Interventions(models.Model):
 
     def __str__(self):
         return f"{self.class_name} - {self.name}"
+    
 
 class InterventionDependencies(models.Model):
     intervention_id = models.IntegerField(primary_key=True)
