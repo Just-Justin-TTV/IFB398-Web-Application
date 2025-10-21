@@ -12,6 +12,7 @@ class ClassTargets(models.Model):
         return self.class_name
 
 
+
 class Interventions(models.Model):
     id = models.AutoField(primary_key=True)
     class_name = models.CharField(max_length=100, db_column='class', null=True)
