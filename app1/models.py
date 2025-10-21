@@ -1,9 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-User = get_user_model()
 
 class ClassTargets(models.Model):
     class_name = models.CharField(max_length=100, primary_key=True)
@@ -34,6 +29,24 @@ class Interventions(models.Model):
     def __str__(self):
         return f"{self.class_name} - {self.name}"
 
+class InterventionDependencies(models.Model):
+    intervention_id = models.IntegerField(primary_key=True)
+    metric_name = models.CharField(max_length=255, db_column='metric_column')
+    min_value = models.FloatField(null=True, blank=True)
+    max_value = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        db_table = "intervention_dependencies"
+        unique_together = (('intervention_id', 'metric_name'),)
+        managed = False  # Django won't create or alter this table
+
+
+
+
+
+
+
+
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
@@ -41,12 +54,25 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
 
-  #  class Meta:
-  #      db_table = 'User'
+    class Meta:
+        db_table = 'User'
 
     def __str__(self):
         return self.username
-    
+
+class InterventionEffects(models.Model):
+    source_intervention_name = models.CharField(max_length=255, db_column='source_intervention_name')
+    target_intervention_name = models.CharField(max_length=255, db_column='target_intervention_name')
+    effect_value = models.FloatField()
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'intervention_effects'
+
+    def __str__(self):
+        return f"{self.source_intervention_name} → {self.target_intervention_name} ({self.effect_value})"
+
+
 # NEW
 class Metrics(models.Model):
     """
@@ -83,9 +109,15 @@ class Metrics(models.Model):
     building_footprint_m2 = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
     # Optional computed outputs
-    estimated_auto_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
+    total_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
+    selected_intervention_ids = models.JSONField(default=list, blank=True)
 
-    # Housekeeping
+    # app/models.py  (inside class Metrics)
+
+    project_name = models.CharField(max_length=255, null=True, blank=True)
+    location     = models.CharField(max_length=255, null=True, blank=True)
+
+        # Housekeeping
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -102,4 +134,11 @@ class Metrics(models.Model):
         return (self.num_apartments or 0) + (self.num_keys or 0) + (self.num_wcs or 0)
 
     def __str__(self):
-        return f"{self.class_name} - {self.intervention}"
+        return f"Metrics #{self.id} – {self.building_type or 'Building'}"
+
+    def update_from_dict(self, data: dict):
+        # handy when merging both pages into one row
+        for k, v in (data or {}).items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+
