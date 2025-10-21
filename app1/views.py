@@ -714,7 +714,7 @@ def project_detail_view(request, pk: int):
             "roof_percent_gifa",
             "basement_size_m2",
             "basement_percent_gifa",
-            "estimated_auto_budget_aud",
+            
         ]:
             if hasattr(p, f):
                 setattr(p, f, _to_dec(request.POST.get(f), default=Decimal("0")))
@@ -985,3 +985,85 @@ def dashboard_view(request: HttpRequest):
 @login_required(login_url='login')
 def carbon_2_view(request):
     return render(request, "carbon_2.html")
+
+@login_required(login_url='login')
+def reports_page(request: HttpRequest):
+    """
+    Reports overview page - shows all projects that can generate reports
+    """
+    # Get all projects for the current user
+    user = _resolve_app_user(request)
+    if user:
+        projects = Metrics.objects.filter(user=user).order_by("-updated_at", "-created_at")
+    else:
+        # Fallback to session projects
+        session_ids = request.session.get("my_project_ids", [])
+        projects = Metrics.objects.filter(id__in=session_ids).order_by("-updated_at", "-created_at")
+    
+    return render(request, "reports.html", {
+        "projects": projects
+    })
+
+@login_required(login_url='login')
+def generate_report(request: HttpRequest, project_id: int):
+    """
+    Generate a report for a specific project
+    """
+    project = get_object_or_404(Metrics, id=project_id)
+    
+    # Check if user has access to this project
+    user = _resolve_app_user(request)
+    if user and project.user != user:
+        session_ids = request.session.get("my_project_ids", [])
+        if project.id not in session_ids:
+            return redirect("reports")
+    
+    download_format = request.GET.get('download')
+    
+    if download_format == 'pdf':
+        return _generate_pdf_report(project)
+    elif download_format == 'word':
+        return _generate_word_report(project)
+    else:
+        return _generate_html_report(request, project)
+
+def _generate_html_report(request: HttpRequest, project: Metrics):
+    """
+    Generate HTML report preview
+    """
+
+    total_impact = 0
+
+    context = {
+        'project': project,
+        'generated_date': timezone.now(),
+        'total_impact': total_impact,
+        'carbon_reduction': 23,   # Example data
+        'water_savings': 15,      # Example data
+        'health_improvement': 18, # Example data
+    }
+    
+    return render(request, "report_template.html", context)
+
+def _generate_pdf_report(project: Metrics):
+    """
+    Generate PDF report (placeholder - you'll need to implement PDF generation)
+    """
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.pdf"'
+    
+    # Placeholder - using weasyprint
+    response.write(b'PDF report generation would go here')
+    return response
+
+def _generate_word_report(project: Metrics):
+    """
+    Generate Word document report (placeholder)
+    """
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.docx"'
+    
+    # Placeholder 
+    response.write(b'Word report generation would go here')
+    return response
+
