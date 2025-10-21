@@ -1,45 +1,40 @@
 # app1/views.py
 import json
 import logging
+import re
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Any, List
-from django.urls import reverse
-from django.utils.text import slugify
+
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, Avg, Count
+from django.db.models.functions import Coalesce, ExtractYear
 from django.http import (
-    JsonResponse,
     HttpRequest,
     HttpResponse,
     HttpResponseBadRequest,
+    JsonResponse,
 )
-from django.db.models.functions import ExtractYear
-from django.db.models import Sum, F, Avg, Count
-from django.db.models.functions import Coalesce
-from decimal import Decimal
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST, require_GET
-from django.contrib.auth.models import User
-from django.db.models import Sum, F
-from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
-
+from django.utils.text import slugify
+from django.views.decorators.http import require_GET, require_POST
 
 from .models import (
-    Metrics,
     ClassTargets,
-    Interventions,
     InterventionDependencies,
-    User as AppUser,
     InterventionEffects,
+    Interventions,
+    Metrics,
+    User as AppUser,
 )
 
 logger = logging.getLogger(__name__)
-
 
 # =========================
 # Helpers
@@ -67,11 +62,11 @@ def _num(value: Any, default: Optional[float] = None) -> Optional[float]:
     s = str(value).strip().lower()
     s = (
         s.replace("aud", "")
-         .replace(",", "")
-         .replace("k", "000")
-         .replace("–", "-")
-         .replace("%", "")
-         .strip()
+        .replace(",", "")
+        .replace("k", "000")
+        .replace("–", "-")
+        .replace("%", "")
+        .strip()
     )
     try:
         return float(s)
@@ -79,22 +74,36 @@ def _num(value: Any, default: Optional[float] = None) -> Optional[float]:
         return default
 
 
-def _to_dec(value: Any) -> Optional[Decimal]:
-    if value in (None, "", "null"):
-        return None
-    try:
-        return Decimal(str(value).replace(",", "").replace("%", ""))
-    except (InvalidOperation, ValueError, TypeError):
-        return None
-
-
 def _to_int(value: Any) -> Optional[int]:
     if value in (None, "", "null"):
         return None
     try:
-        return int(value)
+        return int(str(value).strip())
     except (ValueError, TypeError):
         return None
+
+
+NUM_RE = re.compile(r"[^0-9\.\-]")  # keep digits, dot, minus only
+
+def _to_dec(value: Any, *, default: Optional[Decimal] = None) -> Optional[Decimal]:
+    """
+    Safely convert many user inputs to Decimal.
+    - Removes commas, units, %, spaces (keeps only 0-9 . -)
+    - Treats '', None, 'null', 'nan', 'inf' as invalid -> returns default
+    """
+    if value in (None, "", "null"):
+        return default
+    s = str(value).strip()
+    s_lower = s.lower()
+    if s_lower in ("nan", "+nan", "-nan", "inf", "+inf", "-inf"):
+        return default
+    cleaned = NUM_RE.sub("", s)
+    if cleaned in ("", "-", ".", "-.", ".-"):
+        return default
+    try:
+        return Decimal(cleaned)
+    except (InvalidOperation, ValueError, TypeError):
+        return default
 
 
 def _unique_project_code(project_name: str) -> str:
@@ -123,9 +132,9 @@ def create_project(request: HttpRequest):
     then sends the user to the Building Metrics page.
     """
     if request.method == "POST":
-        project_name    = (request.POST.get("project_name") or "").strip()
-        project_location= (request.POST.get("location") or request.POST.get("project_location") or "").strip()
-        project_type    = (request.POST.get("project_type") or "").strip()
+        project_name = (request.POST.get("project_name") or "").strip()
+        project_location = (request.POST.get("location") or request.POST.get("project_location") or "").strip()
+        project_type = (request.POST.get("project_type") or "").strip()
 
         if not project_name:
             messages.error(request, "Project name is required.")
@@ -153,6 +162,7 @@ def create_project(request: HttpRequest):
 
     return render(request, "create_project.html")
 
+
 @login_required(login_url='login')
 def metrics_edit(request, pk: int):
     """
@@ -163,8 +173,8 @@ def metrics_edit(request, pk: int):
     m = get_object_or_404(Metrics, pk=pk)
 
     if request.method == "POST":
-        m.project_name  = (request.POST.get("project_name") or m.project_name or "").strip()
-        m.location      = (request.POST.get("location") or m.location or "").strip()
+        m.project_name = (request.POST.get("project_name") or m.project_name or "").strip()
+        m.location = (request.POST.get("location") or m.location or "").strip()
         m.building_type = (request.POST.get("project_type") or m.building_type or "").strip()
         m.save()
 
@@ -190,7 +200,6 @@ CLASS_ALIASES = {
     "biodiversity": ["biodiversity"],
     "value": ["value", "value & cost", "value and cost"],
 }
-
 
 @require_GET
 def interventions_api(request):
@@ -238,22 +247,23 @@ def interventions_api(request):
             cols = [c[0] for c in cur.description]
             for row in cur.fetchall():
                 obj = dict(zip(cols, row))
-                items.append({
-                    "id": obj.get("id"),
-                    "name": obj.get("name") or f"Intervention #{obj.get('id')}",
-                    "theme": obj.get("theme") or "",
-                    "description": obj.get("description") or "",
-                    "cost_level": float(obj.get("cost_level") or 0),
-                    "intervention_rating": float(obj.get("intervention_rating") or 0),
-                    "gifa_m2": metrics.get("gifa_m2", 0),
-                    "building_footprint_m2": metrics.get("building_footprint_m2", 0),
-                })
+                items.append(
+                    {
+                        "id": obj.get("id"),
+                        "name": obj.get("name") or f"Intervention #{obj.get('id')}",
+                        "theme": obj.get("theme") or "",
+                        "description": obj.get("description") or "",
+                        "cost_level": float(obj.get("cost_level") or 0),
+                        "intervention_rating": float(obj.get("intervention_rating") or 0),
+                        "gifa_m2": metrics.get("gifa_m2", 0),
+                        "building_footprint_m2": metrics.get("building_footprint_m2", 0),
+                    }
+                )
     except Exception:
         logger.exception("Error fetching interventions from DB")
         items = []
 
     return JsonResponse({"items": items})
-
 
 
 # =========================
@@ -278,7 +288,7 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     if not m:
         m = Metrics(user=_resolve_app_user(request))
 
-    # --- Numeric fields ---
+    # --- Decimal fields ---
     decimal_fields = [
         "gifa_m2",
         "external_wall_area_m2",
@@ -291,7 +301,8 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     ]
     for field in decimal_fields:
         if hasattr(m, field):
-            setattr(m, field, _to_dec(payload.get(field)))
+            # Use 0 default so non-null DecimalFields won't explode
+            setattr(m, field, _to_dec(payload.get(field), default=Decimal("0")))
 
     # --- Integer fields ---
     if hasattr(m, "num_apartments"):
@@ -303,20 +314,26 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
 
     # --- Boolean & string fields ---
     if hasattr(m, "basement_present"):
-        m.basement_present = bool(payload.get("basement_present"))
+        bp = payload.get("basement_present")
+        m.basement_present = str(bp).lower() in ("1", "true", "yes", "on")
     if hasattr(m, "building_type"):
         m.building_type = payload.get("building_type") or getattr(m, "building_type", None)
 
-    # --- Total budget logic ---
-    global_budget = payload.get("global_budget")
+    # --- Total budget logic (default 0 for invalid/missing) ---
     if hasattr(m, "total_budget_aud"):
-        m.total_budget_aud = _to_dec(global_budget if global_budget not in (None, "", "null") else 0)
+        global_budget = payload.get("global_budget")
+        m.total_budget_aud = _to_dec(global_budget, default=Decimal("0"))
 
     # --- Ensure user ownership ---
     if not m.user:
         m.user = _resolve_app_user(request)
 
-    m.save()
+    # Save with diagnostics (to avoid 500s)
+    try:
+        m.save()
+    except Exception as e:
+        logger.exception("Failed to save Metrics")
+        return JsonResponse({"ok": False, "error": f"{e.__class__.__name__}: {e}"}, status=400)
 
     # Persist session
     request.session["metrics_id"] = m.id
@@ -343,13 +360,15 @@ def carbon_view(request):
         db_theme = (i.theme or "other").lower()
         cls_key = CLASS_ALIASES_REVERSE.get(db_theme, "other")
 
-        interventions_dict.setdefault(cls_key, []).append({
-            "id": i.id,
-            "name": i.name or f"Intervention #{i.id}",
-            "cost": float(i.cost_level or 0),
-            "rating": float(i.intervention_rating or 0),
-            "badges": [i.theme.capitalize()] if i.theme else [],
-        })
+        interventions_dict.setdefault(cls_key, []).append(
+            {
+                "id": i.id,
+                "name": i.name or f"Intervention #{i.id}",
+                "cost": float(i.cost_level or 0),
+                "rating": float(i.intervention_rating or 0),
+                "badges": [i.theme.capitalize()] if i.theme else [],
+            }
+        )
 
     classes = [
         {"key": "carbon", "label": "Carbon", "target": 80},
@@ -362,17 +381,18 @@ def carbon_view(request):
         {"key": "other", "label": "Other", "target": 0},
     ]
 
-    return render(request, "carbon.html", {
-        "interventions_json": json.dumps(interventions_dict),
-        "classes": classes,
-    })
+    return render(
+        request,
+        "carbon.html",
+        {"interventions_json": json.dumps(interventions_dict), "classes": classes},
+    )
 
 
 @login_required(login_url='login')
 def get_intervention_effects(request):
-    source_name = request.GET.get('source')
+    source_name = request.GET.get("source")
     if not source_name:
-        return JsonResponse({'error': 'No source provided'}, status=400)
+        return JsonResponse({"error": "No source provided"}, status=400)
 
     effects = InterventionEffects.objects.filter(source_intervention_name=source_name)
     data = []
@@ -390,13 +410,15 @@ def get_intervention_effects(request):
         else:
             adjusted_rating = base_rating
 
-        data.append({
-            'target': e.target_intervention_name,
-            'effect': round(adjusted_rating, 2),
-            'note': e.note
-        })
+        data.append(
+            {
+                "target": e.target_intervention_name,
+                "effect": round(adjusted_rating, 2),
+                "note": e.note,
+            }
+        )
 
-    return JsonResponse({'effects': data})
+    return JsonResponse({"effects": data})
 
 
 @login_required(login_url='login')
@@ -407,7 +429,9 @@ def calculator(request: HttpRequest):
     return _process_calculator_post(request)
 
 
-def intervention_effects(metric, interventions, selected_ids: Optional[List[int]] = None):
+def intervention_effects(
+    metric, interventions, selected_ids: Optional[List[int]] = None
+):
     grouped_interventions = {}
     max_stage = 0
 
@@ -435,31 +459,35 @@ def intervention_effects(metric, interventions, selected_ids: Optional[List[int]
                 val = Decimal(val)
             except Exception:
                 continue
-            if (dep.min_value is not None and val < dep.min_value) or \
-               (dep.max_value is not None and val > dep.max_value):
+            if (dep.min_value is not None and val < dep.min_value) or (
+                dep.max_value is not None and val > dep.max_value
+            ):
                 include = False
                 break
         if not include:
             continue
 
-        # Base rating logic (same as broken version)
+        # Base rating logic
         adjusted_rating = float(i.intervention_rating or 0)
         if selected_ids and i.id in selected_ids:
             adjusted_rating *= 1.1  # +10% rating for selected interventions
 
         cls = i.theme or "Other"
-        grouped_interventions.setdefault(cls, []).append({
-            "id": str(i.id),
-            "name": i.name or f"Intervention #{i.id}",
-            "cost_level": float(i.cost_level or 0),
-            "intervention_rating": round(adjusted_rating, 2),
-            "description": i.description or "No description available",
-            "stage": stage_val,
-            "class_name": getattr(i, "class_name", ""),
-            "theme": cls
-        })
+        grouped_interventions.setdefault(cls, []).append(
+            {
+                "id": str(i.id),
+                "name": i.name or f"Intervention #{i.id}",
+                "cost_level": float(i.cost_level or 0),
+                "intervention_rating": round(adjusted_rating, 2),
+                "description": i.description or "No description available",
+                "stage": stage_val,
+                "class_name": getattr(i, "class_name", ""),
+                "theme": cls,
+            }
+        )
 
     return grouped_interventions
+
 
 def _get_current_metric(request) -> Metrics:
     """
@@ -478,7 +506,11 @@ def _get_current_metric(request) -> Metrics:
 
     m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
     if not m and app_user:
-        m = Metrics.objects.filter(user=app_user).order_by("-updated_at", "-created_at").first()
+        m = (
+            Metrics.objects.filter(user=app_user)
+            .order_by("-updated_at", "-created_at")
+            .first()
+        )
     if not m:
         m = Metrics.objects.create(user=app_user if app_user else None)
 
@@ -506,25 +538,37 @@ def _process_calculator_post(request: HttpRequest) -> HttpResponse:
 
     interventions_qs = list(Interventions.objects.all())
     if selected_ids:
-        max_stage = max([getattr(i, "stage", 0) or 0 for i in interventions_qs if i.id in selected_ids])
-        interventions_qs = [i for i in interventions_qs if (getattr(i, "stage", 0) or 0) >= max_stage]
+        max_stage = max(
+            [
+                getattr(i, "stage", 0) or 0
+                for i in interventions_qs
+                if i.id in selected_ids
+            ]
+        )
+        interventions_qs = [
+            i for i in interventions_qs if (getattr(i, "stage", 0) or 0) >= max_stage
+        ]
 
     grouped = intervention_effects(metric, interventions_qs, selected_ids)
 
-    return render(request, "calculator_results.html", {
-        "interventions": grouped,
-        "interventions_json": json.dumps(grouped),
-        "classes": [
-            {"key": "carbon", "label": "Carbon", "target": 80},
-            {"key": "health", "label": "Health & Wellbeing", "target": 60},
-            {"key": "water", "label": "Water Use", "target": 30},
-            {"key": "circular", "label": "Circular Economy", "target": 40},
-            {"key": "resilience", "label": "Resilience", "target": 60},
-            {"key": "value", "label": "Value & Cost", "target": 10},
-            {"key": "biodiversity", "label": "Biodiversity", "target": 20},
-        ],
-        "cap_high": 300000,
-    })
+    return render(
+        request,
+        "calculator_results.html",
+        {
+            "interventions": grouped,
+            "interventions_json": json.dumps(grouped),
+            "classes": [
+                {"key": "carbon", "label": "Carbon", "target": 80},
+                {"key": "health", "label": "Health & Wellbeing", "target": 60},
+                {"key": "water", "label": "Water Use", "target": 30},
+                {"key": "circular", "label": "Circular Economy", "target": 40},
+                {"key": "resilience", "label": "Resilience", "target": 60},
+                {"key": "value", "label": "Value & Cost", "target": 10},
+                {"key": "biodiversity", "label": "Biodiversity", "target": 20},
+            ],
+            "cap_high": 300000,
+        },
+    )
 
 
 # =========================
@@ -543,15 +587,13 @@ def projects_view(request: HttpRequest):
 
     if q:
         qs = qs.filter(
-            Q(project_name__icontains=q) |
-            Q(building_type__icontains=q) |
-            Q(location__icontains=q)
+            Q(project_name__icontains=q)
+            | Q(building_type__icontains=q)
+            | Q(location__icontains=q)
         )
 
     return render(request, "projects.html", {"projects": qs, "query": q})
 
-# app1/views.py
-from django.contrib import messages
 
 @login_required(login_url='login')
 def project_detail_view(request, pk: int):
@@ -563,23 +605,29 @@ def project_detail_view(request, pk: int):
 
     if request.method == "POST":
         # strings
-        p.project_name  = (request.POST.get("project_name")  or p.project_name  or "").strip()
-        p.location      = (request.POST.get("location")      or p.location      or "").strip()
+        p.project_name = (request.POST.get("project_name") or p.project_name or "").strip()
+        p.location = (request.POST.get("location") or p.location or "").strip()
         p.building_type = (request.POST.get("building_type") or p.building_type or "").strip()
 
         # decimals
         for f in [
-            "gifa_m2","external_wall_area_m2","external_openings_m2",
-            "building_footprint_m2","roof_area_m2","roof_percent_gifa",
-            "basement_size_m2","basement_percent_gifa","estimated_auto_budget_aud",
+            "gifa_m2",
+            "external_wall_area_m2",
+            "external_openings_m2",
+            "building_footprint_m2",
+            "roof_area_m2",
+            "roof_percent_gifa",
+            "basement_size_m2",
+            "basement_percent_gifa",
+            "estimated_auto_budget_aud",
         ]:
             if hasattr(p, f):
-                setattr(p, f, _to_dec(request.POST.get(f)))
+                setattr(p, f, _to_dec(request.POST.get(f), default=Decimal("0")))
 
         # ints + bool
-        p.num_apartments   = _to_int(request.POST.get("num_apartments"))
-        p.num_keys         = _to_int(request.POST.get("num_keys"))
-        p.num_wcs          = _to_int(request.POST.get("num_wcs"))
+        p.num_apartments = _to_int(request.POST.get("num_apartments"))
+        p.num_keys = _to_int(request.POST.get("num_keys"))
+        p.num_wcs = _to_int(request.POST.get("num_wcs"))
         p.basement_present = bool(request.POST.get("basement_present"))
 
         p.save()
@@ -591,8 +639,6 @@ def project_detail_view(request, pk: int):
         if request.POST.get("next") == "interventions":
             return redirect("carbon")
 
-        # stay in edit mode and show the “saved” banner
-        from django.urls import reverse
         return redirect(f"{reverse('project_detail', args=[p.id])}?edit=1&saved=1")
 
     # GET
@@ -600,6 +646,8 @@ def project_detail_view(request, pk: int):
     request.session["metrics_id"] = p.id
     request.session.modified = True
     return render(request, "project_detail.html", {"p": p, "can_edit": can_edit})
+
+
 # =========================
 # Authentication + Settings
 # =========================
@@ -608,7 +656,11 @@ def login_view(request: HttpRequest):
     if request.user.is_authenticated:
         return redirect("home")
     if request.method == "POST":
-        user = authenticate(request, username=request.POST.get("username"), password=request.POST.get("password"))
+        user = authenticate(
+            request,
+            username=request.POST.get("username"),
+            password=request.POST.get("password"),
+        )
         if user:
             login(request, user)
             return redirect("home")
@@ -702,39 +754,47 @@ def settings_view(request: HttpRequest):
 
 @login_required(login_url='login')
 def home(request):
-    return render(request, 'home.html')
+    return render(request, "home.html")
 
 
 @login_required(login_url='login')
 def calculator_results(request):
-    cls = request.GET.get('cls', 'carbon')
-    interventions_qs = Interventions.objects.filter(theme=cls).order_by('-intervention_rating', 'cost_level')
+    cls = request.GET.get("cls", "carbon")
+    interventions_qs = Interventions.objects.filter(theme=cls).order_by(
+        "-intervention_rating", "cost_level"
+    )
 
     interventions = []
     for i in interventions_qs:
-        interventions.append({
-            "id": str(i.id),
-            "name": i.name,
-            "theme": i.theme,
-            "description": i.description,
-            "cost_level": float(i.cost_level or 0),
-            "intervention_rating": float(i.intervention_rating or 0),
-            "cost_range": getattr(i, "cost_range", ""),
-        })
+        interventions.append(
+            {
+                "id": str(i.id),
+                "name": i.name,
+                "theme": i.theme,
+                "description": i.description,
+                "cost_level": float(i.cost_level or 0),
+                "intervention_rating": float(i.intervention_rating or 0),
+                "cost_range": getattr(i, "cost_range", ""),
+            }
+        )
 
-    return render(request, "calculator_results.html", {
-        "interventions_json": json.dumps(interventions),
-        "classes": [
-            {"key": "carbon", "label": "Carbon", "target": 80},
-            {"key": "health", "label": "Health & Wellbeing", "target": 60},
-            {"key": "water", "label": "Water Use", "target": 30},
-            {"key": "circular", "label": "Circular Economy", "target": 40},
-            {"key": "resilience", "label": "Resilience", "target": 60},
-            {"key": "value", "label": "Value & Cost", "target": 10},
-            {"key": "biodiversity", "label": "Biodiversity", "target": 20},
-        ],
-        "cap_high": 300000
-    })
+    return render(
+        request,
+        "calculator_results.html",
+        {
+            "interventions_json": json.dumps(interventions),
+            "classes": [
+                {"key": "carbon", "label": "Carbon", "target": 80},
+                {"key": "health", "label": "Health & Wellbeing", "target": 60},
+                {"key": "water", "label": "Water Use", "target": 30},
+                {"key": "circular", "label": "Circular Economy", "target": 40},
+                {"key": "resilience", "label": "Resilience", "target": 60},
+                {"key": "value", "label": "Value & Cost", "target": 10},
+                {"key": "biodiversity", "label": "Biodiversity", "target": 20},
+            ],
+            "cap_high": 300000,
+        },
+    )
 
 
 @login_required(login_url='login')
@@ -768,8 +828,7 @@ def dashboard_view(request: HttpRequest):
     start_year = now.year - 5
 
     yoy_raw = (
-        Metrics.objects
-        .annotate(y=ExtractYear("created_at"))
+        Metrics.objects.annotate(y=ExtractYear("created_at"))
         .filter(y__gte=start_year, y__lte=now.year)
         .values("y")
         .annotate(n=Count("id"))
@@ -780,7 +839,6 @@ def dashboard_view(request: HttpRequest):
     yoy_labels = [str(y) for y in range(start_year, now.year + 1)]
     yoy_counts = [yoy_map.get(int(lbl), 0) for lbl in yoy_labels]
 
-    # --- Build context once ---
     context = {
         "latest_projects": latest_projects,
         "total_projects": total_projects,
@@ -795,6 +853,7 @@ def dashboard_view(request: HttpRequest):
 
     return render(request, "dashboard.html", context)
 
+
 @login_required(login_url='login')
 def carbon_2_view(request):
-    return render(request, 'carbon_2.html')
+    return render(request, "carbon_2.html")
