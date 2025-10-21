@@ -260,6 +260,24 @@ def interventions_api(request):
 # Save Metrics
 # =========================
 
+def _to_dec(value, *, default=None):
+    """
+    Safely convert various inputs to Decimal.
+    - Strips commas, %.
+    - Treats '', None, 'null', 'NaN', 'inf' as invalid -> returns default.
+    """
+    if value in (None, "", "null"):
+        return default
+    s = str(value).strip().replace(",", "").replace("%", "")
+    s_lower = s.lower()
+    if s_lower in ("nan", "inf", "-inf"):
+        return default
+    try:
+        return Decimal(s)
+    except (InvalidOperation, ValueError, TypeError):
+        return default
+
+
 @require_POST
 @login_required(login_url='login')
 def save_metrics(request: HttpRequest) -> JsonResponse:
@@ -278,7 +296,7 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     if not m:
         m = Metrics(user=_resolve_app_user(request))
 
-    # --- Numeric fields ---
+    # --- Decimal fields ---
     decimal_fields = [
         "gifa_m2",
         "external_wall_area_m2",
@@ -291,9 +309,18 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     ]
     for field in decimal_fields:
         if hasattr(m, field):
-            setattr(m, field, _to_dec(payload.get(field)))
+            # For general fields: leave as NULL when invalid
+            setattr(m, field, _to_dec(payload.get(field), default=None))
 
     # --- Integer fields ---
+    def _to_int(v):
+        if v in (None, "", "null"):
+            return None
+        try:
+            return int(str(v).strip())
+        except (ValueError, TypeError):
+            return None
+
     if hasattr(m, "num_apartments"):
         m.num_apartments = _to_int(payload.get("num_apartments"))
     if hasattr(m, "num_keys"):
@@ -303,19 +330,22 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
 
     # --- Boolean & string fields ---
     if hasattr(m, "basement_present"):
-        m.basement_present = bool(payload.get("basement_present"))
+        # Accept true/false, "true"/"false", 1/0
+        bp = payload.get("basement_present")
+        m.basement_present = str(bp).lower() in ("1", "true", "yes", "on")
     if hasattr(m, "building_type"):
         m.building_type = payload.get("building_type") or getattr(m, "building_type", None)
 
-    # --- Total budget logic ---
-    global_budget = payload.get("global_budget")
+    # --- Total budget logic (default 0 for invalid/missing) ---
     if hasattr(m, "total_budget_aud"):
-        m.total_budget_aud = _to_dec(global_budget if global_budget not in (None, "", "null") else 0)
+        global_budget = payload.get("global_budget")
+        m.total_budget_aud = _to_dec(global_budget, default=Decimal("0"))
 
     # --- Ensure user ownership ---
     if not m.user:
         m.user = _resolve_app_user(request)
 
+    # Save
     m.save()
 
     # Persist session
