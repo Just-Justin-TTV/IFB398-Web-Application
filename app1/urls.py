@@ -27,7 +27,8 @@ urlpatterns = [
     # (remove the duplicate that pointed to views.calculator)
     path('carbon/', views.carbon_view, name='carbon'),
     path('carbon-2/', views.carbon_2_view, name='carbon_2'),
-
+    path("api/projects/<int:metrics_id>/interventions/", views.intervention_selection_list_api, name="intervention_selection_list_api"),
+    path("api/projects/<int:metrics_id>/interventions/save/", views.intervention_selection_save_api, name="intervention_selection_save_api"),
     # APIs
     path('api/interventions/', views.interventions_api, name='interventions_api'),
     path('api/metrics/save/', views.save_metrics, name='save_metrics'),

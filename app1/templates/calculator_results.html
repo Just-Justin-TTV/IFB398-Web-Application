@@ -545,6 +545,71 @@
   filterRows();
 })();
 </script>
+<!-- ensure CSRF cookie exists and give a hidden input fallback -->
+<form id="csrfForm" style="display:none">{% csrf_token %}</form>
+
+<script>
+// ===== URLs built from Django names (no hardcoded strings) =====
+const METRICS_ID = {{ metrics_id|default:"null" }};
+const LIST_URL = METRICS_ID ? "{% url 'intervention_selection_list_api' 0 %}".replace('/0/', `/${METRICS_ID}/`) : null;
+const SAVE_URL = METRICS_ID ? "{% url 'intervention_selection_save_api' 0 %}".replace('/0/', `/${METRICS_ID}/`) : null;
+
+// ===== CSRF helpers =====
+function getCookie(name){
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? decodeURIComponent(m.pop()) : '';
+}
+function getCsrfToken(){
+  return getCookie('csrftoken') || (document.querySelector('#csrfForm [name=csrfmiddlewaretoken]')?.value || '');
+}
+
+// ===== simple state of selected IDs =====
+const selected = new Set();
+
+// preload previously saved selections
+async function preloadSelections(){
+  if (!LIST_URL) return;
+  const res = await fetch(LIST_URL, { credentials: 'same-origin' });
+  if (!res.ok) return;
+  const data = await res.json();
+  const saved = new Set((data.items || []).filter(x => x.selected).map(x => String(x.id)));
+
+  document.querySelectorAll('.select-intervention').forEach(cb => {
+    const id = cb.getAttribute('data-id');
+    const on = saved.has(id);
+    cb.checked = on;
+    if (on) selected.add(id);
+
+    cb.addEventListener('change', () => {
+      cb.checked ? selected.add(id) : selected.delete(id);
+    });
+  });
+}
+
+// save current selection set
+async function saveSelections(){
+  if (!SAVE_URL) { alert('No active project to save against.'); return; }
+  const ids = Array.from(selected).map(Number);
+  const res = await fetch(SAVE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'X-CSRFToken': getCsrfToken() },
+    body: JSON.stringify({ selected_ids: ids }),
+    credentials: 'same-origin'
+  });
+  const data = await res.json().catch(()=> ({}));
+  if (res.ok && data.ok){
+    alert(`Saved ✓ (${data.total_selected})`);
+  } else {
+    alert(`Save failed: ${data.error || res.status}`);
+  }
+}
+
+// hook the Save button (ensure your button has id="saveBtn")
+document.getElementById('saveBtn')?.addEventListener('click', saveSelections);
+
+// kick off preload after the DOM is ready
+document.addEventListener('DOMContentLoaded', preloadSelections);
+</script>
 
 </body>
 </html>

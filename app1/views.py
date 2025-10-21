@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db import connection
+from django.db import connection, transaction
 from django.db.models import Q, Avg, Count
 from django.db.models.functions import Coalesce, ExtractYear
 from django.http import (
@@ -32,6 +32,8 @@ from .models import (
     Interventions,
     Metrics,
     User as AppUser,
+    # NEW: table that stores selections per project (ensure this exists in models.py)
+    InterventionSelection,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,6 +120,36 @@ def _unique_project_code(project_name: str) -> str:
         code = f"{base}-{n}"
         n += 1
     return code
+
+
+def _get_current_metric(request) -> Metrics:
+    """
+    Resolve which Metrics row the calculator should use.
+    Priority:
+      1) metrics_id passed in POST/GET
+      2) metrics_id stored in session
+      3) latest project for this AppUser (fallback)
+    """
+    app_user = _resolve_app_user(request)
+    metrics_id = (
+        request.POST.get("metrics_id")
+        or request.GET.get("metrics_id")
+        or request.session.get("metrics_id")
+    )
+
+    m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
+    if not m and app_user:
+        m = (
+            Metrics.objects.filter(user=app_user)
+            .order_by("-updated_at", "-created_at")
+            .first()
+        )
+    if not m:
+        m = Metrics.objects.create(user=app_user if app_user else None)
+
+    request.session["metrics_id"] = m.id  # keep everyone in sync
+    request.session.modified = True
+    return m
 
 
 # =========================
@@ -489,36 +521,6 @@ def intervention_effects(
     return grouped_interventions
 
 
-def _get_current_metric(request) -> Metrics:
-    """
-    Resolve which Metrics row the calculator should use.
-    Priority:
-      1) metrics_id passed in POST/GET
-      2) metrics_id stored in session
-      3) latest project for this AppUser (fallback)
-    """
-    app_user = _resolve_app_user(request)
-    metrics_id = (
-        request.POST.get("metrics_id")
-        or request.GET.get("metrics_id")
-        or request.session.get("metrics_id")
-    )
-
-    m = Metrics.objects.filter(id=metrics_id).first() if metrics_id else None
-    if not m and app_user:
-        m = (
-            Metrics.objects.filter(user=app_user)
-            .order_by("-updated_at", "-created_at")
-            .first()
-        )
-    if not m:
-        m = Metrics.objects.create(user=app_user if app_user else None)
-
-    request.session["metrics_id"] = m.id  # keep everyone in sync
-    request.session.modified = True
-    return m
-
-
 def _process_calculator_post(request: HttpRequest) -> HttpResponse:
     # Use the current/edited project instead of "latest for this user"
     metric = _get_current_metric(request)
@@ -567,8 +569,101 @@ def _process_calculator_post(request: HttpRequest) -> HttpResponse:
                 {"key": "biodiversity", "label": "Biodiversity", "target": 20},
             ],
             "cap_high": 300000,
+            # Pass active project id so frontend can call list/save APIs
+            "metrics_id": metric.id,
         },
     )
+
+
+# =========================
+# NEW: Intervention Selection APIs
+# =========================
+
+@require_GET
+@login_required(login_url='login')
+def intervention_selection_list_api(request, metrics_id: int):
+    """
+    Return all interventions with a boolean 'selected' for the given Metrics project.
+    """
+    project = get_object_or_404(Metrics, pk=metrics_id)
+
+    selected_ids = set(
+        InterventionSelection.objects
+        .filter(project=project)
+        .values_list("intervention_id", flat=True)
+    )
+
+    items = []
+    for i in Interventions.objects.all().order_by("theme", "name"):
+        items.append({
+            "id": i.id,
+            "name": i.name or f"Intervention #{i.id}",
+            "theme": i.theme or "",
+            "description": i.description or "",
+            "cost_level": float(i.cost_level or 0),
+            "intervention_rating": float(i.intervention_rating or 0),
+            "selected": i.id in selected_ids,
+        })
+
+    return JsonResponse({"items": items, "project_id": project.id})
+
+
+@require_POST
+@login_required(login_url='login')
+def intervention_selection_save_api(request, metrics_id: int):
+    """
+    Mirror-save: after the user submits selected_ids, DB will exactly match that list.
+    Body: {"selected_ids": [1,2,3,...]}
+    """
+    project = get_object_or_404(Metrics, pk=metrics_id)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("Invalid JSON payload")
+
+    selected_ids = payload.get("selected_ids")
+    if not isinstance(selected_ids, list):
+        return HttpResponseBadRequest("selected_ids must be a list")
+
+    try:
+        selected_ids = {int(x) for x in selected_ids if str(x).isdigit()}
+    except Exception:
+        return HttpResponseBadRequest("selected_ids must contain integers")
+
+    existing_ids = set(
+        InterventionSelection.objects
+        .filter(project=project)
+        .values_list("intervention_id", flat=True)
+    )
+
+    to_add = selected_ids - existing_ids
+    to_del = existing_ids - selected_ids
+
+    app_user = _resolve_app_user(request)
+
+    with transaction.atomic():
+        if to_del:
+            InterventionSelection.objects.filter(project=project, intervention_id__in=to_del).delete()
+        if to_add:
+            rows = []
+            for iid in to_add:
+                rows.append(
+                    InterventionSelection(
+                        project=project,
+                        intervention_id=iid,
+                        selected_by=app_user,   # <-- AppUser, not request.user
+                    )
+                )
+            InterventionSelection.objects.bulk_create(rows, ignore_conflicts=True)
+
+    return JsonResponse({
+        "ok": True,
+        "added": sorted(to_add),
+        "removed": sorted(to_del),
+        "project_id": project.id,
+        "total_selected": InterventionSelection.objects.filter(project=project).count(),
+    })
 
 
 # =========================
@@ -793,6 +888,8 @@ def calculator_results(request):
                 {"key": "biodiversity", "label": "Biodiversity", "target": 20},
             ],
             "cap_high": 300000,
+            # also pass metrics_id here for the results view
+            "metrics_id": metric.id,
         },
     )
 

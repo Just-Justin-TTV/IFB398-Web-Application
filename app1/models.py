@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class ClassTargets(models.Model):
     class_name = models.CharField(max_length=100, primary_key=True)
@@ -142,3 +143,20 @@ class Metrics(models.Model):
             if hasattr(self, k):
                 setattr(self, k, v)
 
+
+class InterventionSelection(models.Model):
+    """
+    Stores which interventions are selected for a given project (Metrics row).
+    One row per (project, intervention).
+    """
+    project = models.ForeignKey("Metrics", on_delete=models.CASCADE, related_name="intervention_selections")
+    intervention = models.ForeignKey("Interventions", on_delete=models.CASCADE, related_name="selections")
+    selected_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "InterventionSelection"
+        unique_together = ("project", "intervention")
+
+    def __str__(self):
+        return f"{self.project_id} → {self.intervention_id}"
