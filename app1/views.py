@@ -10,220 +10,16 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db import connection
-from django.db.models import Q, Avg, Count
-from django.db.models.functions import Coalesce, ExtractYear
-from django.http import (
-    HttpRequest,
-    HttpResponse,
-    HttpResponseBadRequest,
-    JsonResponse,
-)
-from django.views.decorators.http import require_GET, require_POST
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
-from django.utils import timezone
-from datetime import timedelta
-from urllib.parse import urlparse, urlunparse
-
-from django.conf import settings
-
-# Avoid shadowing the login() and logout() views below.
-from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
-from django.contrib.auth import login as auth_login
-from django.contrib.auth import logout as auth_logout
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.decorators import login_not_required, login_required
-from django.contrib.auth.forms import (
-    AuthenticationForm,
-    PasswordChangeForm,
-    PasswordResetForm,
-    SetPasswordForm,
-)
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, QueryDict
-from django.shortcuts import resolve_url
-from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode
-from django.utils.translation import gettext_lazy as _
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.debug import sensitive_post_parameters
-from django.views.generic.base import TemplateView
-from django.views.generic.edit import FormView
-
-UserModel = get_user_model()
 
 
-from .models import (
-    ClassTargets,
-    InterventionDependencies,
-    InterventionEffects,
-    Interventions,
-    Metrics,
-    User as AppUser,
-)
 
-logger = logging.getLogger(__name__)
-
-# =========================
-# Helpers
-# =========================
-
-def _resolve_app_user(request: HttpRequest) -> Optional[AppUser]:
-    """Map the Django auth user to your AppUser row (by username/email)."""
-    user = getattr(request, "user", None)
-    if not getattr(user, "is_authenticated", False):
-        return None
-    if getattr(user, "username", None):
-        hit = AppUser.objects.filter(username=user.username).first()
-        if hit:
-            return hit
-    if getattr(user, "email", None):
-        hit = AppUser.objects.filter(email=user.email).first()
-        if hit:
-            return hit
-    return None
+# Home page
+def create_project(request):
+    return render(request, 'create_project.html')
 
 
-def _num(value: Any, default: Optional[float] = None) -> Optional[float]:
-    if value is None:
-        return default
-    s = str(value).strip().lower()
-    s = (
-        s.replace("aud", "")
-        .replace(",", "")
-        .replace("k", "000")
-        .replace("–", "-")
-        .replace("%", "")
-        .strip()
-    )
-    try:
-        return float(s)
-    except Exception:
-        return default
 
-
-def _to_int(value: Any) -> Optional[int]:
-    if value in (None, "", "null"):
-        return None
-    try:
-        return int(str(value).strip())
-    except (ValueError, TypeError):
-        return None
-
-
-NUM_RE = re.compile(r"[^0-9\.\-]")  # keep digits, dot, minus only
-
-def _to_dec(value: Any, *, default: Optional[Decimal] = None) -> Optional[Decimal]:
-    """
-    Safely convert many user inputs to Decimal.
-    - Removes commas, units, %, spaces (keeps only 0-9 . -)
-    - Treats '', None, 'null', 'nan', 'inf' as invalid -> returns default
-    """
-    if value in (None, "", "null"):
-        return default
-    s = str(value).strip()
-    s_lower = s.lower()
-    if s_lower in ("nan", "+nan", "-nan", "inf", "+inf", "-inf"):
-        return default
-    cleaned = NUM_RE.sub("", s)
-    if cleaned in ("", "-", ".", "-.", ".-"):
-        return default
-    try:
-        return Decimal(cleaned)
-    except (InvalidOperation, ValueError, TypeError):
-        return default
-
-
-def _unique_project_code(project_name: str) -> str:
-    """
-    Create a unique, readable slug for Metrics.project_code.
-    Tries 'my-project', then 'my-project-2', 'my-project-3', ...
-    """
-    base = slugify(project_name) or "project"
-    code = base
-    n = 2
-    while Metrics.objects.filter(project_code=code).exists():
-        code = f"{base}-{n}"
-        n += 1
-    return code
-
-
-# =========================
-# Create & Edit Project  → saves to Metrics
-# =========================
-
-@login_required(login_url='login')
-def create_project(request: HttpRequest):
-    """
-    Step 1 – basic project card.
-    Creates a Metrics row (project_name, location, building_type) and
-    then sends the user to the Building Metrics page.
-    """
-    if request.method == "POST":
-        project_name = (request.POST.get("project_name") or "").strip()
-        project_location = (request.POST.get("location") or request.POST.get("project_location") or "").strip()
-        project_type = (request.POST.get("project_type") or "").strip()
-
-        if not project_name:
-            messages.error(request, "Project name is required.")
-            return render(request, "create_project.html")
-
-        code = _unique_project_code(project_name)
-        m = Metrics.objects.create(
-            user=_resolve_app_user(request),
-            project_code=code,
-            project_name=project_name,
-            location=project_location,
-            building_type=project_type,
-        )
-
-        # track in session so it shows on Projects & Dashboard
-        ids = list(request.session.get("my_project_ids", []))
-        if m.id not in ids:
-            ids.append(m.id)
-        request.session["my_project_ids"] = ids
-        request.session["metrics_id"] = m.id
-        request.session.modified = True
-
-        # >>> go to the Building Metrics page
-        return redirect("carbon")
-
-    return render(request, "create_project.html")
-
-
-@login_required(login_url='login')
-def metrics_edit(request, pk: int):
-    """
-    Edit basic project info stored in Metrics (project_name, location, building_type).
-    GET -> renders the same form as create, prefilled
-    POST -> saves and redirects to Projects (or wherever you like)
-    """
-    m = get_object_or_404(Metrics, pk=pk)
-
-    if request.method == "POST":
-        m.project_name = (request.POST.get("project_name") or m.project_name or "").strip()
-        m.location = (request.POST.get("location") or m.location or "").strip()
-        m.building_type = (request.POST.get("project_type") or m.building_type or "").strip()
-        m.save()
-
-        # keep active in session for calculator/interventions
-        request.session["metrics_id"] = m.id
-        request.session.modified = True
-
-        return redirect("projects")
-
-    return render(request, "create_project.html", {"m": m, "is_edit": True})
-
-
-# =========================
-# Interventions API
-# =========================
-
+# UI key -> possible DB labels/aliases
 CLASS_ALIASES = {
     "carbon": ["carbon", "carbon emissions", "operating carbon", "operational carbon", "embodied carbon"],
     "health": ["health", "health & wellbeing", "health and wellbeing"],
@@ -724,111 +520,129 @@ def register_view(request: HttpRequest):
             messages.error(request, "Username already exists.")
         elif User.objects.filter(email=email).exists():
             messages.error(request, "Email already exists.")
-        else:
-            user = User.objects.create_user(username=username, email=email, password=password1)
+            return render(request, 'register.html')
+
+        user = User.objects.create_user(username=username, email=email, password=password1)
+        login(request, user)
+        messages.success(request, "Registration successful!")
+        return redirect('home')
+
+    return render(request, 'register.html')
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user:
             login(request, user)
-            messages.success(request, "Registration successful!")
-            return redirect("home")
-    return render(request, "register.html")
+            return redirect('home')
+        else:
+            messages.error(request, "Invalid username or password.")
+    return render(request, 'login.html')
 
+def logout_view(request):
+    if request.method == "POST":
+        logout(request)
+        messages.success(request, "You have successfully logged out.")
+        return redirect('login')
+    return redirect('home')
 
+# Calculator
+@login_required(login_url='login')
+def calculator(request):
+    if request.method == 'GET':
+        class_targets_qs = ClassTargets.objects.all().values('class_name', 'target_rating')
+        class_targets = [{'class': ct['class_name'], 'target_rating': ct['target_rating']} for ct in class_targets_qs]
+        return render(request, 'calculator.html', {'class_targets': class_targets})
+
+    elif request.method == 'POST':
+        global_budget = float(request.POST.get('global_budget', 1e6))
+
+        # Extract per-class targets
+        targets = {key[6:]: float(value) for key, value in request.POST.items() if key.startswith('class_')}
+
+        # Fetch interventions
+        interventions = Interventions.objects.exclude(class_name__isnull=True).exclude(name__isnull=True).order_by('class_name')
+
+        # Map cost_level to approximate cost
+        cost_mapping = {1: 5000, 2: 10000, 3: 25000, 4: 50000, 5: 100000, 6: 200000, 7: 500000,
+                        8: 1000000, 9: 2000000, 10: 5000000}
+
+        # Group interventions by class and filter by budget
+        grouped_results = {}
+        for row in interventions:
+            if row.cost_level is None:
+                continue
+            approx_cost = cost_mapping.get(row.cost_level, 0)
+            if approx_cost <= global_budget:
+                grouped_results.setdefault(row.class_name, []).append(row)
+
+        # Optional: sort interventions by cost level
+        for cls in grouped_results:
+            grouped_results[cls].sort(key=lambda x: x.cost_level)
+
+        return render(request, 'calculator_results.html', {
+            'grouped_results': grouped_results,
+            'global_budget': global_budget,
+            'targets': targets
+        })
+    
 ## settings page
 @login_required
 def settings_view(request):
     user = request.user
-    current_theme = request.session.get('theme', 'light')
+    current_theme = request.session.get("theme", "light")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
-            # -------------------------
-            # Theme change
-            # -------------------------
-            if 'theme' in request.POST:
-                new_theme = request.POST.get('theme', 'light')
-                request.session['theme'] = new_theme
+            if "theme" in request.POST:
+                new_theme = request.POST.get("theme", "light")
+                request.session["theme"] = new_theme
                 request.session.modified = True
                 messages.success(request, f"Theme changed to {new_theme} mode!")
-                return redirect('settings')
 
-            # -------------------------
-            # Profile info update
-            # -------------------------
-            if 'update_profile' in request.POST:
-                new_username = request.POST.get('username')
-                new_email = request.POST.get('email')
-
+            elif "update_profile" in request.POST:
+                new_username = request.POST.get("username")
+                new_email = request.POST.get("email")
                 if not new_username or not new_email:
                     raise ValueError("Username and email cannot be blank.")
-
-                # Check if username/email already exists
                 if User.objects.filter(username=new_username).exclude(id=user.id).exists():
                     raise ValueError("Username already exists.")
                 if User.objects.filter(email=new_email).exclude(id=user.id).exists():
                     raise ValueError("Email already exists.")
-
-                # Save updates
                 user.username = new_username
                 user.email = new_email
                 user.save()
                 messages.success(request, "Profile updated successfully!")
 
-            # -------------------------
-            # Password change
-            # -------------------------
-            if 'change_password' in request.POST:
-                current_password = request.POST.get('current_password')
-                new_password = request.POST.get('new_password')
-                confirm_password = request.POST.get('confirm_password')
-
-                if not current_password or not new_password or not confirm_password:
+            elif "change_password" in request.POST:
+                current_password = request.POST.get("current_password")
+                new_password = request.POST.get("new_password")
+                confirm_password = request.POST.get("confirm_password")
+                if not all([current_password, new_password, confirm_password]):
                     raise ValueError("All password fields are required.")
-
                 if new_password != confirm_password:
                     raise ValueError("New passwords do not match.")
-
                 if not user.check_password(current_password):
                     raise ValueError("Current password is incorrect.")
-
-                # Set new password and keep user logged in
                 user.set_password(new_password)
                 user.save()
-                from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, user)
                 messages.success(request, "Password changed successfully!")
 
         except ValueError as ve:
-            # Caught logical/user errors
             messages.error(request, f"Error: {ve}")
-        except Exception as e:
-            # Catch unexpected errors
+        except Exception:
             messages.error(request, "Unexpected error occurred. Please try again later.")
-            # Optional: log the error
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Settings update failed: {e}")
+            logger.exception("Settings update failed")
 
-        return redirect('settings')
+        return redirect("settings")
 
-    # GET request
-    context = {
-        'user': user,
-        'current_theme': current_theme
-    }
-    return render(request, 'settings.html', context)
+    return render(request, "settings.html", {"user": user, "current_theme": current_theme})
 
-
-@login_required
-def update_theme(request):
-    """
-    Handle theme updates from navigation dropdown
-    """
-    if request.method == 'POST':
-        theme = request.POST.get('theme', 'light')
-        request.session['user_theme'] = theme
-        request.session.modified = True
-    
-    # Redirect back to the previous page
-    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required(login_url='login')
 def home(request):
@@ -928,15 +742,4 @@ def dashboard_view(request: HttpRequest):
         "yoy_counts_json": json.dumps(yoy_counts),
         "current_year": now.year,
     }
-
-    return render(request, "dashboard.html", context)
-
-
-@login_required(login_url='login')
-def carbon_2_view(request):
-    return render(request, 'carbon_2.html')
-
-
-
-
-
+    return render(request, 'settings.html', context)
