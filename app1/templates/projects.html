@@ -1,4 +1,6 @@
 {% load static %}
+{% load humanize %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,13 +45,7 @@
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
-        <a href="{% url 'carbon' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">build</span> Interventions
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
-        </a>
+        
         <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
@@ -100,72 +96,52 @@
                 <th class="text-right px-5 py-3">Actions</th>
               </tr>
             </thead>
+
             <tbody id="projectRows" class="divide-y">
-              <!-- Example rows; replace with your loop -->
-              <tr class="hover:bg-gray-50" data-name="Pinecrest Logistics">
-                <td class="px-5 py-3 font-medium">Pinecrest Logistics</td>
-                <td class="px-5 py-3">2025</td>
-                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">AU</span></td>
-                <td class="px-5 py-3">248</td>
-                <td class="px-5 py-3">$21,080</td>
-                <td class="px-5 py-3">01/05/2025</td>
-                <td class="px-5 py-3 text-right">
-                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
-                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+              {% for p in projects %}
+              <tr class="hover:bg-gray-50" data-name="{{ p.project_name|default_if_none:'' }}">
+                <td class="px-5 py-3 font-medium">
+                  <a href="{% url 'project_detail' p.id %}" class="hover:underline">
+                    {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
+                  </a>
                 </td>
-              </tr>
 
-              <tr class="hover:bg-gray-50" data-name="Aurora Data Center">
-                <td class="px-5 py-3 font-medium">Aurora Data Center</td>
-                <td class="px-5 py-3">2025</td>
-                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">UK</span></td>
-                <td class="px-5 py-3">176</td>
-                <td class="px-5 py-3">$21,120</td>
-                <td class="px-5 py-3">29/04/2025</td>
-                <td class="px-5 py-3 text-right">
-                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
-                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                <td class="px-5 py-3">
+                  {% if p.updated_at %}{{ p.updated_at|date:"Y" }}
+                  {% elif p.created_at %}{{ p.created_at|date:"Y" }}
+                  {% else %}—{% endif %}
                 </td>
-              </tr>
 
-              <tr class="hover:bg-gray-50" data-name="Cascade Elementary">
-                <td class="px-5 py-3 font-medium">Cascade Elementary</td>
-                <td class="px-5 py-3">2025</td>
-                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">PNG</span></td>
-                <td class="px-5 py-3">512</td>
-                <td class="px-5 py-3">$33,280</td>
-                <td class="px-5 py-3">29/04/2025</td>
-                <td class="px-5 py-3 text-right">
-                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
-                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                <td class="px-5 py-3">
+                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
+                    {{ p.location|default:"—" }}
+                  </span>
                 </td>
-              </tr>
 
-              <tr class="hover:bg-gray-50" data-name="MetroCore Sustainable">
-                <td class="px-5 py-3 font-medium">MetroCore Sustainable</td>
-                <td class="px-5 py-3">2025</td>
-                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">UK</span></td>
-                <td class="px-5 py-3">89</td>
-                <td class="px-5 py-3">$13,350</td>
-                <td class="px-5 py-3">13/04/2025</td>
-                <td class="px-5 py-3 text-right">
-                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
-                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
-                </td>
-              </tr>
+                <td class="px-5 py-3">—</td>
 
-              <tr class="hover:bg-gray-50" data-name="Suncrest Senior">
-                <td class="px-5 py-3 font-medium">Suncrest Senior</td>
-                <td class="px-5 py-3">2025</td>
-                <td class="px-5 py-3"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">PNG</span></td>
-                <td class="px-5 py-3">321</td>
-                <td class="px-5 py-3">$14,445</td>
-                <td class="px-5 py-3">14/04/2025</td>
-                <td class="px-5 py-3 text-right">
-                  <a href="{% url 'projects' %}" class="text-brand hover:text-brand-700 mr-3">Open</a>
-                  <a href="{% url 'projects' %}" class="text-gray-500 hover:text-gray-700">Edit</a>
+                <td class="px-5 py-3">
+                  {% if p.estimated_auto_budget_aud %}
+                    ${{ p.estimated_auto_budget_aud|floatformat:0|intcomma }}
+                  {% else %}—{% endif %}
+                </td>
+
+                <td class="px-5 py-3">
+                  {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y" }}
+                  {% elif p.created_at %}{{ p.created_at|date:"d/m/Y" }}
+                  {% else %}—{% endif %}
+                </td>
+
+                <td class="px-5 py-3 space-x-3 text-right">
+                  <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
+                  <a href="{% url 'project_detail' p.id %}?edit=1" class="text-gray-700 hover:text-gray-900">Edit</a>
                 </td>
               </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="px-5 py-6 text-gray-500">No projects found.</td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </section>
