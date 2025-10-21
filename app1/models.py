@@ -110,6 +110,7 @@ class Metrics(models.Model):
 
     # Optional computed outputs
     total_budget_aud = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
+    selected_intervention_ids = models.JSONField(default=list, blank=True)
 
     # app/models.py  (inside class Metrics)
 
