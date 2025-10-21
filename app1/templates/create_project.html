@@ -1,102 +1,26 @@
 {% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Create Project</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
-          borderRadius: { "2xl": "1rem" }
-        }
-      }
-    }
-  </script>
+{% block title %}Create Project - Carbon Management{% endblock %}
 
-  <!-- Material Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
+{% block page_title %}Create New Project{% endblock %}
+{% block page_subtitle %}Add a project name, location, and type to get started{% endblock %}
 
-<body class="min-h-screen bg-gray-50 text-gray-900">
-<div class="flex min-h-screen">
-
-  <!-- Sidebar -->
-  <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-    <div class="px-5 py-6 border-b">
-      <div class="flex items-center gap-3">
-        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-        <div>
-          <p class="text-xs text-gray-500">Welcome</p>
-          <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+{% block content %}
+<div class="max-w-4xl">
+    <!-- Django messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-lg px-4 py-3 text-sm
+                    {% if message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200
+                    {% elif message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200
+                    {% else %} bg-blue-50 text-blue-700 border border-blue-200 {% endif %}">
+            {{ message }}
         </div>
-      </div>
+        {% endfor %}
     </div>
-
-    <nav class="px-3 py-4 space-y-1">
-      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">dashboard</span> Dashboard
-      </a>
-
-      <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow">
-        <span class="material-icons text-[18px]">folder</span> Projects
-      </a>
-
-      <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">build</span> Interventions
-      </a>
-
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">calculate</span> Cost Matrix
-      </a>
-
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">description</span> Reports
-      </a>
-
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">settings</span> Settings
-      </a>
-    </nav>
-  </aside>
-
-  <!-- Main -->
-  <main class="flex-1">
-    <!-- Top header -->
-    <header class="bg-white border-b">
-      <div class="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold">Create New Project</h1>
-          <p class="text-sm text-gray-600">Add a project name, location, and type to get started.</p>
-        </div>
-        <a href="{% url 'projects' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-          <span class="material-icons text-[18px]">arrow_back</span>
-          Back to Projects
-        </a>
-      </div>
-    </header>
-
-    <div class="max-w-4xl mx-auto px-6 py-8">
-
-      <!-- Django messages -->
-      {% if messages %}
-        <div class="mb-4 space-y-2">
-          {% for message in messages %}
-            <div class="rounded-lg px-4 py-2 text-sm
-                        {% if message.tags == 'error' %} bg-red-50 text-red-700 border border-red-200
-                        {% elif message.tags == 'success' %} bg-green-50 text-green-700 border border-green-200
-                        {% else %} bg-blue-50 text-blue-700 border border-blue-200 {% endif %}">
-              {{ message }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
+    {% endif %}
 
     <!-- Form card -->
     <form id="projectForm" method="post" action="{% url 'create_project' %}" class="bg-white border rounded-2xl shadow-sm p-8">

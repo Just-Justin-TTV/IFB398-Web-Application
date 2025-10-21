@@ -19,11 +19,44 @@ from django.http import (
     HttpResponseBadRequest,
     JsonResponse,
 )
+from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.text import slugify
-from django.views.decorators.http import require_GET, require_POST
+from datetime import timedelta
+from urllib.parse import urlparse, urlunparse
+
+from django.conf import settings
+
+# Avoid shadowing the login() and logout() views below.
+from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
+from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_not_required, login_required
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.http import HttpResponseRedirect, QueryDict
+from django.shortcuts import resolve_url
+from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
+from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.generic.base import TemplateView
+from django.views.generic.edit import FormView
+
+UserModel = get_user_model()
+
 
 from .models import (
     ClassTargets,
@@ -699,58 +732,103 @@ def register_view(request: HttpRequest):
     return render(request, "register.html")
 
 
-@login_required(login_url='login')
-def settings_view(request: HttpRequest):
+## settings page
+@login_required
+def settings_view(request):
     user = request.user
-    current_theme = request.session.get("theme", "light")
+    current_theme = request.session.get('theme', 'light')
 
-    if request.method == "POST":
+    if request.method == 'POST':
         try:
-            if "theme" in request.POST:
-                new_theme = request.POST.get("theme", "light")
-                request.session["theme"] = new_theme
+            # -------------------------
+            # Theme change
+            # -------------------------
+            if 'theme' in request.POST:
+                new_theme = request.POST.get('theme', 'light')
+                request.session['theme'] = new_theme
                 request.session.modified = True
                 messages.success(request, f"Theme changed to {new_theme} mode!")
+                return redirect('settings')
 
-            elif "update_profile" in request.POST:
-                new_username = request.POST.get("username")
-                new_email = request.POST.get("email")
+            # -------------------------
+            # Profile info update
+            # -------------------------
+            if 'update_profile' in request.POST:
+                new_username = request.POST.get('username')
+                new_email = request.POST.get('email')
+
                 if not new_username or not new_email:
                     raise ValueError("Username and email cannot be blank.")
+
+                # Check if username/email already exists
                 if User.objects.filter(username=new_username).exclude(id=user.id).exists():
                     raise ValueError("Username already exists.")
                 if User.objects.filter(email=new_email).exclude(id=user.id).exists():
                     raise ValueError("Email already exists.")
+
+                # Save updates
                 user.username = new_username
                 user.email = new_email
                 user.save()
                 messages.success(request, "Profile updated successfully!")
 
-            elif "change_password" in request.POST:
-                current_password = request.POST.get("current_password")
-                new_password = request.POST.get("new_password")
-                confirm_password = request.POST.get("confirm_password")
-                if not all([current_password, new_password, confirm_password]):
+            # -------------------------
+            # Password change
+            # -------------------------
+            if 'change_password' in request.POST:
+                current_password = request.POST.get('current_password')
+                new_password = request.POST.get('new_password')
+                confirm_password = request.POST.get('confirm_password')
+
+                if not current_password or not new_password or not confirm_password:
                     raise ValueError("All password fields are required.")
+
                 if new_password != confirm_password:
                     raise ValueError("New passwords do not match.")
+
                 if not user.check_password(current_password):
                     raise ValueError("Current password is incorrect.")
+
+                # Set new password and keep user logged in
                 user.set_password(new_password)
                 user.save()
+                from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, user)
                 messages.success(request, "Password changed successfully!")
 
         except ValueError as ve:
+            # Caught logical/user errors
             messages.error(request, f"Error: {ve}")
-        except Exception:
+        except Exception as e:
+            # Catch unexpected errors
             messages.error(request, "Unexpected error occurred. Please try again later.")
-            logger.exception("Settings update failed")
+            # Optional: log the error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Settings update failed: {e}")
 
-        return redirect("settings")
+        return redirect('settings')
 
-    return render(request, "settings.html", {"user": user, "current_theme": current_theme})
+    # GET request
+    context = {
+        'user': user,
+        'current_theme': current_theme
+    }
+    return render(request, 'settings.html', context)
 
+
+@login_required
+def update_theme(request):
+    """
+    Handle theme updates from navigation dropdown
+    """
+    if request.method == 'POST':
+        theme = request.POST.get('theme', 'light')
+        request.session['user_theme'] = theme
+        request.session.modified = True
+    
+    # Redirect back to the previous page
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required(login_url='login')
 def home(request):
@@ -856,4 +934,9 @@ def dashboard_view(request: HttpRequest):
 
 @login_required(login_url='login')
 def carbon_2_view(request):
-    return render(request, "carbon_2.html")
+    return render(request, 'carbon_2.html')
+
+
+
+
+

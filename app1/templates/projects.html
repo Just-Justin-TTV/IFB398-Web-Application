@@ -1,3 +1,4 @@
+{% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
 
@@ -45,7 +46,13 @@
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
-        
+        <a href="{% url 'carbon' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'carbon' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">build</span> Interventions
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">calculate</span> Cost Matrix
+        </a>
         <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
@@ -72,94 +79,100 @@
                 <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
                 <input id="searchProjects" type="text" placeholder="Search projects…"
                        class="w-full rounded-full border pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
-              </div>
-              <a href="{% url 'create_project' %}"
-                 class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
-                <span class="material-icons text-[18px]">add</span> New Project
-              </a>
             </div>
-          </div>
+            <a href="{% url 'create_project' %}"
+               class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600 whitespace-nowrap">
+                <span class="material-icons text-[18px]">add</span> New Project
+            </a>
         </div>
-      </header>
+    </div>
 
-      <div class="max-w-7xl mx-auto px-6 py-6">
-        <section class="bg-white border rounded-2xl shadow-sm overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-50 text-gray-600">
-              <tr>
-                <th class="text-left px-5 py-3">Project</th>
-                <th class="text-left px-5 py-3">Year</th>
-                <th class="text-left px-5 py-3">Region</th>
-                <th class="text-left px-5 py-3">Carbon (tCO₂e)</th>
-                <th class="text-left px-5 py-3">Cost</th>
-                <th class="text-left px-5 py-3">Updated</th>
-                <th class="text-right px-5 py-3">Actions</th>
-              </tr>
-            </thead>
+    <!-- Projects Table -->
+    <section class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                        <th class="text-left px-6 py-4 font-medium">Project</th>
+                        <th class="text-left px-6 py-4 font-medium">Year</th>
+                        <th class="text-left px-6 py-4 font-medium">Region</th>
+                        <th class="text-left px-6 py-4 font-medium">Carbon (tCO₂e)</th>
+                        <th class="text-left px-6 py-4 font-medium">Cost</th>
+                        <th class="text-left px-6 py-4 font-medium">Updated</th>
+                        <th class="text-right px-6 py-4 font-medium">Actions</th>
+                    </tr>
+                </thead>
 
-            <tbody id="projectRows" class="divide-y">
-              {% for p in projects %}
-              <tr class="hover:bg-gray-50" data-name="{{ p.project_name|default_if_none:'' }}">
-                <td class="px-5 py-3 font-medium">
-                  <a href="{% url 'project_detail' p.id %}" class="hover:underline">
-                    {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
-                  </a>
-                </td>
+                <tbody id="projectRows" class="divide-y">
+                    {% for p in projects %}
+                    <tr class="hover:bg-gray-50" data-name="{{ p.project_name|default_if_none:'' }}">
+                        <td class="px-6 py-4 font-medium">
+                            <a href="{% url 'project_detail' p.id %}" class="hover:underline text-gray-900">
+                                {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
+                            </a>
+                        </td>
 
-                <td class="px-5 py-3">
-                  {% if p.updated_at %}{{ p.updated_at|date:"Y" }}
-                  {% elif p.created_at %}{{ p.created_at|date:"Y" }}
-                  {% else %}—{% endif %}
-                </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {% if p.updated_at %}{{ p.updated_at|date:"Y" }}
+                            {% elif p.created_at %}{{ p.created_at|date:"Y" }}
+                            {% else %}—{% endif %}
+                        </td>
 
-                <td class="px-5 py-3">
-                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
-                    {{ p.location|default:"—" }}
-                  </span>
-                </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                                {{ p.location|default:"—" }}
+                            </span>
+                        </td>
 
-                <td class="px-5 py-3">—</td>
+                        <td class="px-6 py-4 text-gray-600">—</td>
 
-                <td class="px-5 py-3">
-                  {% if p.estimated_auto_budget_aud %}
-                    ${{ p.estimated_auto_budget_aud|floatformat:0|intcomma }}
-                  {% else %}—{% endif %}
-                </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {% if p.estimated_auto_budget_aud %}
+                                ${{ p.estimated_auto_budget_aud|floatformat:0|intcomma }}
+                            {% else %}—{% endif %}
+                        </td>
 
-                <td class="px-5 py-3">
-                  {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y" }}
-                  {% elif p.created_at %}{{ p.created_at|date:"d/m/Y" }}
-                  {% else %}—{% endif %}
-                </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y" }}
+                            {% elif p.created_at %}{{ p.created_at|date:"d/m/Y" }}
+                            {% else %}—{% endif %}
+                        </td>
 
-                <td class="px-5 py-3 space-x-3 text-right">
-                  <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
-                  <a href="{% url 'project_detail' p.id %}?edit=1" class="text-gray-700 hover:text-gray-900">Edit</a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="7" class="px-5 py-6 text-gray-500">No projects found.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </section>
-      </div>
-    </main>
-  </div>
+                        <td class="px-6 py-4 space-x-4 text-right">
+                            <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700 font-medium text-sm">Open</a>
+                            <a href="{% url 'project_detail' p.id %}?edit=1" class="text-gray-600 hover:text-gray-800 font-medium text-sm">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center text-gray-500">
+                                <span class="material-icons text-4xl text-gray-300 mb-3">folder_open</span>
+                                <p class="text-lg font-medium">No projects found</p>
+                                <p class="text-sm mt-1">Get started by creating your first project</p>
+                                <a href="{% url 'create_project' %}" class="mt-4 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+                                    <span class="material-icons text-[18px]">add</span> Create Project
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
-  <script>
+<script>
     // Simple client-side name filter
     const q = document.getElementById('searchProjects');
     const rows = document.getElementById('projectRows');
     q.addEventListener('input', () => {
-      const needle = q.value.trim().toLowerCase();
-      [...rows.querySelectorAll('tr')].forEach(tr => {
-        const name = (tr.dataset.name || tr.cells[0]?.innerText || '').toLowerCase();
-        tr.style.display = name.includes(needle) ? '' : 'none';
-      });
+        const needle = q.value.trim().toLowerCase();
+        [...rows.querySelectorAll('tr')].forEach(tr => {
+            const name = (tr.dataset.name || tr.cells[0]?.innerText || '').toLowerCase();
+            tr.style.display = name.includes(needle) ? '' : 'none';
+        });
     });
-  </script>
-</body>
-</html>
+</script>
+{% endblock %}

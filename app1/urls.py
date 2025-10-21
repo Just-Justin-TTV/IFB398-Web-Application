@@ -33,6 +33,9 @@ urlpatterns = [
     path('api/metrics/save/', views.save_metrics, name='save_metrics'),
     path('get_intervention_effects/', views.get_intervention_effects, name='get_intervention_effects'),
     path('projects/', views.projects_view, name='projects_view'),
+    path('settings/', views.settings_view, name='settings'),
+    path('settings/password/', PasswordChangeView.as_view(template_name='registration/password_change.html'), name='password_change'),  
+    path('settings/password/done/', PasswordChangeDoneView.as_view(template_name='registration/password_change_done.html'), name='password_change_done'),
 
     # Dev
     path('django_browser_reload/', include('django_browser_reload.urls')),
