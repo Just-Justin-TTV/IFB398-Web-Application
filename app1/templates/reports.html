@@ -1,176 +1,180 @@
-{% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Environmental Reports - CarbonBalance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-{% block title %}Environmental Reports - CarbonBalance{% endblock %}
-
-{% block content %}
-
-<!-- Tailwind + Material Icons -->
-<!-- Tailwind is configured locally in case base.html does not include it. -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          brand: { DEFAULT: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }  // Custom brand colors
-        },
-        borderRadius: { '2xl': '1rem' }  // Custom border radius
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
+          borderRadius: { "2xl": "1rem" }
+        }
       }
     }
-  }
-</script>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  </script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
 
-<!-- Main container for page content -->
-<div class="max-w-6xl mx-auto px-5 py-9">
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <div class="flex min-h-screen">
 
-  <!-- Page header -->
-  <div class="mb-8">
-    <div class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 rounded-2xl text-white p-8 shadow-sm">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <!-- Title and description -->
-        <div>
-          <h1 class="text-3xl font-extrabold tracking-tight">Project Analysis Reports</h1>
-          <p class="text-blue-100 mt-1">
-            Access environmental impact assessments for your construction projects.
-          </p>
+    <!-- ============ Sidebar ============ -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+          </div>
         </div>
-        <!-- Link to create a new project -->
-        <a href="{% url 'create_project' %}"
-           class="inline-flex items-center gap-2 rounded-xl bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 font-semibold shadow">
-          <span class="material-icons text-base">add</span>
-          New Project
+      </div>
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
-      </div>
-    </div>
-  </div>
+        <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+        <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'reports' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+      </nav>
+    </aside>
+    <!-- ============ End Sidebar ============ -->
 
-  <!-- Summary cards -->
-  <!-- Shows high-level metrics such as active projects, reports ready, and analysis format -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-9">
-    <!-- Active Projects -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-sm text-slate-500">Active Projects</div>
-          <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ projects|length }}</div>
+    <!-- ============ Main Content ============ -->
+    <main class="flex-1">
+      <!-- Header -->
+      <header class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold">Environmental Reports</h1>
+            <p class="text-sm text-gray-600">Overview of project sustainability assessments</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="{% url 'create_project' %}" class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
+              <span class="material-icons text-[18px]">add</span> New Project
+            </a>
+          </div>
         </div>
-        <span class="material-icons text-sky-500">folder</span>
-      </div>
-    </div>
+      </header>
 
-    <!-- Reports Ready -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-sm text-slate-500">Reports Ready</div>
-          <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ projects|length }}</div>
-        </div>
-        <span class="material-icons text-emerald-500">description</span>
-      </div>
-    </div>
+      <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
-    <!-- Analysis Format (static placeholder) -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-sm text-slate-500">Analysis Format</div>
-          <div class="text-3xl font-extrabold text-slate-900 mt-1">1</div>
-        </div>
-        <span class="material-icons text-violet-500">insights</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Grid of individual project cards -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
-    {% for project in projects %}
-      <!-- Each project card -->
-      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
-        <div class="p-6">
-          <!-- Project title and metadata -->
-          <div class="flex items-start justify-between gap-3 mb-4">
-            <div class="min-w-0">
-              <h3 class="text-lg font-bold text-slate-900 leading-tight line-clamp-2">
-                {{ project.project_name }}
-              </h3>
-              <div class="text-sm text-slate-500 mt-1">{{ project.location }}</div>
+        <!-- Summary cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-slate-500">Active Projects</div>
+                <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ projects|length }}</div>
+              </div>
+              <span class="material-icons text-sky-500">folder</span>
             </div>
-            <!-- Project type badge -->
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
-              {{ project.project_type|default:"Project" }}
-            </span>
           </div>
 
-          <!-- Project creation date -->
-          <div class="text-sm text-slate-500 mb-6">
-            Created: <span class="font-medium text-slate-700">{{ project.created_at|date:"M j, Y" }}</span>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-slate-500">Reports Ready</div>
+                <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ projects|length }}</div>
+              </div>
+              <span class="material-icons text-emerald-500">description</span>
+            </div>
           </div>
 
-          <!-- Button to open project report in a new tab -->
-          <button onclick="viewReport({{ project.id }})"
-                  class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 shadow-sm">
-            <span class="material-icons text-base">visibility</span>
-            View Analysis Report
-          </button>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-slate-500">Analysis Format</div>
+                <div class="text-3xl font-extrabold text-slate-900 mt-1">1</div>
+              </div>
+              <span class="material-icons text-violet-500">insights</span>
+            </div>
+          </div>
         </div>
-      </div>
-    {% empty %}
-      <!-- Displayed when no projects exist -->
-      <div class="col-span-full">
-        <div class="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
-          <span class="material-icons text-4xl text-slate-400 mb-2">insert_drive_file</span>
-          <h3 class="text-xl font-semibold text-slate-700 mb-2">No projects available</h3>
-          <p class="text-slate-600 mb-6 max-w-md mx-auto">
-            Start by creating your first project to generate sustainability reports.
-          </p>
-          <a href="{% url 'create_project' %}"
-             class="inline-flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold px-6 py-3 shadow-sm">
-            <span class="material-icons text-base">add</span>
-            Create New Project
-          </a>
+
+        <!-- Projects grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {% for project in projects %}
+          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+            <div class="p-6">
+              <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="min-w-0">
+                  <h3 class="text-lg font-bold text-slate-900 leading-tight line-clamp-2">{{ project.project_name }}</h3>
+                  <div class="text-sm text-slate-500 mt-1">{{ project.location }}</div>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">{{ project.project_type|default:"Project" }}</span>
+              </div>
+              <div class="text-sm text-slate-500 mb-6">
+                Created: <span class="font-medium text-slate-700">{{ project.created_at|date:"M j, Y" }}</span>
+              </div>
+              <button onclick="viewReport({{ project.id }})" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 shadow-sm">
+                <span class="material-icons text-base">visibility</span> View Analysis Report
+              </button>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-span-full">
+            <div class="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
+              <span class="material-icons text-4xl text-slate-400 mb-2">insert_drive_file</span>
+              <h3 class="text-xl font-semibold text-slate-700 mb-2">No projects available</h3>
+              <p class="text-slate-600 mb-6 max-w-md mx-auto">Start by creating your first project to generate sustainability reports.</p>
+              <a href="{% url 'create_project' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold px-6 py-3 shadow-sm">
+                <span class="material-icons text-base">add</span> Create New Project
+              </a>
+            </div>
+          </div>
+          {% endfor %}
         </div>
+
+        <!-- Info panel -->
+        <div class="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+          <div class="flex items-start gap-3">
+            <span class="material-icons text-sky-600">info</span>
+            <div>
+              <h3 class="text-lg font-semibold text-sky-900 mb-1">About Environmental Reports</h3>
+              <p class="text-sky-800 leading-relaxed">
+                Each report provides a detailed assessment of carbon metrics, tailored sustainability
+                recommendations, and practical implementation guidance for your project.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
-    {% endfor %}
+    </main>
   </div>
 
-  <!-- Info panel about reports -->
-  <div class="bg-blue-50 rounded-2xl p-6 border border-blue-200">
-    <div class="flex items-start gap-3">
-      <span class="material-icons text-sky-600">info</span>
-      <div>
-        <h3 class="text-lg font-semibold text-sky-900 mb-1">About Environmental Reports</h3>
-        <p class="text-sky-800 leading-relaxed">
-          Each report provides a detailed assessment of carbon metrics, tailored sustainability
-          recommendations, and practical implementation guidance for your project.
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- JavaScript function to open report in new window -->
-<script>
-  function viewReport(projectId){
-    try {
-      // Opens the generated report in a new browser tab
-      window.open(`/reports/generate/${projectId}/`, '_blank');
-    } catch (e) {
-      console.error(e);
-      alert('Unable to open report. Please try again.');
+  <script>
+    function viewReport(projectId){
+      try {
+        window.open(`/reports/generate/${projectId}/`, '_blank');
+      } catch (e) {
+        console.error(e);
+        alert('Unable to open report. Please try again.');
+      }
     }
-  }
-</script>
+  </script>
 
-<!-- Utility CSS for clamping project titles to two lines -->
-<style>
-  .line-clamp-2{
-    display:-webkit-box; 
-    -webkit-line-clamp:2; 
-    -webkit-box-orient:vertical; 
-    overflow:hidden;
-  }
-</style>
-
-{% endblock %}
+  <style>
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</body>
+</html>

@@ -77,11 +77,7 @@
             <p class="text-sm text-gray-600">Overview of projects & emissions</p>
           </div>
           <div class="flex items-center gap-3">
-            <!-- Display logged-in user's name on larger screens -->
-            <div class="hidden md:flex items-center gap-2 text-sm text-gray-600">
-              <span class="material-icons text-[18px] text-gray-500">person</span>
-              <span>{{ request.session.user_name|default:"" }}</span>
-            </div>
+
             <!-- Button to create new project -->
             <a href="{% url 'projects' %}"
                class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
