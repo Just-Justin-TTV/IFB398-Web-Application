@@ -15,145 +15,143 @@ from pathlib import Path
 import logging
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent  # Root directory of the project
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j0_9nwv@qs^@w=g=2j#$ziphq)f(gwhg-v*og)&@)h7+y%0z*%'
+SECRET_KEY = 'django-insecure-j0_9nwv@qs^@w=g=2j#$ziphq)f(gwhg-v*og)&@)h7+y%0z*%'  # Secret key for cryptographic signing
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True  # Set to False in production
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = []  # Hosts/domain names that this Django site can serve
 
 
 # Application definition
-
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'app1',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'tailwind',
-    'django.contrib.staticfiles',
-    'theme',
-    'django_browser_reload',
-    'django.contrib.humanize',
+    'django.contrib.admin',          # Admin site
+    'django.contrib.auth',           # Authentication framework
+    'app1',                          # Main application
+    'django.contrib.contenttypes',   # Content type system
+    'django.contrib.sessions',       # Session framework
+    'django.contrib.messages',       # Messaging framework
+    'tailwind',                      # Tailwind CSS integration
+    'django.contrib.staticfiles',    # Static file management
+    'theme',                         # Tailwind theme app
+    'django_browser_reload',         # Browser reload for development
+    'django.contrib.humanize',       # Humanize template filters
 ]
 
+# Logging configuration for debugging purposes
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'class': 'logging.StreamHandler',
+            'class': 'logging.StreamHandler',  # Output logs to console
         },
     },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',
+        'level': 'DEBUG',  # Log level for all messages
     },
 }
 
+# Middleware definition
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "django_browser_reload.middleware.BrowserReloadMiddleware",
+    'django.middleware.security.SecurityMiddleware',  # Security-related middleware
+    'django.contrib.sessions.middleware.SessionMiddleware',  # Manages sessions
+    'django.middleware.common.CommonMiddleware',  # Common HTTP middleware
+    'django.middleware.csrf.CsrfViewMiddleware',  # CSRF protection
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Auth session management
+    'django.contrib.messages.middleware.MessageMiddleware',  # Messaging
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Clickjacking protection
+    "django_browser_reload.middleware.BrowserReloadMiddleware",  # Auto reload during development
 ]
 
+# Root URL configuration
 ROOT_URLCONF = 'app1.urls'
 
+# Template configuration
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',  # Template engine
         'DIRS': [
-            os.path.join(BASE_DIR, 'app1/templates'),
-            os.path.join(BASE_DIR, 'theme/templates'),
+            os.path.join(BASE_DIR, 'app1/templates'),   # Custom templates directory
+            os.path.join(BASE_DIR, 'theme/templates'),  # Tailwind theme templates
         ],
 
-        'APP_DIRS': True,
+        'APP_DIRS': True,  # Enable template loading from app directories
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'app1.context_processors.theme_context', 
-              #  'app1.context_processors.accessibility_settings',
+                'django.template.context_processors.debug',   # Debug information
+                'django.template.context_processors.request', # Request object in templates
+                'django.contrib.auth.context_processors.auth', # Auth context in templates
+                'django.contrib.messages.context_processors.messages', # Messages framework
+                'app1.context_processors.theme_context',  # Custom theme context processor
+                # 'app1.context_processors.accessibility_settings', # Optional accessibility context
             ],
         },
     },
 ]
 
+# WSGI application
 WSGI_APPLICATION = 'app1.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+# Database configuration
+# Using SQLite for development
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'sdt_app.db',
+        'ENGINE': 'django.db.backends.sqlite3',  # SQLite backend
+        'NAME': BASE_DIR / 'sdt_app.db',        # Database file location
     }
 }
 
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',  # Avoid passwords similar to user attributes
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',  # Minimum password length
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',  # Prevent common passwords
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',  # Prevent fully numeric passwords
     },
 ]
 
-APPEND_SLASH = False
+APPEND_SLASH = False  # Disable automatic URL slash appending
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
+LANGUAGE_CODE = 'en-us'  # Default language
 
-LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'        # Default timezone
 
-TIME_ZONE = 'UTC'
+USE_I18N = True          # Enable Django internationalization
 
-USE_I18N = True
-
-USE_TZ = True
+USE_TZ = True            # Enable timezone-aware datetimes
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
+STATIC_URL = 'static/'  # URL prefix for static files
 
-STATIC_URL = 'static/'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default auto-increment field for models
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+# Tailwind CSS app configuration
 TAILWIND_APP_NAME = 'theme'
 
+# Internal IPs for development tools like django-browser-reload
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
