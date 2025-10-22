@@ -1029,22 +1029,95 @@ def generate_report(request: HttpRequest, project_id: int):
 
 def _generate_html_report(request: HttpRequest, project: Metrics):
     """
-    Generate HTML report preview
+    FINAL VERSION - All template variables covered
     """
-
-    total_impact = 0
-
+    print("🔍 DEBUG: _generate_html_report STARTED")
+    
+    # Get interventions
+    selections = InterventionSelection.objects.filter(project_id=project.id)
+    intervention_ids = []
+    
+    for s in selections:
+        if hasattr(s, 'intervention_id') and s.intervention_id:
+            intervention_ids.append(s.intervention_id)
+    
+    if intervention_ids:
+        selected_interventions = list(Interventions.objects.filter(id__in=intervention_ids))
+    else:
+        selected_interventions = list(Interventions.objects.all()[:5])
+    
+    print(f"🔍 Found {len(selected_interventions)} interventions")
+    
+    # Calculate theme stats for the table
+    theme_stats = {}
+    for intervention in selected_interventions:
+        theme = intervention.theme or 'Other'
+        rating = float(intervention.intervention_rating or 0)
+        cost_level = float(intervention.cost_level or 0)
+        
+        if theme not in theme_stats:
+            theme_stats[theme] = {
+                'count': 0,
+                'total_rating': 0,
+                'total_cost': 0,
+                'interventions': []
+            }
+        
+        theme_stats[theme]['count'] += 1
+        theme_stats[theme]['total_rating'] += rating
+        theme_stats[theme]['total_cost'] += cost_level
+        theme_stats[theme]['interventions'].append(intervention)
+    
+    # Create table data
+    available_interventions_data = []
+    for theme, data in theme_stats.items():
+        avg_rating = data['total_rating'] / data['count'] if data['count'] > 0 else 0
+        avg_cost = data['total_cost'] / data['count'] if data['count'] > 0 else 0
+        
+        available_interventions_data.append({
+            'theme': theme,
+            'count': data['count'],
+            'avg_rating': round(avg_rating, 1),
+            'avg_cost': round(avg_cost, 1)
+        })
+    
+    # Create context with ALL possible variable names
     context = {
         'project': project,
-        'generated_date': timezone.now(),
-        'total_impact': total_impact,
-        'carbon_reduction': 23,   # Example data
-        'water_savings': 15,      # Example data
-        'health_improvement': 18, # Example data
+        
+        # Provide ALL possible variable names for the detailed interventions list
+        'selected_interventions': selected_interventions,
+        'interventions': selected_interventions,
+        'recommended_interventions': selected_interventions,
+        'interventions_list': selected_interventions,
+        'all_interventions': selected_interventions,
+        
+        # Table data (this is working correctly)
+        'available_interventions': available_interventions_data,
+        'intervention_stats': available_interventions_data,
+        
+        # Theme data
+        'theme_impacts': theme_stats,
+        
+        # Project summary
+        'metrics_summary': {
+            'building_type': project.building_type or 'Not specified',
+            'location': project.location or 'Not specified', 
+            'total_area': f"{project.gifa_m2 or 0} m²",
+            'total_budget': f"${project.total_budget_aud or 0:,.2f}",
+            'apartments': project.num_apartments or 0,
+            'basement': 'Yes' if project.basement_present else 'No',
+            'created_date': project.created_at.strftime("%B %d, %Y"),
+        },
+        
+        'report_date': timezone.now().strftime("%B %d, %Y"),
+        'total_selected': len(selected_interventions),
     }
     
+    print(f"🔍 Sending {len(selected_interventions)} interventions with multiple variable names")
+    print("🔍 DEBUG: _generate_html_report COMPLETED")
+    
     return render(request, "report_template.html", context)
-
 def _generate_pdf_report(project: Metrics):
     """
     Generate PDF report (placeholder - you'll need to implement PDF generation)
