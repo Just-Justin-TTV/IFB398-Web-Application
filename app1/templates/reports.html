@@ -1,146 +1,158 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{# Page identification for browser tab #}
 {% block title %}Environmental Reports - CarbonBalance{% endblock %}
 
-{# Main content area starts here #}
 {% block content %}
 
-{# Report listing page container #}
+<!-- Tailwind + Icons (safe to include even if base.html already has them) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { DEFAULT: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }
+        },
+        borderRadius: { '2xl': '1rem' }
+      }
+    }
+  }
+</script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
 <div class="max-w-6xl mx-auto px-5 py-9">
 
-    {# ----- PAGE HEADER SECTION ----- #}
-    <div class="text-center mb-10">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">Project Analysis Reports</h1>
-        <p class="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">
-            Access comprehensive environmental impact assessments for your construction projects. 
-            Select any project to view detailed sustainability analysis and recommendations.
+  <!-- Page header -->
+  <div class="mb-8">
+    <div class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 rounded-2xl text-white p-8 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-tight">Project Analysis Reports</h1>
+          <p class="text-blue-100 mt-1">
+            Access environmental impact assessments for your construction projects.
+          </p>
+        </div>
+        <a href="{% url 'create_project' %}"
+           class="inline-flex items-center gap-2 rounded-xl bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 font-semibold shadow">
+          <span class="material-icons text-base">add</span>
+          New Project
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-9">
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-slate-500">Active Projects</div>
+          <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ projects|length }}</div>
+        </div>
+        <span class="material-icons text-sky-500">folder</span>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-slate-500">Reports Ready</div>
+          <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ projects|length }}</div>
+        </div>
+        <span class="material-icons text-emerald-500">description</span>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-slate-500">Analysis Format</div>
+          <div class="text-3xl font-extrabold text-slate-900 mt-1">1</div>
+        </div>
+        <span class="material-icons text-violet-500">insights</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid of project cards -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+    {% for project in projects %}
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+        <div class="p-6">
+          <div class="flex items-start justify-between gap-3 mb-4">
+            <div class="min-w-0">
+              <h3 class="text-lg font-bold text-slate-900 leading-tight line-clamp-2">
+                {{ project.project_name }}
+              </h3>
+              <div class="text-sm text-slate-500 mt-1">{{ project.location }}</div>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
+              {{ project.project_type|default:"Project" }}
+            </span>
+          </div>
+
+          <div class="text-sm text-slate-500 mb-6">
+            Created: <span class="font-medium text-slate-700">{{ project.created_at|date:"M j, Y" }}</span>
+          </div>
+
+          <button onclick="viewReport({{ project.id }})"
+                  class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 shadow-sm">
+            <span class="material-icons text-base">visibility</span>
+            View Analysis Report
+          </button>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-span-full">
+        <div class="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
+          <span class="material-icons text-4xl text-slate-400 mb-2">insert_drive_file</span>
+          <h3 class="text-xl font-semibold text-slate-700 mb-2">No projects available</h3>
+          <p class="text-slate-600 mb-6 max-w-md mx-auto">
+            Start by creating your first project to generate sustainability reports.
+          </p>
+          <a href="{% url 'create_project' %}"
+             class="inline-flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold px-6 py-3 shadow-sm">
+            <span class="material-icons text-base">add</span>
+            Create New Project
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Info panel -->
+  <div class="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+    <div class="flex items-start gap-3">
+      <span class="material-icons text-sky-600">info</span>
+      <div>
+        <h3 class="text-lg font-semibold text-sky-900 mb-1">About Environmental Reports</h3>
+        <p class="text-sky-800 leading-relaxed">
+          Each report provides a detailed assessment of carbon metrics, tailored sustainability
+          recommendations, and practical implementation guidance for your project.
         </p>
+      </div>
     </div>
-
-    {# ----- SUMMARY STATISTICS ----- #}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-9">
-        {# Project count card #}
-        <div class="bg-white rounded-xl p-6 shadow border border-gray-200 text-center">
-            <div class="text-blue-600 text-2xl font-bold mb-2">{{ projects|length }}</div>
-            <div class="text-gray-700 font-medium">Active Projects</div>
-        </div>
-        
-        {# Report availability card #}
-        <div class="bg-white rounded-xl p-6 shadow border border-gray-200 text-center">
-            <div class="text-green-600 text-2xl font-bold mb-2">{{ projects|length }}</div>
-            <div class="text-gray-700 font-medium">Reports Ready</div>
-        </div>
-        
-        {# Analysis types card #}
-        <div class="bg-white rounded-xl p-6 shadow border border-gray-200 text-center">
-            <div class="text-purple-600 text-2xl font-bold mb-2">1</div>
-            <div class="text-gray-700 font-medium">Analysis Format</div>
-        </div>
-    </div>
-
-    {# ----- PROJECT LISTING GRID ----- #}
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
-        {% for project in projects %}
-        {# Individual project card #}
-        <div class="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-            <div class="p-6">
-                
-                {# Project header with basic info #}
-                <div class="flex items-start justify-between mb-5">
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2 leading-tight">{{ project.project_name }}</h3>
-                        <div class="text-sm text-gray-600 mb-3">
-                            {{ project.location }}
-                        </div>
-                    </div>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                        {{ project.project_type }}
-                    </span>
-                </div>
-
-                {# Project metadata #}
-                <div class="space-y-2 mb-6">
-                    <div class="text-sm text-gray-500">
-                        Created: {{ project.created_at|date:"M j, Y" }}
-                    </div>
-                </div>
-
-                {# Action buttons #}
-                <div class="space-y-3">
-                    <button onclick="viewReport({{ project.id }})" 
-                            class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 shadow-sm hover:shadow flex items-center justify-center">
-                        View Analysis Report
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        
-        {# Empty state when no projects exist #}
-        <div class="col-span-full">
-            <div class="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 p-12 text-center">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">No projects available</h3>
-                <p class="text-gray-600 mb-7 max-w-md mx-auto leading-relaxed">
-                    Start by creating your first project to generate environmental impact analysis and sustainability reports.
-                </p>
-                <a href="{% url 'create_project' %}" 
-                   class="inline-flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-lg transition-colors duration-200">
-                    Create New Project
-                </a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    {# ----- INFORMATION PANEL ----- #}
-    <div class="bg-blue-50 rounded-xl p-6 border border-blue-200">
-        <div class="flex items-start">
-            <div class="flex-1">
-                <h3 class="text-lg font-semibold text-blue-800 mb-3">About Environmental Reports</h3>
-                <p class="text-blue-700 leading-relaxed">
-                    Each environmental analysis report provides detailed assessment of carbon metrics, 
-                    sustainability recommendations, and implementation guidance tailored to your specific 
-                    construction project requirements and objectives.
-                </p>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
-{# ----- JAVASCRIPT FUNCTIONALITY ----- #}
+<!-- JS -->
 <script>
-// Open project analysis report in new window
-function viewReport(projectId) {
+  function viewReport(projectId){
     try {
-        window.open(`/reports/generate/${projectId}/`, '_blank');
-    } catch (error) {
-        console.error('Could not open report:', error);
-        alert('Unable to open report. Please try again.');
+      window.open(`/reports/generate/${projectId}/`, '_blank');
+    } catch (e) {
+      console.error(e);
+      alert('Unable to open report. Please try again.');
     }
-}
+  }
 </script>
 
-{# ----- COMPONENT STYLING ----- #}
+<!-- Tiny helpers (no plugin) -->
 <style>
-/* Text truncation for project names */
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Smooth transitions for interactive elements */
-.hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-}
+  .line-clamp-2{
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
 </style>
 
 {% endblock %}

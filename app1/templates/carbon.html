@@ -33,27 +33,22 @@
           </div>
         </div>
       </div>
-      <nav class="flex-1 px-4 py-4">
-        <ul class="space-y-2">
-          <li>
-            <a href="{% url 'dashboard' %}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-xl border {% if 'dashboard' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% else %} border-gray-200 hover:bg-gray-50 {% endif %}">
-              <span class="material-icons">dashboard</span><span class="font-medium">Dashboard</span>
-            </a>
-          </li>
-          <li>
-            <a href="{% url 'projects' %}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-xl border {% if 'projects' in request.path %} bg-brand text-white border-transparent hover:bg-brand-dark {% else %} border-gray-200 hover:bg-gray-50 {% endif %}">
-              <span class="material-icons">folder</span><span class="font-medium">Projects</span>
-            </a>
-          </li>
-          <li>
+      <nav class="px-3 py-4 space-y-1">
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
+        </a>
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
 
-          <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">
-            <span class="material-icons">description</span><span class="font-medium">Reports</span></a></li>
-          <li><a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">
-            <span class="material-icons">settings</span><span class="font-medium">Settings</span></a></li>
-        </ul>
+        <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
       </nav>
     </aside>
 

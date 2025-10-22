@@ -1,302 +1,254 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
-{# Main page title for the browser tab #}
-{% block title %}Project Sustainability Analysis - CarbonBalance{% endblock %}
+{% block title %}Project Sustainability Analysis · CarbonBalance{% endblock %}
 
-{# Primary content section starts here #}
 {% block content %}
 
-<style>
-/* Force black text in report regardless of theme */
-.report-container * {
-    color: #000000 !important;
-}
+<!-- Tailwind + Icons (safe to include here even if base.html also loads Tailwind) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { DEFAULT: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }
+        },
+        borderRadius: { '2xl': '1rem' }
+      }
+    }
+  }
+</script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-/* Ensure specific elements are black */
-.report-container h1,
-.report-container h2, 
-.report-container h3,
-.report-container p,
-.report-container span,
-.report-container div {
-    color: #000000 !important;
-}
+<!-- Page shell -->
+<div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
-/* Override any dark theme styles */
-.report-container .text-white,
-.report-container .text-gray-100,
-.report-container .text-gray-200,
-.report-container .text-gray-300 {
-    color: #000000 !important;
-}
-</style>
-<!-- Main report container with subtle shadow and rounded corners -->
-<div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white px-8 sm:px-12 py-10">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+      <div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Environmental Impact Report</h1>
+        <p class="mt-2 text-blue-100 text-lg font-medium">{{ project.project_name }}</p>
+        <p class="text-blue-200">{{ project.location }} • {{ project.building_type|default:"Building Project" }}</p>
+      </div>
+      <div class="text-right">
+        <div class="uppercase text-xs tracking-wider text-blue-200">Report Date</div>
+        <div class="text-xl font-semibold">{{ report_date }}</div>
+        <div class="text-blue-200 text-xs mt-2">Document ID: CB-{{ project.id }}-{{ report_date|date:"Ymd" }}</div>
+      </div>
+    </div>
+  </header>
 
-    {# ===== REPORT HEADER SECTION ===== #}
-    <!-- Header with gradient background - shows project identity -->
-    <header class="bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-800 text-white p-10 rounded-t-2xl">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-start space-y-6 md:space-y-0">
-            <!-- Left side: Project identification -->
-            <div class="flex-1">
-                <h1 class="text-4xl font-extrabold mb-4 tracking-tight">Environmental Impact Report</h1>
-                <h2 class="text-2xl font-semibold text-blue-100 mb-3">{{ project.project_name }}</h2>
-                <p class="text-blue-200 text-lg font-medium">
-                    {{ project.location }} • {{ project.building_type|default:"Building Project" }}
-                </p>
-            </div>
-            
-            <!-- Right side: Report metadata -->
-            <div class="text-right space-y-2">
-                <div class="text-blue-200 text-sm uppercase tracking-wide font-semibold">Report Date</div>
-                <div class="text-white text-xl font-bold">{{ report_date }}</div>
-                <div class="text-blue-300 text-xs mt-4">Document ID: CB-{{ project.id }}-{{ report_date|date:"Ymd" }}</div>
-            </div>
+  <!-- Content -->
+  <main class="px-6 sm:px-10 py-10 space-y-12">
+
+    <!-- Project Overview -->
+    <section>
+      <h2 class="text-2xl font-bold text-slate-800 mb-4">Project Overview</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div class="text-sm text-slate-500 font-medium">Built Area</div>
+          <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ project.gifa_m2|default:0|floatformat:0|intcomma }} m²</div>
+          <div class="text-xs text-sky-700 mt-2">Gross Internal Floor Area</div>
         </div>
-    </header>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div class="text-sm text-slate-500 font-medium">Project Budget</div>
+          <div class="text-2xl font-extrabold text-slate-900 mt-1">${{ project.total_budget_aud|default:0|floatformat:0|intcomma }}</div>
+          <div class="text-xs text-emerald-700 mt-2">Total Construction Cost</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div class="text-sm text-slate-500 font-medium">Residential Units</div>
+          <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ project.num_apartments|default:0|intcomma }}</div>
+          <div class="text-xs text-violet-700 mt-2">Total Apartments</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <div class="text-sm text-slate-500 font-medium">Sustainability Measures</div>
+          <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ total_selected|default:0|intcomma }}</div>
+          <div class="text-xs text-amber-700 mt-2">Recommended Actions</div>
+        </div>
+      </div>
+    </section>
 
-    {# ===== MAIN REPORT CONTENT ===== #}
-    <main class="p-10 space-y-12">
-        
-        {# ----- EXECUTIVE SUMMARY CARDS ----- #}
-        <!-- Quick overview metrics in card format -->
-        <section class="space-y-6">
-            <h2 class="text-3xl font-bold text-gray-800 border-b-2 border-blue-200 pb-3">Project Overview</h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Total Area Card -->
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-6 shadow-sm border border-blue-200">
-                    <div class="text-blue-800 text-sm font-semibold mb-2">Built Area</div>
-                    <div class="text-2xl font-bold text-gray-900">{{ project.gifa_m2|default:"0" }} m²</div>
-                    <div class="text-blue-600 text-xs mt-2">Gross Internal Floor Area</div>
-                </div>
-                
-                <!-- Budget Card -->
-                <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-6 shadow-sm border border-green-200">
-                    <div class="text-green-800 text-sm font-semibold mb-2">Project Budget</div>
-                    <div class="text-2xl font-bold text-gray-900">${{ project.total_budget_aud|default:"0"|floatformat:0 }}</div>
-                    <div class="text-green-600 text-xs mt-2">Total Construction Cost</div>
-                </div>
-                
-                <!-- Units Card -->
-                <div class="bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl p-6 shadow-sm border border-purple-200">
-                    <div class="text-purple-800 text-sm font-semibold mb-2">Residential Units</div>
-                    <div class="text-2xl font-bold text-gray-900">{{ project.num_apartments|default:"0" }}</div>
-                    <div class="text-purple-600 text-xs mt-2">Total Apartments</div>
-                </div>
-                
-                <!-- Interventions Card -->
-                <div class="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl p-6 shadow-sm border border-orange-200">
-                    <div class="text-orange-800 text-sm font-semibold mb-2">Sustainability Measures</div>
-                    <div class="text-2xl font-bold text-gray-900">{{ total_selected|default:"0" }}</div>
-                    <div class="text-orange-600 text-xs mt-2">Recommended Actions</div>
-                </div>
+    <!-- Project Specifications -->
+    <section>
+      <h2 class="text-2xl font-bold text-slate-800 mb-4">Project Specifications</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <h3 class="text-lg font-semibold text-slate-800 mb-4">Core Information</h3>
+          <dl class="divide-y divide-gray-200">
+            <div class="py-3 flex justify-between gap-6">
+              <dt class="text-slate-500">Building Category</dt>
+              <dd class="font-medium text-slate-900">{{ project.building_type|default:"Not specified" }}</dd>
             </div>
-        </section>
+            <div class="py-3 flex justify-between gap-6">
+              <dt class="text-slate-500">Site Location</dt>
+              <dd class="font-medium text-slate-900">{{ project.location|default:"Location not provided" }}</dd>
+            </div>
+            <div class="py-3 flex justify-between gap-6">
+              <dt class="text-slate-500">Project Initiation</dt>
+              <dd class="font-medium text-slate-900">{{ project.created_at|date:"F j, Y" }}</dd>
+            </div>
+          </dl>
+        </div>
 
-        {# ----- PROJECT CHARACTERISTICS ----- #}
-        <!-- Detailed project specifications and features -->
-        <section class="space-y-6">
-            <h2 class="text-3xl font-bold text-gray-800 border-b-2 border-green-200 pb-3">Project Specifications</h2>
-            
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- Basic project information -->
-                <div class="space-y-5">
-                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Core Information</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between border-b border-gray-200 pb-3">
-                            <span class="font-medium text-gray-600">Building Category</span>
-                            <span class="font-semibold text-gray-900">{{ project.building_type|default:"Not specified" }}</span>
-                        </div>
-                        <div class="flex justify-between border-b border-gray-200 pb-3">
-                            <span class="font-medium text-gray-600">Site Location</span>
-                            <span class="font-semibold text-gray-900">{{ project.location|default:"Location not provided" }}</span>
-                        </div>
-                        <div class="flex justify-between border-b border-gray-200 pb-3">
-                            <span class="font-medium text-gray-600">Project Initiation</span>
-                            <span class="font-semibold text-gray-900">{{ project.created_at|date:"F j, Y" }}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Building features and specifications -->
-                <div class="space-y-5">
-                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Building Features</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between border-b border-gray-200 pb-3">
-                            <span class="font-medium text-gray-600">Underground Parking</span>
-                            <span class="font-semibold {% if project.basement_present %}text-green-600{% else %}text-gray-500{% endif %}">
-                                {{ project.basement_present|yesno:"Included,Not included" }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between border-b border-gray-200 pb-3">
-                            <span class="font-medium text-gray-600">Total Key Count</span>
-                            <span class="font-semibold text-gray-900">{{ project.num_keys|default:"0" }} units</span>
-                        </div>
-                        <div class="flex justify-between border-b border-gray-200 pb-3">
-                            <span class="font-medium text-gray-600">Facility Count</span>
-                            <span class="font-semibold text-gray-900">{{ project.num_wcs|default:"0" }} facilities</span>
-                        </div>
-                    </div>
-                </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <h3 class="text-lg font-semibold text-slate-800 mb-4">Building Features</h3>
+          <dl class="divide-y divide-gray-200">
+            <div class="py-3 flex justify-between gap-6">
+              <dt class="text-slate-500">Underground Parking</dt>
+              <dd class="font-medium {% if project.basement_present %}text-emerald-700{% else %}text-slate-500{% endif %}">
+                {{ project.basement_present|yesno:"Included,Not included" }}
+              </dd>
             </div>
-        </section>
+            <div class="py-3 flex justify-between gap-6">
+              <dt class="text-slate-500">Total Key Count</dt>
+              <dd class="font-medium text-slate-900">{{ project.num_keys|default:0|intcomma }} units</dd>
+            </div>
+            <div class="py-3 flex justify-between gap-6">
+              <dt class="text-slate-500">Facility Count</dt>
+              <dd class="font-medium text-slate-900">{{ project.num_wcs|default:0|intcomma }} facilities</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
 
-        {# ----- SUSTAINABILITY INTERVENTIONS ANALYSIS ----- #}
-        <!-- Comprehensive analysis of recommended sustainability measures -->
-        <section class="space-y-8">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end border-b-2 border-purple-200 pb-4">
-                <h2 class="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Sustainability Action Plan</h2>
-                <div class="text-sm text-gray-600 bg-purple-50 px-4 py-2 rounded-lg">
-                    {{ available_interventions|length }} focus areas identified
+    <!-- Category Summary -->
+    <section>
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-3">
+        <h2 class="text-2xl font-bold text-slate-800">Sustainability Action Plan</h2>
+        <span class="inline-flex items-center gap-2 text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-lg">
+          {{ available_interventions|length }} focus areas identified
+        </span>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left">
+          <thead class="bg-slate-50 border-b border-gray-200">
+            <tr class="text-slate-600 text-xs uppercase tracking-wide">
+              <th class="p-4">Focus Area</th>
+              <th class="p-4">Actions</th>
+              <th class="p-4">Impact Score</th>
+              <th class="p-4">Investment Level</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for category in available_interventions %}
+            <tr class="hover:bg-slate-50">
+              <td class="p-4 font-semibold text-slate-900">{{ category.theme }}</td>
+              <td class="p-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
+                  {{ category.count }} measures
+                </span>
+              </td>
+              <td class="p-4">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-slate-800">{{ category.avg_rating|floatformat:1 }}/10</span>
+                  <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-2 bg-emerald-500" style="width: {{ category.avg_rating|default:0|floatformat:0 }}0%;"></div>
+                  </div>
                 </div>
+              </td>
+              <td class="p-4">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-slate-800">Level {{ category.avg_cost|floatformat:0 }}</span>
+                  <div class="flex gap-1">
+                    {% for i in "12345" %}
+                      {% if forloop.counter <= category.avg_cost %}
+                        <span class="inline-block w-2.5 h-4 bg-amber-500 rounded-sm"></span>
+                      {% else %}
+                        <span class="inline-block w-2.5 h-4 bg-gray-300 rounded-sm"></span>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="p-8 text-center text-slate-500 italic">
+                No sustainability measures have been selected for analysis.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Detailed Recommendations -->
+    <section>
+      <h2 class="text-2xl font-bold text-slate-800 mb-4">Recommended Implementation Plan</h2>
+
+      {% if selected_interventions %}
+      <div class="space-y-4">
+        {% for measure in selected_interventions %}
+        <article class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition">
+          <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center gap-3 mb-2">
+                <h3 class="text-lg font-bold text-slate-900">{{ measure.name }}</h3>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                  {% if measure.theme == 'carbon' %} bg-red-50 text-red-700 border border-red-200
+                  {% elif measure.theme == 'water' %} bg-sky-50 text-sky-700 border border-sky-200
+                  {% elif measure.theme == 'health' %} bg-emerald-50 text-emerald-700 border border-emerald-200
+                  {% else %} bg-violet-50 text-violet-700 border border-violet-200 {% endif %}">
+                  {{ measure.theme|default:"General"|title }}
+                </span>
+              </div>
+
+              {% if measure.description %}
+                <p class="text-slate-700 leading-relaxed">{{ measure.description }}</p>
+              {% endif %}
+
+              <dl class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="flex items-center gap-2">
+                  <dt class="text-slate-500">Effectiveness</dt>
+                  <dd class="font-semibold text-slate-900">{{ measure.intervention_rating|default:"0" }}/10</dd>
+                </div>
+                <div class="flex items-center gap-2">
+                  <dt class="text-slate-500">Implementation Cost</dt>
+                  <dd class="font-semibold text-slate-900">Level {{ measure.cost_level|default:"0" }}/5</dd>
+                </div>
+              </dl>
             </div>
 
-            {# Intervention categories breakdown table #}
-            <div class="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-300">
-                            <th class="text-left p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Focus Area</th>
-                            <th class="text-left p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Actions</th>
-                            <th class="text-left p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Impact Score</th>
-                            <th class="text-left p-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Investment Level</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        {% for category in available_interventions %}
-                        <tr class="hover:bg-gray-50 transition-colors duration-200">
-                            <td class="p-4 font-semibold text-gray-800">{{ category.theme }}</td>
-                            <td class="p-4">
-                                <span class="inline-flex items-center justify-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-                                    {{ category.count }} measures
-                                </span>
-                            </td>
-                            <td class="p-4">
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-semibold text-gray-700">{{ category.avg_rating }}/10</span>
-                                    <div class="w-16 bg-gray-200 rounded-full h-2">
-                                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ category.avg_rating|default:0|floatformat:0 }}%"></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-4">
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-semibold text-gray-700">Level {{ category.avg_cost|floatformat:0 }}</span>
-                                    <div class="flex space-x-1">
-                                        {% for i in "12345" %}
-                                            {% if forloop.counter <= category.avg_cost %}
-                                                <div class="w-2 h-4 bg-orange-500 rounded-sm"></div>
-                                            {% else %}
-                                                <div class="w-2 h-4 bg-gray-300 rounded-sm"></div>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="p-8 text-center text-gray-500 italic">
-                                No sustainability measures have been selected for analysis
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="lg:text-right">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-sm">
+                Priority Action
+              </span>
+              <div class="text-xs text-slate-500 mt-2">Recommended for implementation</div>
             </div>
-        </section>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+        <div class="bg-white border border-gray-200 rounded-xl p-10 text-center">
+          <div class="text-slate-500 mb-2">No specific recommendations selected.</div>
+          <p class="text-slate-600">Use the calculator to select measures and regenerate this report.</p>
+        </div>
+      {% endif %}
+    </section>
 
-        {# ----- DETAILED RECOMMENDATIONS ----- #}
-        <!-- Individual intervention recommendations with full details -->
-        <section class="space-y-8">
-            <h2 class="text-3xl font-bold text-gray-800 border-b-2 border-orange-200 pb-3">Recommended Implementation Plan</h2>
-            
-            {% if selected_interventions %}
-            <div class="space-y-6">
-                {% for measure in selected_interventions %}
-                <div class="border border-gray-300 rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-all duration-300">
-                    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
-                        <!-- Intervention details -->
-                        <div class="flex-1 space-y-4">
-                            <div class="flex flex-wrap items-center gap-3 mb-3">
-                                <h3 class="text-xl font-bold text-gray-900 pr-4 border-r border-gray-300">{{ measure.name }}</h3>
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold 
-                                            {% if measure.theme == 'carbon' %}bg-red-100 text-red-800
-                                            {% elif measure.theme == 'water' %}bg-blue-100 text-blue-800
-                                            {% elif measure.theme == 'health' %}bg-green-100 text-green-800
-                                            {% else %}bg-purple-100 text-purple-800{% endif %}">
-                                    {{ measure.theme|default:"General"|title }}
-                                </span>
-                            </div>
-                            
-                            {% if measure.description %}
-                            <p class="text-gray-700 leading-relaxed text-lg">{{ measure.description }}</p>
-                            {% endif %}
-                            
-                            <div class="flex flex-wrap gap-6 pt-4">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-gray-600 font-medium">Effectiveness:</span>
-                                    <span class="font-bold text-gray-900">{{ measure.intervention_rating|default:"0" }}/10</span>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-gray-600 font-medium">Implementation Cost:</span>
-                                    <span class="font-bold text-gray-900">Level {{ measure.cost_level|default:"0" }}/5</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Priority indicator -->
-                        <div class="lg:text-right space-y-2">
-                            <div class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full text-sm font-bold shadow-sm">
-                                Priority Action
-                            </div>
-                            <div class="text-xs text-gray-500 mt-2">Recommended for implementation</div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
-                <div class="text-gray-500 text-lg mb-4">No specific recommendations selected</div>
-                <p class="text-gray-600 max-w-md mx-auto">
-                    Sustainability measures can be selected through the project analysis tools to generate specific implementation guidance.
-                </p>
-            </div>
-            {% endif %}
-        </section>
-        {# ----- REPORT ACTIONS ----- #}
-        <!-- Print and navigation options -->
-        <footer class="pt-8 border-t border-gray-200 print:hidden">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
-                <div class="text-sm text-gray-600">
-                    Report generated by CarbonBalance Sustainability Platform
-                </div>
-                
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="window.print()" 
-                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                        <span class="mr-2">🖨️</span>
-                        Print Report
-                    </button>
-                    <a href="{% url 'reports' %}" 
-                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-                        <span class="mr-2">←</span>
-                        Return to Reports
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Print instructions -->
-            <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p class="text-sm text-blue-800">
-                    <strong>Please note:</strong> For best results, use "Save as PDF" in your browser's print dialog to create a digital copy.
-                </p>
-            </div>
-        </footer>
-    </main>
+    <!-- Footer actions -->
+    <footer class="pt-6 border-t border-gray-200">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="text-sm text-slate-500">Report generated by CarbonBalance Sustainability Platform</div>
+        <div class="flex gap-3">
+          <button onclick="window.print()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm">
+            <span class="material-icons text-base">print</span> Print / Save PDF
+          </button>
+          <a href="{% url 'reports' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-semibold shadow-sm">
+            <span class="material-icons text-base">arrow_back</span> Back to Reports
+          </a>
+        </div>
+      </div>
+    </footer>
+
+  </main>
 </div>
-{% endblock %}
 
+{% endblock %}

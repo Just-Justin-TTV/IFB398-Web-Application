@@ -40,23 +40,20 @@
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
+        
         <a href="{% url 'projects' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
 
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
-                                    <div class="p-2">
-                                <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                    <span class="material-icons text-gray-400 dark:text-gray-300 text-lg">settings</span>
-                                    Account Settings
-                                </a>
-                            </div>
-                                <a href="{% url 'reports' %}" class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
-        ← Back to Reports
-    </a>
+
+        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+          <span class="material-icons text-[18px]">description</span> Settings
+        </a>                          
+                                
     </aside>
     <!-- ============ End Sidebar ============ -->
 
