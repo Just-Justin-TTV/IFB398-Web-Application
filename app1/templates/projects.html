@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %} 
 {% load humanize %}
 
 <!DOCTYPE html>
@@ -7,7 +7,11 @@
   <meta charset="UTF-8" />
   <title>Projects</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Include Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tailwind custom configuration for brand colors and radius -->
   <script>
     tailwind.config = {
       theme: {
@@ -18,15 +22,18 @@
       }
     }
   </script>
+
+  <!-- Google Material Icons for UI elements -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <div class="flex min-h-screen">
 
-    <!-- ============ Sidebar ============ -->
+    <!-- ============ Sidebar Section ============ -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
       <div class="px-5 py-6 border-b">
+        <!-- Display user welcome info and profile image -->
         <div class="flex items-center gap-3">
           <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
           <div>
@@ -36,16 +43,21 @@
         </div>
       </div>
 
+      <!-- Navigation links for different sections -->
       <nav class="px-3 py-4 space-y-1">
+        <!-- Dashboard link with active highlighting -->
         <a href="{% url 'dashboard' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
+
+        <!-- Projects link with conditional active state -->
         <a href="{% url 'projects' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
 
+        <!-- Reports and Settings navigation -->
         <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
@@ -54,19 +66,21 @@
         </a>
       </nav>
     </aside>
-    <!-- ============ End Sidebar ============ -->
+    <!-- ============ End Sidebar Section ============ -->
 
-    <!-- ============ Main ============ -->
+    <!-- ============ Main Content Area ============ -->
     <main class="flex-1">
-      <!-- Header -->
+      <!-- Page header -->
       <header class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-6 py-5">
           <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <!-- Page title and subtitle -->
             <div>
               <h1 class="text-2xl font-semibold">Projects</h1>
               <p class="text-sm text-gray-600">Manage, search, and create projects</p>
             </div>
 
+            <!-- Search bar and 'New Project' button -->
             <div class="flex items-center gap-3 w-full md:w-auto">
               <div class="relative flex-1 md:w-80">
                 <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
@@ -82,6 +96,7 @@
         </div>
       </header>
 
+      <!-- Project listing table -->
       <div class="max-w-7xl mx-auto px-6 py-6">
         <section class="bg-white border rounded-2xl shadow-sm overflow-x-auto">
           <table class="min-w-full text-sm">
@@ -98,46 +113,55 @@
             </thead>
 
             <tbody id="projectRows" class="divide-y">
+              <!-- Loop through each project in the context -->
               {% for p in projects %}
               <tr class="hover:bg-gray-50" data-name="{{ p.project_name|default_if_none:'' }}">
+                <!-- Project name and link -->
                 <td class="px-5 py-3 font-medium">
                   <a href="{% url 'project_detail' p.id %}" class="hover:underline">
                     {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
                   </a>
                 </td>
 
+                <!-- Display project year from updated_at or created_at -->
                 <td class="px-5 py-3">
                   {% if p.updated_at %}{{ p.updated_at|date:"Y" }}
                   {% elif p.created_at %}{{ p.created_at|date:"Y" }}
                   {% else %}—{% endif %}
                 </td>
 
+                <!-- Show project region -->
                 <td class="px-5 py-3">
                   <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
                     {{ p.location|default:"—" }}
                   </span>
                 </td>
 
+                <!-- Placeholder for carbon emissions (to be filled if available) -->
                 <td class="px-5 py-3">—</td>
 
+                <!-- Estimated cost of the project -->
                 <td class="px-5 py-3">
                   {% if p.estimated_auto_budget_aud %}
                     ${{ p.estimated_auto_budget_aud|floatformat:0|intcomma }}
                   {% else %}—{% endif %}
                 </td>
 
+                <!-- Show the last updated or created date -->
                 <td class="px-5 py-3">
                   {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y" }}
                   {% elif p.created_at %}{{ p.created_at|date:"d/m/Y" }}
                   {% else %}—{% endif %}
                 </td>
 
+                <!-- Links for viewing or editing the project -->
                 <td class="px-5 py-3 space-x-3 text-right">
                   <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
                   <a href="{% url 'project_detail' p.id %}?edit=1" class="text-gray-700 hover:text-gray-900">Edit</a>
                 </td>
               </tr>
               {% empty %}
+              <!-- Message if no projects exist -->
               <tr>
                 <td colspan="7" class="px-5 py-6 text-gray-500">No projects found.</td>
               </tr>
@@ -149,10 +173,13 @@
     </main>
   </div>
 
+  <!-- Client-side filtering logic for project names -->
   <script>
-    // Simple client-side name filter
+    // Get search input and table rows
     const q = document.getElementById('searchProjects');
     const rows = document.getElementById('projectRows');
+
+    // Filter rows based on search query
     q.addEventListener('input', () => {
       const needle = q.value.trim().toLowerCase();
       [...rows.querySelectorAll('tr')].forEach(tr => {

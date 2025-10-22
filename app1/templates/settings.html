@@ -1,25 +1,18 @@
 {% extends 'base.html' %}
 {% load static %}
 
-
-
-
 {% block title %}User Settings - CarbonBalance{% endblock %}
 
-
-
-
-
 {% block content %}
+<!-- Main container for user settings page -->
 <div class="max-w-4xl mx-auto px-4 py-10">
     
-    
+    <!-- Card container for all account settings sections -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 high-contrast:bg-black high-contrast:border-white">
-        
         
         <div class="p-10">
             
-            
+            <!-- Page header -->
             <div class="mb-14 text-left">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white high-contrast:text-white mb-4">
                     Account Settings
@@ -29,8 +22,7 @@
                 </p>
             </div>
 
-            
-            
+            <!-- Display Django messages (success/error notifications) -->
             {% if messages %}
             <div class="mb-12 space-y-4">
                 {% for message in messages %}
@@ -41,21 +33,17 @@
             </div>
             {% endif %}
 
-            
-            
+            <!-- All user settings sections -->
             <div class="space-y-16">
-                
-                
-                
+
+                <!-- Display Preferences Section -->
                 <div class="bg-gray-50 dark:bg-gray-900 high-contrast:bg-black high-contrast:border-white rounded-xl p-8 border border-gray-200 dark:border-gray-700">
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-white high-contrast:text-white mb-8">
                         Display Preferences
                     </h2>
-                    
-                    
+
                     <div class="space-y-8">
-                        
-                        
+                        <!-- Color Theme Selector -->
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                 Color Theme
@@ -64,17 +52,15 @@
                                 <option value="light" {% if request.session.theme == 'light' %}selected{% endif %}>
                                     Light Theme
                                 </option>
-                               <!-- Dark theme not working, so commenting out --> <!--<option value="dark" {% if request.session.theme == 'dark' %}selected{% endif %}>
-                                    Dark Theme -->
-                                </option>
+                                <!-- Dark theme commented out as not fully functional -->
+                                <!--<option value="dark" {% if request.session.theme == 'dark' %}selected{% endif %}>Dark Theme</option>-->
                                 <option value="high-contrast" {% if request.session.theme == 'high-contrast' %}selected{% endif %}>
                                     High Contrast Theme
                                 </option>
                             </select>
                         </div>
 
-                        
-                        
+                        <!-- Text Size Selector -->
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                 Text Display Size
@@ -97,26 +83,20 @@
                                 Adjusts the text size across the application
                             </p>
                         </div>
-                        
                     </div>
                 </div>
 
-                
-                
-                
+                <!-- Account Information Section -->
                 <div class="bg-gray-50 dark:bg-gray-900 high-contrast:bg-black high-contrast:border-white rounded-xl p-8 border border-gray-200 dark:border-gray-700">
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-white high-contrast:text-white mb-8">
                         Account Information
                     </h2>
-                    
-                    
+
+                    <!-- Form for updating username and email -->
                     <form method="POST" class="space-y-8">
                         {% csrf_token %}
-                        
-                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            
-                            
+                            <!-- Username field -->
                             <div>
                                 <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                     Username
@@ -124,8 +104,8 @@
                                 <input type="text" name="username" value="{{ user.username }}" 
                                        class="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 high-contrast:border-white high-contrast:bg-black high-contrast:text-white rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 high-contrast:focus:ring-yellow-500 transition-colors duration-200">
                             </div>
-                            
-                            
+
+                            <!-- Email field -->
                             <div>
                                 <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                     Email Address
@@ -133,31 +113,27 @@
                                 <input type="email" name="email" value="{{ user.email }}" 
                                        class="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 high-contrast:border-white high-contrast:bg-black high-contrast:text-white rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 high-contrast:focus:ring-yellow-500 transition-colors duration-200">
                             </div>
-                            
                         </div>
-                        
-                        
+
+                        <!-- Submit button for profile update -->
                         <button type="submit" name="update_profile" 
                                 class="bg-gray-700 hover:bg-gray-800 high-contrast:bg-white high-contrast:text-black high-contrast:hover:bg-gray-300 text-white font-medium py-4 px-10 rounded-xl transition-all duration-200 transform hover:scale-105 focus:scale-105">
                             Update Profile Information
                         </button>
-                        
                     </form>
                 </div>
 
-                
-                
-                
+                <!-- Password Management Section -->
                 <div class="bg-gray-50 dark:bg-gray-900 high-contrast:bg-black high-contrast:border-white rounded-xl p-8 border border-gray-200 dark:border-gray-700">
                     <h2 class="text-2xl font-semibold text-gray-800 dark:text-white high-contrast:text-white mb-8">
                         Password Management
                     </h2>
-                    
-                    
+
+                    <!-- Form for updating password -->
                     <form method="POST" class="space-y-8">
                         {% csrf_token %}
-                        
-                        
+
+                        <!-- Current password field -->
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                 Current Password
@@ -166,8 +142,8 @@
                                    class="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 high-contrast:border-white high-contrast:bg-black high-contrast:text-white rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 high-contrast:focus:ring-yellow-500 transition-colors duration-200"
                                    placeholder="Enter your current password">
                         </div>
-                        
-                        
+
+                        <!-- New password field -->
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                 New Password
@@ -176,8 +152,8 @@
                                    class="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 high-contrast:border-white high-contrast:bg-black high-contrast:text-white rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 high-contrast:focus:ring-yellow-500 transition-colors duration-200"
                                    placeholder="Enter your new password">
                         </div>
-                        
-                        
+
+                        <!-- Confirm new password field -->
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300 high-contrast:text-white font-medium mb-4 text-lg">
                                 Confirm New Password
@@ -186,87 +162,66 @@
                                    class="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 high-contrast:border-white high-contrast:bg-black high-contrast:text-white rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 high-contrast:focus:ring-yellow-500 transition-colors duration-200"
                                    placeholder="Confirm your new password">
                         </div>
-                        
-                        
+
+                        <!-- Submit button for password change -->
                         <button type="submit" name="change_password" 
                                 class="bg-gray-700 hover:bg-gray-800 high-contrast:bg-white high-contrast:text-black high-contrast:hover:bg-gray-300 text-white font-medium py-4 px-10 rounded-xl transition-all duration-200 transform hover:scale-105 focus:scale-105">
                             Change Password
                         </button>
-                        
                     </form>
                 </div>
-                
+
             </div>
-            
-            
         </div>
-        
-        
     </div>
-    
-    
 </div>
 
-
-
-
+<!-- JavaScript for theme and text size management -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    
+
     const themeSelect = document.getElementById('themeSelector');
     const textSizeSelect = document.getElementById('textSizeSelector');
-    
-    
-    
-    
+
+    // Listen for theme changes and update HTML class
     themeSelect.addEventListener('change', function() {
         const selectedTheme = this.value;
         const htmlElement = document.documentElement;
-        
-        
+
+        // Remove existing theme classes
         htmlElement.classList.remove('dark', 'high-contrast');
-        
-        
+
+        // Apply new theme
         if (selectedTheme === 'dark') {
             htmlElement.classList.add('dark');
         } else if (selectedTheme === 'high-contrast') {
             htmlElement.classList.add('high-contrast');
         }
-        
-        
+
+        // Persist theme selection to server
         saveSettingToServer('theme', selectedTheme);
-        
     });
-    
-    
-    
-    
+
+    // Listen for text size changes and update body class
     textSizeSelect.addEventListener('change', function() {
         const selectedSize = this.value;
         const bodyElement = document.body;
-        
-        
+
+        // Remove existing text size classes
         bodyElement.classList.remove('text-small', 'text-medium', 'text-large', 'text-xlarge');
-        
-        
+
+        // Apply new text size
         bodyElement.classList.add('text-' + selectedSize);
-        
-        
+
+        // Persist text size selection to server
         saveSettingToServer('text_size', selectedSize);
-        
     });
-    
-    
-    
-    
+
+    // Sends selected setting to server using POST
     function saveSettingToServer(settingType, settingValue) {
-        
-        
         const data = new FormData();
         data.append(settingType, settingValue);
-        
-        
+
         fetch('{% url "settings" %}', {
             method: 'POST',
             headers: {
@@ -276,133 +231,50 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (response.ok) {
-                
+                // Successfully saved, no further action needed
             }
         })
         .catch(error => {
-            
+            // Error saving setting
         });
-        
     }
-    
-    
-    
-    
+
+    // Apply saved text size on page load
     const savedTextSize = '{{ request.session.text_size }}' || 'medium';
     document.body.classList.add('text-' + savedTextSize);
-    
-    
-    
+
 });
 </script>
 
-
-
-
+<!-- CSS for text sizes and high contrast mode -->
 <style>
-.text-small {
-    font-size: 0.875rem;
-    line-height: 1.4;
-}
+/* Text size utilities */
+.text-small { font-size: 0.875rem; line-height: 1.4; }
+.text-small h1 { font-size: 1.5rem; }
+.text-small h2 { font-size: 1.25rem; }
+.text-small .text-3xl { font-size: 1.5rem; }
 
-.text-small h1 {
-    font-size: 1.5rem;
-}
+.text-medium { font-size: 1rem; line-height: 1.5; }
+.text-medium h1 { font-size: 1.75rem; }
+.text-medium h2 { font-size: 1.5rem; }
 
-.text-small h2 {
-    font-size: 1.25rem;
-}
+.text-large { font-size: 1.125rem; line-height: 1.6; }
+.text-large h1 { font-size: 2rem; }
+.text-large h2 { font-size: 1.75rem; }
+.text-large .text-3xl { font-size: 2.25rem; }
 
-.text-small .text-3xl {
-    font-size: 1.5rem;
-}
+.text-xlarge { font-size: 1.25rem; line-height: 1.7; }
+.text-xlarge h1 { font-size: 2.5rem; }
+.text-xlarge h2 { font-size: 2rem; }
+.text-xlarge .text-3xl { font-size: 2.75rem; }
 
-.text-medium {
-    font-size: 1rem;
-    line-height: 1.5;
-}
-
-.text-medium h1 {
-    font-size: 1.75rem;
-}
-
-.text-medium h2 {
-    font-size: 1.5rem;
-}
-
-.text-large {
-    font-size: 1.125rem;
-    line-height: 1.6;
-}
-
-.text-large h1 {
-    font-size: 2rem;
-}
-
-.text-large h2 {
-    font-size: 1.75rem;
-}
-
-.text-large .text-3xl {
-    font-size: 2.25rem;
-}
-
-.text-xlarge {
-    font-size: 1.25rem;
-    line-height: 1.7;
-}
-
-.text-xlarge h1 {
-    font-size: 2.5rem;
-}
-
-.text-xlarge h2 {
-    font-size: 2rem;
-}
-
-.text-xlarge .text-3xl {
-    font-size: 2.75rem;
-}
-
-.high-contrast {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-.high-contrast .bg-white {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-    border-color: #ffffff !important;
-}
-
-.high-contrast input,
-.high-contrast select {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-    border-color: #ffffff !important;
-}
-
-.high-contrast .bg-gray-50 {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-    border-color: #ffffff !important;
-}
-
-.high-contrast .text-gray-500,
-.high-contrast .text-gray-600,
-.high-contrast .text-gray-700,
-.high-contrast .text-gray-800,
-.high-contrast .text-gray-900 {
-    color: #ffffff !important;
-}
-
-.high-contrast .dark\\:text-gray-300,
-.high-contrast .dark\\:text-gray-400 {
-    color: #ffffff !important;
-}
+/* High contrast mode overrides */
+.high-contrast { background-color: #000000 !important; color: #ffffff !important; }
+.high-contrast .bg-white { background-color: #000000 !important; color: #ffffff !important; border-color: #ffffff !important; }
+.high-contrast input, .high-contrast select { background-color: #000000 !important; color: #ffffff !important; border-color: #ffffff !important; }
+.high-contrast .bg-gray-50 { background-color: #000000 !important; color: #ffffff !important; border-color: #ffffff !important; }
+.high-contrast .text-gray-500, .high-contrast .text-gray-600, .high-contrast .text-gray-700, .high-contrast .text-gray-800, .high-contrast .text-gray-900 { color: #ffffff !important; }
+.high-contrast .dark\\:text-gray-300, .high-contrast .dark\\:text-gray-400 { color: #ffffff !important; }
 </style>
-
-
-
 
 {% endblock %}

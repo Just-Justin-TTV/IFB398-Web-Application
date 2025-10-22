@@ -1,22 +1,26 @@
-{% load static %}
+{% load static %} 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Tailwind -->
+  
+  <!-- Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    // Tailwind configuration extension
     tailwind.config = {
       theme: {
         extend: {
-          colors: { brand: { DEFAULT: "#0ea5e9", dark: "#0284c7" } },
-          borderRadius: { "2xl": "1rem" },
+          colors: { brand: { DEFAULT: "#0ea5e9", dark: "#0284c7" } }, // Brand colors
+          borderRadius: { "2xl": "1rem" }, // Extended border radius
         },
       },
     };
   </script>
+
+  <!-- Material Icons for sidebar and UI elements -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
@@ -25,6 +29,7 @@
     <!-- Sidebar -->
     <aside class="w-72 bg-white border-r shadow-sm flex flex-col">
       <div class="px-6 py-6 border-b">
+        <!-- User greeting and avatar -->
         <div class="flex items-center gap-3">
           <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-12 h-12 rounded-full object-cover" />
           <div>
@@ -33,16 +38,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Navigation links -->
       <nav class="px-3 py-4 space-y-1">
+        <!-- Dashboard link with active highlight -->
         <a href="{% url 'dashboard' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
+        <!-- Projects link with active highlight -->
         <a href="{% url 'projects' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
-
+        <!-- Reports and Settings links -->
         <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
@@ -52,29 +61,30 @@
       </nav>
     </aside>
 
-    <!-- Main content -->
+    <!-- Main content area -->
     <main class="flex-1 p-6 overflow-y-auto space-y-6">
-      <!-- Building Metrics -->
+
+      <!-- Building Metrics Section -->
       <section class="bg-white border rounded-2xl shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b">
           <h2 class="text-lg font-semibold">Building Metrics</h2>
         </div>
 
-        <!-- Top metrics inputs -->
+        <!-- Form for entering building metrics -->
         <form method="post" action="{% url 'calculator_results' %}" class="p-0">
           {% csrf_token %}
           <div class="w-full space-y-2">
 
-            <!-- Roof -->
+            <!-- Roof area input -->
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Roof Area / % GIFA</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3 flex items-center gap-2">
                 <input id="roof_area" name="roof_area" type="number" value="{{ roof_area|default:'0' }}" class="w-44 rounded-xl border-gray-300 px-3 py-2">
-                <span>m² /</span><span id="roof_pct">— %</span>
+                <span>m² /</span><span id="roof_pct">— %</span> <!-- Roof % GIFA dynamically calculated -->
               </div>
             </div>
 
-            <!-- Building Type -->
+            <!-- Building type dropdown -->
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Building Type</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3">
@@ -89,25 +99,25 @@
               </div>
             </div>
 
-            <!-- Basement -->
+            <!-- Basement presence checkbox -->
             <div class="grid grid-cols-12 border-b" id="basement_row">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Basement (Y/N)</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3">
                 <input type="checkbox" id="has_basement" name="has_basement" {% if has_basement %}checked{% endif %} onchange="toggleBasement()">
-                <span id="basement_chip">{% if has_basement %}Yes{% else %}No{% endif %}</span>
+                <span id="basement_chip">{% if has_basement %}Yes{% else %}No{% endif %}</span> <!-- Updates text based on checkbox -->
               </div>
             </div>
 
-            <!-- Basement Size -->
+            <!-- Basement size input -->
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">Basement Size / % GIFA</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3 flex items-center gap-2">
                 <input id="basement_area" name="basement_area" type="number" value="{{ basement_area|default:'0' }}" class="w-44 rounded-xl border-gray-300 px-3 py-2">
-                <span>m² /</span><span id="basement_pct">— %</span>
+                <span>m² /</span><span id="basement_pct">— %</span> <!-- Basement % GIFA dynamically calculated -->
               </div>
             </div>
 
-            <!-- Apartments / Keys / WCS -->
+            <!-- Apartments / Keys / WCS input -->
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-12 md:col-span-5 px-6 py-3 font-medium">No of Apartments / Keys / WCS</div>
               <div class="col-span-12 md:col-span-7 px-6 py-3 grid grid-cols-3 gap-4">
@@ -116,12 +126,13 @@
                 <input id="wcs" name="wcs" type="number" value="{{ wcs|default:'0' }}" oninput="combineLine()" class="rounded-xl border-gray-300 px-3 py-2 text-center">
               </div>
             </div>
+            <!-- Display combined total of units -->
             <div class="px-6 py-2 text-sm text-gray-600" id="combined_line"></div>
 
-            <!-- Divider -->
+            <!-- Divider for visual separation -->
             <div class="h-8 bg-gray-700"></div>
 
-            <!-- Reference Metrics -->
+            <!-- Reference metric inputs -->
             <div class="grid grid-cols-12 border-b">
               <div class="col-span-5 px-6 py-3">GIFA (m²)</div>
               <div class="col-span-7 px-6 py-3">
@@ -150,7 +161,7 @@
               </div>
             </div>
 
-            <!-- Keep container (we clear it in JS so nothing shows here) -->
+            <!-- Placeholder for metrics display updated by JS -->
             <div class="grid grid-cols-12">
               <div class="col-span-12 px-6 py-3 space-y-2" id="metrics_display"></div>
             </div>
@@ -158,31 +169,29 @@
         </form>
       </section>
 
-      <!-- Sticky Bottom Action Bar -->
+      <!-- Interventions Budget + Targets Form -->
+      <div>
+        <h2 class="font-semibold mb-2">Set Target Impact Ratings and Global Budget</h2>
+        <form id="targetsForm" action="/calculator/" method="post" class="space-y-2">
+          {% csrf_token %}
+          <!-- Global budget input -->
+          <label for="global_budget"><strong>Total Budget (AUD):</strong></label>
+          <input type="number" name="global_budget" value="0" min="0" class="w-full md:w-72 rounded-xl border-gray-300 px-3 py-2">
 
+          <!-- Dynamic target inputs -->
+          {% for entry in class_targets %}
+            <div>
+              <label>{{ entry.class }}</label>
+              <input type="number" name="class_{{ entry.class }}" value="{{ entry.target_rating|floatformat:0 }}" min="0" step="1" class="w-full md:w-72 rounded-xl border-gray-300 px-3 py-2">
+            </div>
+          {% endfor %}
 
-          <!-- Interventions Budget + Targets -->
-          <div>
-            <h2 class="font-semibold mb-2">Set Target Impact Ratings and Global Budget</h2>
-            <form id="targetsForm" action="/calculator/" method="post" class="space-y-2">
-              {% csrf_token %}
-              <label for="global_budget"><strong>Total Budget (AUD):</strong></label>
-              <input type="number" name="global_budget" value="0" min="0" class="w-full md:w-72 rounded-xl border-gray-300 px-3 py-2">
+          <input type="hidden" name="metrics_id" id="metrics_id">
 
-              {% for entry in class_targets %}
-                <div>
-                  <label>{{ entry.class }}</label>
-                  <input type="number" name="class_{{ entry.class }}" value="{{ entry.target_rating|floatformat:0 }}" min="0" step="1" class="w-full md:w-72 rounded-xl border-gray-300 px-3 py-2">
-                </div>
-              {% endfor %}
-
-              <input type="hidden" name="metrics_id" id="metrics_id">
-
-              <input id="generateBtn" type="submit" value="Generate Interventions"
-                     class="mt-2 rounded-xl bg-brand text-white px-4 py-2 hover:bg-brand-dark">
-            </form>
-          </div>
-        </div>
+          <!-- Submit button -->
+          <input id="generateBtn" type="submit" value="Generate Interventions"
+                 class="mt-2 rounded-xl bg-brand text-white px-4 py-2 hover:bg-brand-dark">
+        </form>
       </div>
     </main>
   </div>
@@ -199,6 +208,7 @@
         </div>
 
         <div class="p-6">
+          <!-- List of saved metrics populated by JS -->
           <div id="confirmList" class="space-y-2 text-sm"></div>
         </div>
 
@@ -212,8 +222,9 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Scripts for form logic and dynamic updates -->
   <script>
+    // Toggle basement text Yes/No and recalc percentages
     function toggleBasement(){
       const cb = document.getElementById('has_basement');
       const chip = document.getElementById('basement_chip');
@@ -221,6 +232,7 @@
       recalc();
     }
 
+    // Combine apartments, keys, and WCS into a single total
     function combineLine(){
       const a = Number(document.getElementById('apartments').value)||0;
       const k = Number(document.getElementById('keys').value)||0;
@@ -228,6 +240,7 @@
       document.getElementById('combined_line').textContent = `Total Units: ${a+k+w}`;
     }
 
+    // Recalculate roof and basement percentages and clear metrics display
     function recalc(){
       const roof = Number(document.getElementById('roof_area').value)||0;
       const gifa = Number(document.getElementById('gifa_input').value)||0;
@@ -243,7 +256,7 @@
       if (metricsDiv) metricsDiv.innerHTML = '';
     }
 
-    // Initial render
+    // Initial render on page load
     toggleBasement();
     combineLine();
     recalc();
@@ -258,12 +271,13 @@
       document.body.classList.remove('overflow-hidden');
     }
 
+    // Get CSRF token from cookies
     function getCookie(name) {
       const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
       return m ? m.pop() : '';
     }
 
-    /* ---------- Build payload ---------- */
+    /* ---------- Build payload for API ---------- */
     function buildPayload() {
       const roofArea   = Number(document.getElementById('roof_area').value) || 0;
       const gifa       = Number(document.getElementById('gifa_input').value) || 0;
@@ -276,6 +290,8 @@
       const basementPct = gifa ? (basement / gifa * 100) : null;
       const globalBudget = Number(document.querySelector('input[name="global_budget"]').value) || 0;
       sessionStorage.setItem('global_budget', String(globalBudget));
+
+      // Return structured payload
       return {
         building_type: document.getElementById('building_type').value,
 
@@ -295,10 +311,11 @@
         external_openings_m2: openings,
         building_footprint_m2: footprint,
 
-        global_budget: globalBudget  // ✅ use total budget instead of autoBudget
+        global_budget: globalBudget
       };
     }
 
+    // Save metrics to API
     async function saveMetrics(payload) {
       const res = await fetch('/api/metrics/save/', {
         method: 'POST',
@@ -313,10 +330,10 @@
         const t = await res.text();
         throw new Error(`Metrics save failed: HTTP ${res.status} – ${t.slice(0,200)}`);
       }
-      return res.json(); // { ok: true, metrics_id: ... }
+      return res.json(); // Returns saved metrics including metrics_id
     }
 
-    /* ---------- Confirmation modal ---------- */
+    /* ---------- Confirmation modal rendering ---------- */
     function renderConfirmation(payload) {
       const fmt   = (n, unit='') => (n == null || isNaN(n)) ? '—' : `${Number(n).toLocaleString()}${unit}`;
       const pct   = (n) => (n == null || isNaN(n)) ? '—' : `${Number(n).toFixed(1)}%`;
@@ -342,7 +359,6 @@
           <div class="text-gray-500">External Openings</div><div class="font-medium">${fmt(payload.external_openings_m2, ' m²')}</div>
           <div class="text-gray-500">Building Footprint</div><div class="font-medium">${fmt(payload.building_footprint_m2, ' m²')}</div>
 
-          <!-- ✅ Fixed label and value -->
           <div class="text-gray-500">Total Budget (AUD)</div>
           <div class="font-semibold text-green-700">${money(payload.global_budget)}</div>
         </div>
@@ -350,7 +366,7 @@
       document.getElementById('confirmList').innerHTML = html;
     }
 
-    // Save → show modal → OK submits the /calculator/ form
+    // Wire form submission: save metrics, show confirmation modal, then submit form
     (function wireGenerate() {
       const form = document.getElementById('targetsForm');
       if (!form) return;
@@ -381,9 +397,11 @@
           if (metricsId) metricsInput.value = metricsId;
           hideModal();
           okBtn.removeEventListener('click', onOk);
-          form.submit();
+          form.submit(); // Final form submission
         };
         okBtn.addEventListener('click', onOk, { once: true });
       });
     })();
   </script>
+</body>
+</html>

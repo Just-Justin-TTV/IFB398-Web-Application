@@ -6,10 +6,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>
+    <!-- Display the project name if available, otherwise show the project ID -->
     {% if p.project_name %}Project – {{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
   </title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Import Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tailwind custom configuration for brand colors and border radius -->
   <script>
     tailwind.config = {
       theme: {
@@ -20,48 +25,59 @@
       }
     }
   </script>
+
+  <!-- Import Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
 <div class="flex min-h-screen">
 
-  <!-- Sidebar / Back -->
+  <!-- Sidebar section with navigation back to the projects page -->
   <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
     <div class="px-5 py-6 border-b">
+      <!-- Link to return to projects overview -->
       <a href="{% url 'projects' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
         <span class="material-icons text-[18px]">arrow_back</span> Back to Projects
       </a>
     </div>
   </aside>
 
-  <!-- Main -->
+  <!-- Main content section -->
   <main class="flex-1">
-    <!-- Top bar -->
+    <!-- Header displaying project name and last updated info -->
     <header class="bg-white border-b">
       <div class="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
         <div>
+          <!-- Project title -->
           <h1 class="text-2xl font-semibold">
             {% if p.project_name %}{{ p.project_name }}{% else %}Project #{{ p.id }}{% endif %}
           </h1>
+
+          <!-- Last updated timestamp -->
           <p class="text-sm text-gray-600">
             Last updated:
             {% if p.updated_at %}{{ p.updated_at|date:"d/m/Y H:i" }}{% else %}—{% endif %}
           </p>
         </div>
 
+        <!-- Action buttons (Edit, Save, or Cancel) -->
         <div class="flex items-center gap-2">
           {% if can_edit %}
+            <!-- Cancel button to discard changes -->
             <a href="{% url 'project_detail' p.id %}"
                class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm hover:bg-gray-50">
               Cancel
             </a>
+
+            <!-- Save button to submit form -->
             <button form="projectForm" type="submit"
                     class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
               <span class="material-icons text-[18px]">save</span>
               Save
             </button>
           {% else %}
+            <!-- Edit button shown if the project is in read-only mode -->
             <a href="{% url 'project_detail' p.id %}?edit=1"
                class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
               <span class="material-icons text-[18px]">edit</span>
@@ -72,12 +88,13 @@
       </div>
     </header>
 
-    <!-- Success toast after save -->
+    <!-- Success notification toast after saving project -->
     {% if request.GET.saved %}
       <div class="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded-full shadow">
         Saved successfully. Your metrics are up to date.
       </div>
       <script>
+        /* Automatically hides the success toast after a few seconds */
         setTimeout(() => {
           const t = document.currentScript.previousElementSibling;
           if (t) t.style.display = 'none';
@@ -85,13 +102,15 @@
       </script>
     {% endif %}
 
+    <!-- Project edit form -->
     <div class="max-w-5xl mx-auto px-6 py-8">
       <form id="projectForm" method="post" action="">
         {% csrf_token %}
         <div class="bg-white border rounded-2xl shadow-sm p-6 space-y-6">
 
-          <!-- Basic info -->
+          <!-- Project Basic Information section -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Project name input -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
               <input name="project_name" type="text" value="{{ p.project_name }}"
@@ -99,6 +118,7 @@
                      class="w-full rounded-xl border-gray-300 px-3 py-2 {% if not can_edit %}bg-gray-50{% endif %}">
             </div>
 
+            <!-- Project type input -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Project Type</label>
               <input name="building_type" type="text" value="{{ p.building_type }}"
@@ -106,6 +126,7 @@
                      class="w-full rounded-xl border-gray-300 px-3 py-2 {% if not can_edit %}bg-gray-50{% endif %}">
             </div>
 
+            <!-- Location input -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
               <input name="location" type="text" value="{{ p.location }}"
@@ -116,10 +137,11 @@
 
           <hr class="my-2">
 
-          <!-- Building metrics -->
+          <!-- Building Metrics section -->
           <h2 class="text-base font-semibold">Building Metrics</h2>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
+            <!-- Individual building metric fields -->
             <div>
               <label class="block text-sm text-gray-700 mb-1">GIFA (m²)</label>
               <input name="gifa_m2" type="number" step="0.01" value="{{ p.gifa_m2 }}"
@@ -204,6 +226,7 @@
                      class="w-full rounded-xl border-gray-300 px-3 py-2 {% if not can_edit %}bg-gray-50{% endif %}">
             </div>
 
+            <!-- Checkbox for basement presence -->
             <div class="md:col-span-3">
               <label class="inline-flex items-center gap-2">
                 <input type="checkbox" name="basement_present" value="1"
@@ -218,14 +241,17 @@
       </form>
     </div>
 
-    <!-- Sticky footer actions -->
+    <!-- Sticky footer with form submission and navigation buttons -->
     <div class="sticky bottom-0 bg-white/90 backdrop-blur border-t">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-end gap-3">
+
+        <!-- Cancel button navigates back to the project list -->
         <a href="{% url 'projects' %}"
            class="inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm hover:bg-gray-50">
           Cancel
         </a>
 
+        <!-- Button to proceed to intervention selection (only when saved or not editable) -->
         {% if request.GET.saved or not can_edit %}
         <form action="{% url 'calculator' %}" method="post" class="mt-6 text-right">
           {% csrf_token %}

@@ -3,9 +3,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Page title -->
   <title>Carbon Calculator · Interventions</title>
+  <!-- Ensure proper scaling on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Include Tailwind CSS from CDN for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind configuration: custom brand colors and border radius -->
   <script>
     tailwind.config = {
       theme: {
@@ -16,38 +20,46 @@
       }
     }
   </script>
+  <!-- Include Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <div class="flex min-h-screen">
-    <!-- Sidebar -->
+    <!-- Sidebar containing navigation -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <!-- User info section -->
       <div class="px-5 py-6 border-b">
         <div class="flex items-center gap-3">
           <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
           <div>
             <p class="text-xs text-gray-500">Welcome</p>
+            <!-- Display current user's name from session -->
             <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
           </div>
         </div>
       </div>
 
+      <!-- Navigation links -->
       <nav class="px-3 py-4 space-y-1">
+        <!-- Dashboard link -->
         <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
+        <!-- Projects link -->
         <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
+        <!-- Current page link: Interventions -->
         <a href="{% url 'carbon' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow hover:bg-brand-600">
           <span class="material-icons text-[18px]">build</span> Interventions
         </a>
       </nav>
     </aside>
 
-    <!-- Main -->
+    <!-- Main content area -->
     <main class="flex-1">
+      <!-- Page header -->
       <header class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
@@ -58,19 +70,23 @@
       </header>
 
       <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        <!-- Budget summary -->
+        <!-- Display the user's budget -->
         <h2 class="text-xl font-semibold">
           Interventions within Budget: AUD {{ global_budget|floatformat:0 }}
         </h2>
 
-        <!-- Loop grouped interventions -->
+        <!-- Loop through interventions grouped by class -->
         {% for class_name, interventions in grouped_results.items %}
           <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+            <!-- Class name header -->
             <div class="bg-gray-100 px-4 py-2 font-semibold text-gray-700">{{ class_name }}</div>
+            <!-- List of interventions in this class -->
             <ul class="divide-y">
               {% for intervention in interventions %}
                 <li class="px-4 py-3 flex items-center justify-between">
+                  <!-- Intervention name -->
                   <span class="font-medium">{{ intervention.name }}</span>
+                  <!-- Cost information -->
                   <span class="text-sm text-gray-600">
                     Cost Level: {{ intervention.cost_level }} |
                     Range: {{ intervention.cost_range }}
@@ -80,6 +96,7 @@
             </ul>
           </div>
         {% empty %}
+          <!-- Message if no interventions are available -->
           <p class="text-gray-600">No interventions available within the selected budget.</p>
         {% endfor %}
       </div>

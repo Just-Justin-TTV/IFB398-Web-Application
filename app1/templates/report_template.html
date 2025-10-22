@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} 
 {% load static %}
 {% load humanize %}
 
@@ -6,9 +6,10 @@
 
 {% block content %}
 
-<!-- Tailwind + Icons (safe to include here even if base.html also loads Tailwind) -->
+<!-- Tailwind CSS and Material Icons -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
+  /* Tailwind theme configuration to extend colors and border radius */
   tailwind.config = {
     theme: {
       extend: {
@@ -22,10 +23,10 @@
 </script>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-<!-- Page shell -->
+<!-- Main page container with rounded corners, shadow, and border -->
 <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
-  <!-- Header -->
+  <!-- Header section with project title, location, building type, report date, and document ID -->
   <header class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 text-white px-8 sm:px-12 py-10">
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
       <div>
@@ -41,28 +42,32 @@
     </div>
   </header>
 
-  <!-- Content -->
+  <!-- Main content section with spacing -->
   <main class="px-6 sm:px-10 py-10 space-y-12">
 
-    <!-- Project Overview -->
+    <!-- Project Overview section with four summary cards -->
     <section>
       <h2 class="text-2xl font-bold text-slate-800 mb-4">Project Overview</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Built area card -->
         <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div class="text-sm text-slate-500 font-medium">Built Area</div>
           <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ project.gifa_m2|default:0|floatformat:0|intcomma }} m²</div>
           <div class="text-xs text-sky-700 mt-2">Gross Internal Floor Area</div>
         </div>
+        <!-- Project budget card -->
         <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div class="text-sm text-slate-500 font-medium">Project Budget</div>
           <div class="text-2xl font-extrabold text-slate-900 mt-1">${{ project.total_budget_aud|default:0|floatformat:0|intcomma }}</div>
           <div class="text-xs text-emerald-700 mt-2">Total Construction Cost</div>
         </div>
+        <!-- Residential units card -->
         <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div class="text-sm text-slate-500 font-medium">Residential Units</div>
           <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ project.num_apartments|default:0|intcomma }}</div>
           <div class="text-xs text-violet-700 mt-2">Total Apartments</div>
         </div>
+        <!-- Sustainability measures card -->
         <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div class="text-sm text-slate-500 font-medium">Sustainability Measures</div>
           <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ total_selected|default:0|intcomma }}</div>
@@ -71,10 +76,11 @@
       </div>
     </section>
 
-    <!-- Project Specifications -->
+    <!-- Project Specifications section -->
     <section>
       <h2 class="text-2xl font-bold text-slate-800 mb-4">Project Specifications</h2>
       <div class="grid md:grid-cols-2 gap-6">
+        <!-- Core Information card -->
         <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 class="text-lg font-semibold text-slate-800 mb-4">Core Information</h3>
           <dl class="divide-y divide-gray-200">
@@ -93,6 +99,7 @@
           </dl>
         </div>
 
+        <!-- Building Features card -->
         <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 class="text-lg font-semibold text-slate-800 mb-4">Building Features</h3>
           <dl class="divide-y divide-gray-200">
@@ -115,15 +122,17 @@
       </div>
     </section>
 
-    <!-- Category Summary -->
+    <!-- Sustainability Action Plan section -->
     <section>
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-3">
         <h2 class="text-2xl font-bold text-slate-800">Sustainability Action Plan</h2>
+        <!-- Number of focus areas identified -->
         <span class="inline-flex items-center gap-2 text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-lg">
           {{ available_interventions|length }} focus areas identified
         </span>
       </div>
 
+      <!-- Focus area table -->
       <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <table class="w-full text-left">
           <thead class="bg-slate-50 border-b border-gray-200">
@@ -139,11 +148,13 @@
             <tr class="hover:bg-slate-50">
               <td class="p-4 font-semibold text-slate-900">{{ category.theme }}</td>
               <td class="p-4">
+                <!-- Number of measures for the focus area -->
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
                   {{ category.count }} measures
                 </span>
               </td>
               <td class="p-4">
+                <!-- Average rating with progress bar -->
                 <div class="flex items-center gap-2">
                   <span class="font-semibold text-slate-800">{{ category.avg_rating|floatformat:1 }}/10</span>
                   <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -152,6 +163,7 @@
                 </div>
               </td>
               <td class="p-4">
+                <!-- Investment level visualization -->
                 <div class="flex items-center gap-2">
                   <span class="font-medium text-slate-800">Level {{ category.avg_cost|floatformat:0 }}</span>
                   <div class="flex gap-1">
@@ -178,17 +190,19 @@
       </div>
     </section>
 
-    <!-- Detailed Recommendations -->
+    <!-- Recommended Implementation Plan section -->
     <section>
       <h2 class="text-2xl font-bold text-slate-800 mb-4">Recommended Implementation Plan</h2>
 
       {% if selected_interventions %}
+      <!-- Loop through each selected measure -->
       <div class="space-y-4">
         {% for measure in selected_interventions %}
         <article class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition">
           <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div class="flex-1">
               <div class="flex flex-wrap items-center gap-3 mb-2">
+                <!-- Measure name and theme tag -->
                 <h3 class="text-lg font-bold text-slate-900">{{ measure.name }}</h3>
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
                   {% if measure.theme == 'carbon' %} bg-red-50 text-red-700 border border-red-200
@@ -199,10 +213,12 @@
                 </span>
               </div>
 
+              <!-- Optional measure description -->
               {% if measure.description %}
                 <p class="text-slate-700 leading-relaxed">{{ measure.description }}</p>
               {% endif %}
 
+              <!-- Effectiveness and cost level details -->
               <dl class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="flex items-center gap-2">
                   <dt class="text-slate-500">Effectiveness</dt>
@@ -215,6 +231,7 @@
               </dl>
             </div>
 
+            <!-- Priority badge and recommendation note -->
             <div class="lg:text-right">
               <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-sm">
                 Priority Action
@@ -226,6 +243,7 @@
         {% endfor %}
       </div>
       {% else %}
+      <!-- Message when no interventions are selected -->
         <div class="bg-white border border-gray-200 rounded-xl p-10 text-center">
           <div class="text-slate-500 mb-2">No specific recommendations selected.</div>
           <p class="text-slate-600">Use the calculator to select measures and regenerate this report.</p>
@@ -233,7 +251,7 @@
       {% endif %}
     </section>
 
-    <!-- Footer actions -->
+    <!-- Footer section with print and back buttons -->
     <footer class="pt-6 border-t border-gray-200">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div class="text-sm text-slate-500">Report generated by CarbonBalance Sustainability Platform</div>

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %} 
 {% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
@@ -6,8 +6,11 @@
   <meta charset="UTF-8" />
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    // Tailwind configuration extension for brand colors and border radius
     tailwind.config = {
       theme: {
         extend: {
@@ -17,6 +20,8 @@
       }
     }
   </script>
+
+  <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
@@ -26,6 +31,7 @@
     <!-- ============ Sidebar ============ -->
     <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
       <div class="px-5 py-6 border-b">
+        <!-- User avatar and greeting -->
         <div class="flex items-center gap-3">
           <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
           <div>
@@ -35,31 +41,35 @@
         </div>
       </div>
 
+      <!-- Sidebar navigation links -->
       <nav class="px-3 py-4 space-y-1">
+        <!-- Dashboard link, highlighted if current page -->
         <a href="{% url 'dashboard' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">dashboard</span> Dashboard
         </a>
         
+        <!-- Projects link, highlighted if current page -->
         <a href="{% url 'projects' %}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">folder</span> Projects
         </a>
 
+        <!-- Reports link -->
         <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
 
+        <!-- Settings link -->
         <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
           <span class="material-icons text-[18px]">description</span> Settings
         </a>                          
-                                
     </aside>
     <!-- ============ End Sidebar ============ -->
 
-    <!-- ============ Main ============ -->
+    <!-- ============ Main Content ============ -->
     <main class="flex-1">
-      <!-- Header -->
+      <!-- Header with page title and user info -->
       <header class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
@@ -67,10 +77,12 @@
             <p class="text-sm text-gray-600">Overview of projects & emissions</p>
           </div>
           <div class="flex items-center gap-3">
+            <!-- Display logged-in user's name on larger screens -->
             <div class="hidden md:flex items-center gap-2 text-sm text-gray-600">
               <span class="material-icons text-[18px] text-gray-500">person</span>
               <span>{{ request.session.user_name|default:"" }}</span>
             </div>
+            <!-- Button to create new project -->
             <a href="{% url 'projects' %}"
                class="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600">
               <span class="material-icons text-[18px]">add</span> New Project
@@ -80,7 +92,7 @@
       </header>
 
       <div class="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        <!-- Stat cards -->
+        <!-- Stat cards overview -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
           <!-- Avg. Project Budget -->
@@ -96,7 +108,7 @@
             <p class="text-xs text-gray-400 mt-1">Across all projects</p>
           </div>
 
-          <!-- Projects -->
+          <!-- Total Projects -->
           <div class="bg-white border rounded-2xl shadow-sm p-5">
             <div class="flex items-center justify-between">
               <p class="text-sm text-gray-600">Projects</p>
@@ -115,41 +127,40 @@
           </div>
 
           <!-- Avg. Intervention Rating -->
-        <div class="bg-white border rounded-2xl shadow-sm p-5">
-          <div class="flex items-center justify-between">
-            <p class="text-sm text-gray-600">Avg. Intervention Rating</p>
-            <span class="material-icons text-sky-500">star_half</span>
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-gray-600">Avg. Intervention Rating</p>
+              <span class="material-icons text-sky-500">star_half</span>
+            </div>
+            <div class="mt-2 text-3xl font-semibold">
+              {{ avg_intervention_rating|floatformat:2 }}
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Across all interventions</p>
           </div>
-          <div class="mt-2 text-3xl font-semibold">
-            {{ avg_intervention_rating|floatformat:2 }}
-          </div>
-          <p class="text-xs text-gray-400 mt-1">Across all interventions</p>
-        </div>
 
-        <!-- Top Performing Theme -->
-        <div class="bg-white border rounded-2xl shadow-sm p-5">
-          <div class="flex items-center justify-between">
-            <p class="text-sm text-gray-600">Top Performing Theme</p>
-            <span class="material-icons text-sky-500">leaderboard</span>
+          <!-- Top Performing Theme -->
+          <div class="bg-white border rounded-2xl shadow-sm p-5">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-gray-600">Top Performing Theme</p>
+              <span class="material-icons text-sky-500">leaderboard</span>
+            </div>
+            <div class="mt-2 text-2xl font-semibold text-gray-900">
+              {{ top_theme|title }}
+            </div>
+            <p class="text-xs text-gray-400 mt-1">
+              Avg. Rating: <span class="font-semibold">{{ top_theme_rating|floatformat:2 }}</span>
+            </p>
           </div>
-          <div class="mt-2 text-2xl font-semibold text-gray-900">
-            {{ top_theme|title }}
-          </div>
-          <p class="text-xs text-gray-400 mt-1">
-            Avg. Rating: <span class="font-semibold">{{ top_theme_rating|floatformat:2 }}</span>
-          </p>
-        </div>
 
         </section>
-      </div>
 
-        <!-- Project summary -->
+        <!-- Project Summary Table -->
         <section class="bg-white border rounded-2xl shadow-sm">
           <div class="px-5 py-4 border-b flex items-center justify-between">
             <h2 class="text-lg font-semibold">Project Summary</h2>
-            
           </div>
 
+          <!-- Table wrapper for horizontal scrolling -->
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
               <thead class="bg-gray-50 text-gray-600">
@@ -171,6 +182,7 @@
                     {% endif %}
                   </td>
 
+                  <!-- Display project due date -->
                   <td class="px-5 py-3">
                     {% if p.updated_at %}
                       {{ p.updated_at|date:"d/m/Y" }}
@@ -181,6 +193,7 @@
                     {% endif %}
                   </td>
 
+                  <!-- Project status badge -->
                   <td class="px-5 py-3">
                     <span class="inline-flex items-center rounded-full 
                       {% if p.status == 'Complete' %} bg-green-50 text-green-700
@@ -192,6 +205,7 @@
                     </span>
                   </td>
 
+                  <!-- Actions -->
                   <td class="px-5 py-3 text-right">
                     <a href="{% url 'project_detail' p.id %}" class="text-brand hover:text-brand-700">Open</a>
                   </td>
@@ -207,12 +221,11 @@
                 </tr>
                 {% endfor %}
               </tbody>
-
             </table>
           </div>
         </section>
 
-        <!-- Year-to-Year Project Creations -->
+        <!-- Year-to-Year Project Creations Chart -->
         <section>
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-semibold">Year-to-Year Project Creations</h2>
@@ -220,10 +233,12 @@
           </div>
 
           <div class="bg-white border rounded-2xl shadow-sm p-5">
+            <!-- Chart canvas -->
             <div class="h-40">
               <canvas id="yoyProjectsChart" height="120" aria-label="Projects created per year" role="img"></canvas>
             </div>
 
+            <!-- Legend -->
             <div class="mt-3 flex items-center gap-4 text-xs text-gray-500">
               <span class="inline-flex items-center gap-1">
                 <span class="w-3 h-3 inline-block rounded opacity-40 bg-sky-500"></span> Prior years
@@ -235,7 +250,7 @@
           </div>
         </section>
 
-        <!-- Chart.js CDN (only include once on the page) -->
+        <!-- Chart.js script -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
           (function () {
@@ -243,10 +258,10 @@
             const counts = {{ yoy_counts_json|safe }};
             const currentYear = {{ current_year|default:0 }};
 
-            // light bars for prior years; solid bar for current year
+            // Set bar colors: solid for current year, faded for prior years
             const barColors = labels.map(y => (parseInt(y) === currentYear)
-              ? 'rgba(14, 165, 233, 1)'     // sky-500 solid
-              : 'rgba(14, 165, 233, 0.35)'  // sky-500 @ 35% opacity
+              ? 'rgba(14, 165, 233, 1)'     // solid sky-500
+              : 'rgba(14, 165, 233, 0.35)'  // 35% opacity sky-500
             );
 
             const ctx = document.getElementById('yoyProjectsChart').getContext('2d');
@@ -280,7 +295,7 @@
                   x: { grid: { display: false } },
                   y: {
                     beginAtZero: true,
-                    ticks: { precision: 0 } // whole numbers
+                    ticks: { precision: 0 } // show whole numbers only
                   }
                 }
               }

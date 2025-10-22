@@ -1,35 +1,47 @@
-{% load static %}{% load humanize %}
+{% load static %}{% load humanize %} 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>Carbon Calculator · Interventions</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!-- Tailwind CSS for utility-first styling -->
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Material Icons -->
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
 <style>
-/* Selected row highlight */
+/* ---------- Styling for intervention rows ---------- */
+
+/* Highlight selected row */
 .intervention-row.selected { border-left: 4px solid #0ea5e9; background-color: #e0f7ff; }
-/* Disabled / duplicate */
+
+/* Disabled or duplicate rows */
 .intervention-row.stage-disabled,
 .intervention-row.duplicate-blocked { opacity:.5; pointer-events:none; user-select:none; cursor:not-allowed; }
-/* Badges */
+
+/* Badge styling */
 .stage-disabled-badge,.duplicate-badge { font-size:10px; padding:.125rem .5rem; border-radius:9999px; }
 .stage-disabled-badge { background:#e5e7eb; color:#374151; margin-left:.5rem; }
 .duplicate-badge { background:#fee2e2; color:#b91c1c; }
-/* Headers */
+
+/* Table headers */
 .theme-header > div { font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
 .category-header > div { font-weight:600; }
-/* Description row */
+
+/* Description row styling */
 .description-row { font-size:.875rem; color:#4b5563; }
-/* Toggle icon rotation */
+
+/* Rotate toggle icon */
 .material-icons.rot-180 { transform: rotate(180deg); }
 
-/* Name cell: left-align + wrap */
+/* Name cell formatting */
 .name-cell { align-items:flex-start; }
 .name-title { display:block; white-space:normal; word-break:break-word; text-align:left; }
 
-/* Stage chip (warning) — injected by JS */
+/* Stage chip styling (added via JS) */
 .stage-chip{
   display:inline-flex; align-items:center; gap:.25rem;
   padding:.125rem .5rem; border-radius:9999px;
@@ -38,14 +50,14 @@
 }
 .stage-chip .material-icons{ font-size:14px; line-height:1; }
 
-/* Updated rating cell */
+/* Updated rating cell styling */
 .updated-rating { background:#f0fdf4; }
 .updated-rating .updated-big { font-weight:700; }
 
-/* Rightmost select column */
+/* Rightmost select checkbox column */
 .select-cell { position:relative; }
 
-/* Cost pill + warning */
+/* Cost tracker pill + over-budget warning */
 .cost-pill { border-radius:9999px; }
 #budgetWarn { display:none; }
 #budgetWarn.show { display:inline-flex; }
@@ -55,8 +67,9 @@
 <body class="min-h-screen bg-gray-50 text-gray-900">
 <div class="flex min-h-screen">
 
-  <!-- Sidebar -->
+  <!-- Sidebar navigation -->
   <aside class="w-64 bg-white border-r shadow-sm">
+    <!-- User info header -->
     <div class="px-5 py-6 border-b flex items-center gap-3">
       <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
       <div>
@@ -64,6 +77,8 @@
         <p class="text-sm font-semibold">{{ request.session.user_name }}</p>
       </div>
     </div>
+
+    <!-- Navigation links -->
     <nav class="px-3 py-4 space-y-1">
       <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
         <span class="material-icons text-[18px]">dashboard</span> Dashboard
@@ -80,8 +95,9 @@
     </nav>
   </aside>
 
-  <!-- Main -->
+  <!-- Main content -->
   <main class="flex-1">
+    <!-- Page header -->
     <header class="bg-white border-b">
       <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <div>
@@ -94,8 +110,10 @@
       </div>
     </header>
 
+    <!-- Controls + interventions table -->
     <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
-      <!-- Controls -->
+
+      <!-- Top controls: Class select, reset, sort, search -->
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-3">
           <label class="text-sm text-gray-700">Select Class</label>
@@ -114,6 +132,7 @@
           </select>
         </div>
 
+        <!-- Search box -->
         <div class="relative w-full sm:w-96">
           <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
           <input id="searchBox" type="text" placeholder="Search interventions…"
@@ -122,7 +141,7 @@
           <button id="clearSearch" class="hidden material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[18px]">close</button>
         </div>
 
-        <!-- Cost Tracker pill -->
+        <!-- Cost tracker pill -->
         <div class="flex items-center gap-2 rounded-full bg-white border px-3 py-2 text-sm shadow-sm cost-pill">
           <span class="text-gray-500">Cost Tracker:</span>
           <span id="costTracker" class="font-semibold">$0</span>
@@ -135,10 +154,12 @@
         </div>
       </div>
 
+      <!-- Main grid: interventions table + sidebar summary -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
         <!-- Interventions Table -->
         <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
-          <!-- HEADER (12 columns): 6 + 2 + 3 + 1 -->
+          <!-- Table header row -->
           <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <div class="col-span-6 px-4 py-3 text-left">Intervention</div>
             <div class="col-span-2 px-4 py-3 text-center">Cost</div>
@@ -146,6 +167,7 @@
             <div class="col-span-1 px-4 py-3 text-center">Select</div>
           </div>
 
+          <!-- Table body populated by Django template loop -->
           <div id="rows">
             {% for theme, items in interventions.items %}
               <div class="grid grid-cols-12 theme-header" data-theme="{{ theme|escape }}">
@@ -153,7 +175,7 @@
               </div>
 
               {% for item in items %}
-              <!-- ROW -->
+              <!-- Individual intervention row -->
               <div class="grid grid-cols-12 items-center border-t relative hover:bg-gray-50 intervention-row"
                    data-id="{{ item.id|escape }}"
                    data-name="{{ item.name|striptags|escape }}"
@@ -166,7 +188,7 @@
                    data-description="{{ item.description|default:''|striptags|escape }}"
                    data-dependencies='{{ item.dependencies|default:"[]"|safe }}'>
 
-                <!-- Name + Toggle (left aligned, wraps); stage chip is injected by JS -->
+                <!-- Name cell with toggle button -->
                 <div class="col-span-6 px-4 py-3 flex name-cell gap-3">
                   <button class="toggle-desc flex items-start gap-2 text-gray-600 hover:text-gray-800" type="button" aria-label="Toggle description">
                     <span class="material-icons text-base">expand_more</span>
@@ -174,25 +196,25 @@
                   </button>
                 </div>
 
-                <!-- Show the friendly range if present, else fallback to the level -->
+                <!-- Cost cell -->
                 <div class="col-span-2 px-4 py-3 text-center">
                   {{ item.cost_range|default:item.cost_level }}
                 </div>
 
-                <!-- Combined rating cell -->
+                <!-- Rating cell -->
                 <div class="col-span-3 px-4 py-3 text-center updated-rating">
                   <div class="updated-big text-lg">{{ item.intervention_rating|default:0 }}</div>
                   <div class="text-[11px] text-gray-500">(orig: {{ item.intervention_rating|default:0 }})</div>
                   <div class="effect-notes text-xs text-gray-600 mt-1"></div>
                 </div>
 
-                <!-- RIGHTMOST SELECT -->
+                <!-- Select checkbox -->
                 <div class="col-span-1 px-4 py-3 text-center select-cell">
                   <input type="checkbox" class="select-intervention accent-blue-500" data-id="{{ item.id|escape }}">
                 </div>
               </div>
 
-              <!-- Description -->
+              <!-- Description row (initially hidden) -->
               <div class="col-span-12 px-6 py-3 bg-gray-50 text-sm text-gray-700 description-row hidden">
                 {{ item.description|default:"No description available." }}
               </div>
@@ -218,23 +240,23 @@
 
 <script>
 (async () => {
+  // Shortcut for querySelector / querySelectorAll
   const qs  = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
-  const ROWS = qs('#rows');
-  const RAW = [];
+  const ROWS = qs('#rows');  // Container for all table rows
+  const RAW = [];            // Raw data representation of interventions
 
-  /* ---------- Budget from previous page ---------- */
-  // carbon.html stores this when you clicked Generate
+  /* ---------- Budget from previous session ---------- */
   const GLOBAL_BUDGET = Number(sessionStorage.getItem('global_budget') || 0);
   const fmtMoney = n => '$' + (Number(n)||0).toLocaleString();
   qs('#budgetDisplay').textContent = fmtMoney(GLOBAL_BUDGET);
 
-  /* ---------- Build RAW from DOM ---------- */
+  /* ---------- Build RAW data structure from DOM ---------- */
   qsa('.intervention-row').forEach(el => {
     RAW.push({
       id: el.dataset.id,
       name: el.dataset.name,
-      costLevel: Number(el.dataset.costLevel || el.dataset.cost || 0),    // fallback
+      costLevel: Number(el.dataset.costLevel || el.dataset.cost || 0),
       costRange: el.dataset.costRange || '',
       rating: Number(el.dataset.rating || 0),
       currentRating: Number(el.dataset.rating || 0),
@@ -250,11 +272,9 @@
 
   const state = { selected: new Set(), query: '', activeClass: 'all', sort: 'impact' };
 
-  /* ---------- Cost range parsing ---------- */
-  // Accepts "25–50k AUD", "200-500k", "1–2m AUD", etc.
+  /* ---------- Cost range parsing functions ---------- */
   function parseCostRange(txt, fallbackLevel) {
     if (!txt) {
-      // quick heuristic if only level (1..10) exists; tweak mapping as you like
       const L = Number(fallbackLevel||0);
       const table = {
         1:[0,25000], 2:[0,50000], 3:[25000,50000], 4:[25000,50000],
@@ -265,10 +285,8 @@
       return {min:lo,max:hi,mid:(lo+hi)/2};
     }
     const clean = String(txt).toLowerCase().replace(/[,\s]/g,'').replace(/[–—]/g,'-');
-    // capture "a-bk" or "a-bm" or "ak-bk"
     const m = clean.match(/(\d+(?:\.\d+)?)(k|m)?-(\d+(?:\.\d+)?)(k|m)?/i);
     if (!m) {
-      // single number like "50k"
       const s = clean.match(/(\d+(?:\.\d+)?)(k|m)?/i);
       const v = s ? toNumber(s[1], s[2]) : 0;
       return {min:v,max:v,mid:v};
@@ -295,6 +313,8 @@
     if (r2) return parseInt(r2[1],10);
     return null;
   }
+
+  // Add stage badges to intervention rows
   function ensureStageChips(scope = document) {
     scope.querySelectorAll('.intervention-row').forEach(row => {
       const nameCell = row.querySelector('.name-cell');
@@ -317,11 +337,13 @@
       }
     });
   }
+
+  // Convert name to a normalized family string
   function familyFromName(name) {
     return name?.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || '';
   }
 
-  /* ---------- Duplicate + stage gating ---------- */
+  /* ---------- Duplicate selection handling ---------- */
   function updateDuplicateBlocking() {
     const selectedNames = Array.from(state.selected).map(id => RAW.find(r=>r.id===id)?.name);
     qsa('.intervention-row').forEach(el => {
@@ -344,6 +366,7 @@
     });
   }
 
+  /* ---------- Rating recalculation with effects ---------- */
   async function recalcRatings() {
     RAW.forEach(r => { r.currentRating = r.rating; r.activeNotes = []; });
 
@@ -379,6 +402,7 @@
     updateDuplicateBlocking();
   }
 
+  // Render updated ratings in table
   function renderRatings() {
     RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
@@ -390,7 +414,7 @@
     });
   }
 
-  /* ---------- Totals + budget check ---------- */
+  /* ---------- Totals and budget warning ---------- */
   function updateStats() {
     qs('#selCount').textContent = state.selected.size;
 
@@ -407,12 +431,12 @@
     qs('#totalCost').textContent = fmtMoney(sumMid);
     qs('#costTracker').textContent = fmtMoney(sumMid);
 
-    // warn if the conservative (max) total exceeds the budget
+    // Show over-budget warning if max cost exceeds global budget
     const warn = GLOBAL_BUDGET > 0 && sumMax > GLOBAL_BUDGET;
     qs('#budgetWarn').classList.toggle('show', warn);
   }
 
-  /* ---------- Filter + sort + render ---------- */
+  /* ---------- Filtering and sorting ---------- */
   function filterRows() {
     RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
@@ -439,7 +463,7 @@
       case 'theme':  items.sort((a,b)=> a.originalIndex - b.originalIndex); break;
     }
 
-    // Hide theme headers; remove existing category headers
+    // Remove old headers and append rows in sorted order
     qsa('.theme-header').forEach(th => th.style.display = 'none');
     qsa('.category-header').forEach(ch => ch.remove());
 
@@ -474,6 +498,7 @@
     updateDuplicateBlocking();
   }
 
+  /* ---------- Stage-based constraints ---------- */
   function applyStageConstraints() {
     const maxSel = {};
     RAW.forEach(r => {
@@ -506,7 +531,7 @@
     });
   }
 
-  /* ---------- Controls ---------- */
+  /* ---------- Control event listeners ---------- */
   qs('#classSelect').addEventListener('change', e => { state.activeClass = e.target.value; filterRows(); });
   qs('#searchBox').addEventListener('input', e => { state.query = e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden', !state.query); });
   qs('#clearSearch').addEventListener('click', e => { state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
@@ -518,7 +543,7 @@
     renderSorted();
   });
 
-  // Checkbox selection
+  // Checkbox selection handler
   qsa('.select-intervention').forEach(cb => cb.addEventListener('change', async () => {
     if(cb.checked) {
       const r = RAW.find(x => x.id===cb.dataset.id);
@@ -531,7 +556,7 @@
     await recalcRatings();
   }));
 
-  // Description toggle
+  // Description toggle button
   qsa('.toggle-desc').forEach(btn => btn.addEventListener('click', e => {
     const row = btn.closest('.intervention-row');
     const desc = row?.nextElementSibling;
@@ -545,11 +570,12 @@
   filterRows();
 })();
 </script>
-<!-- ensure CSRF cookie exists and give a hidden input fallback -->
+
+<!-- CSRF token fallback for AJAX -->
 <form id="csrfForm" style="display:none">{% csrf_token %}</form>
 
 <script>
-// ===== URLs built from Django names (no hardcoded strings) =====
+// ===== API URLs for intervention list and save =====
 const METRICS_ID = {{ metrics_id|default:"null" }};
 const LIST_URL = METRICS_ID ? "{% url 'intervention_selection_list_api' 0 %}".replace('/0/', `/${METRICS_ID}/`) : null;
 const SAVE_URL = METRICS_ID ? "{% url 'intervention_selection_save_api' 0 %}".replace('/0/', `/${METRICS_ID}/`) : null;
@@ -563,10 +589,10 @@ function getCsrfToken(){
   return getCookie('csrftoken') || (document.querySelector('#csrfForm [name=csrfmiddlewaretoken]')?.value || '');
 }
 
-// ===== simple state of selected IDs =====
+// ===== Selected IDs state =====
 const selected = new Set();
 
-// preload previously saved selections
+// Preload saved selections from server
 async function preloadSelections(){
   if (!LIST_URL) return;
   const res = await fetch(LIST_URL, { credentials: 'same-origin' });
@@ -586,7 +612,7 @@ async function preloadSelections(){
   });
 }
 
-// save current selection set
+// Save current selection set to server
 async function saveSelections(){
   if (!SAVE_URL) { alert('No active project to save against.'); return; }
   const ids = Array.from(selected).map(Number);
@@ -604,10 +630,10 @@ async function saveSelections(){
   }
 }
 
-// hook the Save button (ensure your button has id="saveBtn")
+// Hook Save button
 document.getElementById('saveBtn')?.addEventListener('click', saveSelections);
 
-// kick off preload after the DOM is ready
+// Kick off preloading after DOM ready
 document.addEventListener('DOMContentLoaded', preloadSelections);
 </script>
 

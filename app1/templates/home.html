@@ -1,18 +1,20 @@
-{% extends "base.html" %}
+{% extends "base.html" %} 
 {% load static %}
 
 {% block head %}
 <style>
+  /* Keyframes for the animated background gradient */
   @keyframes Animation {
     0%{background-position:10% 0%}
     50%{background-position:91% 100%}
     100%{background-position:10% 0%}
   }
 
+  /* Full-screen animated background pattern */
   .animated-pattern {
     position: fixed;
     inset: 0;
-    z-index: -10;
+    z-index: -10; /* ensures it stays behind content */
     background-image:
       linear-gradient(135deg,
         #15b97b 0%,
@@ -28,16 +30,17 @@
     animation: Animation 15s ease-in-out infinite;
   }
 
-  /* Hero styles */
+  /* Hero Section container styling */
   .hero-container {
     max-width: 7xl;
     margin: 0 auto;
     padding: 6rem 1.5rem;
     text-align: center;
-    z-index: 10;
+    z-index: 10; /* keeps it above the background */
     position: relative;
   }
 
+  /* Hero card styling with blur and transparency */
   .hero-card {
     background: rgba(16, 185, 129, 0.8);
     backdrop-filter: blur(15px);
@@ -48,6 +51,7 @@
     display: inline-block;
   }
 
+  /* Hero title styling with gradient text */
   .hero-title {
     font-size: 3rem;
     font-weight: 900;
@@ -57,12 +61,14 @@
     -webkit-text-fill-color: transparent;
   }
 
+  /* Hero subtitle styling */
   .hero-subtitle {
     font-size: 1.25rem;
     margin-bottom: 2rem;
     color: rgba(255,255,255,0.9);
   }
 
+  /* Buttons container inside hero section */
   .hero-buttons a {
     display: inline-block;
     padding: 1rem 2.5rem;
@@ -72,6 +78,7 @@
     margin: 0.5rem;
   }
 
+  /* Primary calculator button styling */
   .btn-calculator {
     background: linear-gradient(90deg, #facc15, #4ade80);
     color: white;
@@ -83,6 +90,7 @@
     box-shadow: 0 15px 25px rgba(0,0,0,0.35);
   }
 
+  /* Login/Register button styling */
   .btn-login {
     border: 2px solid white;
     color: white;
@@ -95,7 +103,7 @@
     transform: translateY(-3px) scale(1.02);
   }
 
-  /* Card styles */
+  /* General card styling */
   .card {
     border-radius: 2rem;
     padding: 2.5rem 2rem;
@@ -114,6 +122,7 @@
     box-shadow: 0 25px 50px rgba(0,0,0,0.35);
   }
 
+  /* Icon container inside cards */
   .card-icon {
     height: 80px;
     width: 80px;
@@ -125,18 +134,21 @@
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
   }
 
+  /* Card title styling */
   .card h3 {
     font-size: 1.75rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
   }
 
+  /* Card description styling */
   .card p {
     color: rgba(255,255,255,0.9);
     font-size: 1rem;
     line-height: 1.6;
   }
 
+  /* Individual card color variations */
   .card-green { background: rgba(5,150,105,0.7); }
   .card-teal { background: rgba(20,184,166,0.7); }
   .card-yellow { background: rgba(250,204,21,0.7); }
@@ -145,6 +157,7 @@
 
 {% block content %}
 <div class="min-h-screen relative">
+  <!-- Animated background element -->
   <div class="animated-pattern"></div>
 
   <!-- Hero Section -->
@@ -153,16 +166,17 @@
       <h1 class="hero-title">Welcome to CarbonBalance</h1>
       <p class="hero-subtitle">Estimate carbon savings, explore interventions, and make smarter sustainability decisions.</p>
       <div class="hero-buttons">
+        <!-- Primary action buttons -->
         <a href="{% url 'calculator' %}" class="btn-calculator">Launch Calculator</a>
         <a href="{% url 'login' %}" class="btn-login">Login / Register</a>
       </div>
     </div>
   </section>
 
-  <!-- Features Section -->
+  <!-- Features Section displaying key benefits -->
   <section class="py-20 max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 z-10 relative">
 
-    <!-- Card 1 -->
+    <!-- Feature Card 1 -->
     <div class="card card-green">
       <div class="card-icon bg-green-700">
         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -173,7 +187,7 @@
       <p>Estimate potential carbon savings across building interventions with clear insights.</p>
     </div>
 
-    <!-- Card 2 -->
+    <!-- Feature Card 2 -->
     <div class="card card-teal">
       <div class="card-icon bg-teal-700">
         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -184,7 +198,7 @@
       <p>An intuitive interface that lets you focus on insights, not setup, for faster decisions.</p>
     </div>
 
-    <!-- Card 3 -->
+    <!-- Feature Card 3 -->
     <div class="card card-yellow">
       <div class="card-icon bg-yellow-700">
         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -197,7 +211,7 @@
 
   </section>
 
-  <!-- Footer -->
+  <!-- Footer Section -->
   <footer class="bg-green-900 text-white py-8 mt-20 relative z-10">
     <div class="max-w-6xl mx-auto text-center text-sm">
       © {{ now|date:"Y" }} CarbonBalance — Built for sustainability and smarter living.

@@ -3,30 +3,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Ensure proper scaling on mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sustainability App – Input</title>
+    <!-- Include Tailwind CSS from CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <!-- Main container for the form -->
     <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6">
+        <!-- Page heading -->
         <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Set Target Impact Ratings & Global Budget</h2>
+
+        <!-- Form for submitting budget and target ratings -->
         <form action="/calculator/" method="post" class="space-y-4">
             {% csrf_token %}
             
+            <!-- Global budget input field -->
             <div>
                 <label for="global_budget" class="block text-gray-700 font-semibold mb-1">Total Budget (AUD):</label>
-                <input type="number" name="global_budget" id="global_budget" value="1000000" min="0" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                <input 
+                    type="number" 
+                    name="global_budget" 
+                    id="global_budget" 
+                    value="1000000" 
+                    min="0" 
+                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
             </div>
 
+            <!-- Loop through class_targets to create inputs for each class -->
             {% for entry in class_targets %}
                 <div>
+                    <!-- Label for class-specific target input -->
                     <label for="class_{{ entry.class }}" class="block text-gray-700 font-semibold mb-1">{{ entry.class }}</label>
-                    <input type="number" name="class_{{ entry.class }}" id="class_{{ entry.class }}" value="{{ entry.target_rating|floatformat:0 }}" min="0" step="1" class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    
+                    <!-- Input field for the target rating of this class -->
+                    <input 
+                        type="number" 
+                        name="class_{{ entry.class }}" 
+                        id="class_{{ entry.class }}" 
+                        value="{{ entry.target_rating|floatformat:0 }}" 
+                        min="0" 
+                        step="1" 
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
                 </div>
             {% endfor %}
 
+            <!-- Submit button to generate interventions -->
             <div class="flex justify-center mt-4">
-                <input type="submit" value="Generate Interventions" class="bg-green-500 text-white font-semibold px-6 py-2 rounded-md hover:bg-green-600 cursor-pointer">
+                <input 
+                    type="submit" 
+                    value="Generate Interventions" 
+                    class="bg-green-500 text-white font-semibold px-6 py-2 rounded-md hover:bg-green-600 cursor-pointer"
+                >
             </div>
         </form>
     </div>

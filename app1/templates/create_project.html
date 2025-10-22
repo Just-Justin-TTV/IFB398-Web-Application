@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %} 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,9 +6,10 @@
   <title>Create Project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Tailwind -->
+  <!-- Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    // Tailwind configuration extension for brand colors and border radius
     tailwind.config = {
       theme: {
         extend: {
@@ -19,16 +20,17 @@
     }
   </script>
 
-  <!-- Material Icons -->
+  <!-- Material Icons for sidebar and buttons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
 <div class="flex min-h-screen">
 
-  <!-- Sidebar -->
+  <!-- Sidebar navigation -->
   <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
     <div class="px-5 py-6 border-b">
+      <!-- User avatar and greeting -->
       <div class="flex items-center gap-3">
         <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
         <div>
@@ -38,6 +40,7 @@
       </div>
     </div>
 
+    <!-- Sidebar links -->
     <nav class="px-3 py-4 space-y-1">
       <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
         <span class="material-icons text-[18px]">dashboard</span> Dashboard
@@ -46,8 +49,6 @@
       <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow">
         <span class="material-icons text-[18px]">folder</span> Projects
       </a>
-
-      
 
       <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
         <span class="material-icons text-[18px]">description</span> Reports
@@ -59,9 +60,9 @@
     </nav>
   </aside>
 
-  <!-- Main -->
+  <!-- Main content -->
   <main class="flex-1">
-    <!-- Top header -->
+    <!-- Header with page title and back link -->
     <header class="bg-white border-b">
       <div class="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
         <div>
@@ -77,7 +78,7 @@
 
     <div class="max-w-4xl mx-auto px-6 py-8">
 
-      <!-- Django messages -->
+      <!-- Display Django messages -->
       {% if messages %}
         <div class="mb-4 space-y-2">
           {% for message in messages %}
@@ -91,11 +92,13 @@
         </div>
       {% endif %}
 
-      <!-- Form card -->
+      <!-- Project creation form -->
       <form id="projectForm" method="post" action="{% url 'create_project' %}" class="bg-white border rounded-2xl shadow-sm p-6 md:p-8">
         {% csrf_token %}
 
+        <!-- Form fields grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Project Name input -->
           <div class="md:col-span-2">
             <label for="project_name" class="block text-sm font-medium text-gray-700 mb-1">Project Name <span class="text-red-500">*</span></label>
             <input id="project_name" name="project_name" type="text" required
@@ -103,12 +106,14 @@
                    class="w-full rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
           </div>
 
+          <!-- Location input -->
           <div>
             <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
             <input id="location" name="location" type="text" placeholder="e.g. Sydney, NSW"
                    class="w-full rounded-xl border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
           </div>
 
+          <!-- Project Type select -->
           <div>
             <label for="project_type" class="block text-sm font-medium text-gray-700 mb-1">Project Type <span class="text-red-500">*</span></label>
             <select id="project_type" name="project_type" required
@@ -123,14 +128,16 @@
           </div>
         </div>
 
-        <!-- Sticky action bar -->
+        <!-- Sticky bottom action bar -->
         <div class="sticky bottom-0 -mx-6 md:-mx-8 mt-8 bg-white/90 backdrop-blur border-t px-6 md:px-8 py-4 rounded-b-2xl">
           <div class="flex justify-end gap-3">
+            <!-- Cancel button -->
             <a href="{% url 'projects' %}"
                class="inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm hover:bg-gray-50">
               Cancel
             </a>
 
+            <!-- Next button -->
             <button type="submit" id="nextBtn"
                     class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2 text-white text-sm font-medium shadow-sm hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed">
               <span class="material-icons text-[18px]">arrow_forward</span>
@@ -144,22 +151,27 @@
 </div>
 
 <script>
-  // Simple client-side validation to enable/disable Next button
+  // Client-side form validation and submit handling
   (function () {
     const form = document.getElementById('projectForm');
     const nameEl = document.getElementById('project_name');
     const typeEl = document.getElementById('project_type');
     const nextBtn = document.getElementById('nextBtn');
 
+    // Validate required fields and enable/disable Next button
     function validate() {
       const ok = nameEl.value.trim().length > 0 && typeEl.value.trim().length > 0;
       nextBtn.disabled = !ok;
     }
+
+    // Attach event listeners to inputs
     nameEl.addEventListener('input', validate);
     typeEl.addEventListener('change', validate);
+
+    // Initial validation on page load
     validate();
 
-    // Prevent double submit
+    // Prevent double submission by disabling Next button on submit
     form.addEventListener('submit', function () {
       nextBtn.disabled = true;
       nextBtn.classList.add('opacity-60');
