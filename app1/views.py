@@ -1,16 +1,12 @@
-# app1/views.py 
-
+# app1/views.py
 import json
 import logging
 import re
-from io import BytesIO
 from datetime import timedelta
-from django.template.loader import get_template
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Any, List
+
 from django.contrib import messages
-from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -29,6 +25,10 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from io import BytesIO
+
 from .models import (
     ClassTargets,
     InterventionDependencies,
@@ -36,7 +36,8 @@ from .models import (
     Interventions,
     Metrics,
     User as AppUser,
-    InterventionSelection,  # Stores selected interventions per project
+    # NEW: table that stores selections per project (ensure this exists in models.py)
+    InterventionSelection,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,10 +47,7 @@ logger = logging.getLogger(__name__)
 # =========================
 
 def _resolve_app_user(request: HttpRequest) -> Optional[AppUser]:
-    """
-    Map the Django auth user to the AppUser row by username/email.
-    Returns None if user is not authenticated or no matching AppUser found.
-    """
+    """Map the Django auth user to your AppUser row (by username/email)."""
     user = getattr(request, "user", None)
     if not getattr(user, "is_authenticated", False):
         return None
@@ -65,10 +63,6 @@ def _resolve_app_user(request: HttpRequest) -> Optional[AppUser]:
 
 
 def _num(value: Any, default: Optional[float] = None) -> Optional[float]:
-    """
-    Convert various string/number formats to float.
-    Handles units like AUD, %, k for thousand, commas, and dash replacements.
-    """
     if value is None:
         return default
     s = str(value).strip().lower()
@@ -87,10 +81,6 @@ def _num(value: Any, default: Optional[float] = None) -> Optional[float]:
 
 
 def _to_int(value: Any) -> Optional[int]:
-    """
-    Safely convert input to int.
-    Returns None for empty strings, None, or 'null'.
-    """
     if value in (None, "", "null"):
         return None
     try:
@@ -99,13 +89,13 @@ def _to_int(value: Any) -> Optional[int]:
         return None
 
 
-NUM_RE = re.compile(r"[^0-9\.\-]")  # Regex to keep digits, dot, and minus only
+NUM_RE = re.compile(r"[^0-9\.\-]")  # keep digits, dot, minus only
 
 def _to_dec(value: Any, *, default: Optional[Decimal] = None) -> Optional[Decimal]:
     """
-    Safely convert user input to Decimal.
-    Cleans input by removing commas, units, %, spaces.
-    Returns default for invalid or special values like NaN, inf, or empty strings.
+    Safely convert many user inputs to Decimal.
+    - Removes commas, units, %, spaces (keeps only 0-9 . -)
+    - Treats '', None, 'null', 'nan', 'inf' as invalid -> returns default
     """
     if value in (None, "", "null"):
         return default
@@ -124,8 +114,8 @@ def _to_dec(value: Any, *, default: Optional[Decimal] = None) -> Optional[Decima
 
 def _unique_project_code(project_name: str) -> str:
     """
-    Generate a unique slug for Metrics.project_code.
-    If the slug exists, append a number suffix: project, project-2, project-3...
+    Create a unique, readable slug for Metrics.project_code.
+    Tries 'my-project', then 'my-project-2', 'my-project-3', ...
     """
     base = slugify(project_name) or "project"
     code = base
@@ -138,12 +128,11 @@ def _unique_project_code(project_name: str) -> str:
 
 def _get_current_metric(request) -> Metrics:
     """
-    Determine which Metrics row should be used for calculations.
+    Resolve which Metrics row the calculator should use.
     Priority:
-      1) metrics_id from POST/GET
+      1) metrics_id passed in POST/GET
       2) metrics_id stored in session
-      3) latest project for this user
-      4) fallback: create a new Metrics row if none exists
+      3) latest project for this AppUser (fallback)
     """
     app_user = _resolve_app_user(request)
     metrics_id = (
@@ -162,22 +151,21 @@ def _get_current_metric(request) -> Metrics:
     if not m:
         m = Metrics.objects.create(user=app_user if app_user else None)
 
-    # Store current metrics ID in session
-    request.session["metrics_id"] = m.id
+    request.session["metrics_id"] = m.id  # keep everyone in sync
     request.session.modified = True
     return m
 
 
 # =========================
-# Create & Edit Project
+# Create & Edit Project  → saves to Metrics
 # =========================
 
 @login_required(login_url='login')
 def create_project(request: HttpRequest):
     """
-    Handle creating a new project (Metrics row).
-    POST -> create Metrics with project details and save session info.
-    GET -> render create_project.html form.
+    Step 1 – basic project card.
+    Creates a Metrics row (project_name, location, building_type) and
+    then sends the user to the Building Metrics page.
     """
     if request.method == "POST":
         project_name = (request.POST.get("project_name") or "").strip()
@@ -197,7 +185,7 @@ def create_project(request: HttpRequest):
             building_type=project_type,
         )
 
-        # Save project IDs in session
+        # track in session so it shows on Projects & Dashboard
         ids = list(request.session.get("my_project_ids", []))
         if m.id not in ids:
             ids.append(m.id)
@@ -205,6 +193,7 @@ def create_project(request: HttpRequest):
         request.session["metrics_id"] = m.id
         request.session.modified = True
 
+        # >>> go to the Building Metrics page
         return redirect("carbon")
 
     return render(request, "create_project.html")
@@ -213,9 +202,9 @@ def create_project(request: HttpRequest):
 @login_required(login_url='login')
 def metrics_edit(request, pk: int):
     """
-    Edit basic project info stored in Metrics.
-    GET -> render prefilled form
-    POST -> save changes and redirect to Projects
+    Edit basic project info stored in Metrics (project_name, location, building_type).
+    GET -> renders the same form as create, prefilled
+    POST -> saves and redirects to Projects (or wherever you like)
     """
     m = get_object_or_404(Metrics, pk=pk)
 
@@ -225,7 +214,7 @@ def metrics_edit(request, pk: int):
         m.building_type = (request.POST.get("project_type") or m.building_type or "").strip()
         m.save()
 
-        # Update session with current Metrics ID
+        # keep active in session for calculator/interventions
         request.session["metrics_id"] = m.id
         request.session.modified = True
 
@@ -251,12 +240,12 @@ CLASS_ALIASES = {
 @require_GET
 def interventions_api(request):
     """
-    Return interventions as JSON, optionally filtered by class/theme.
-    Includes current project metrics (if metrics_id in session).
+    Returns interventions as JSON, optionally filtered by class/theme.
+    Includes current project's metrics (if metrics_id in session).
     """
     ui_key = (request.GET.get("cls") or "").strip().lower()
 
-    # Get metrics for current project
+    # Get metrics for current project from session
     metrics = {"gifa_m2": 0, "building_footprint_m2": 0}
     metrics_id = request.session.get("metrics_id")
     if metrics_id:
@@ -268,7 +257,7 @@ def interventions_api(request):
         except Exception:
             logger.exception("Error fetching metrics for metrics_id=%s", metrics_id)
 
-    # Fetch interventions with optional filtering by class
+    # Fetch interventions (dynamic SQL to handle reserved column "class")
     try:
         with connection.cursor() as cur:
             desc = connection.introspection.get_table_description(cur, "Interventions")
@@ -322,8 +311,7 @@ def interventions_api(request):
 def save_metrics(request: HttpRequest) -> JsonResponse:
     """
     Save building metrics for the current project.
-    Handles Decimal, Integer, Boolean, and string fields.
-    Stores Total Budget and updates session with current Metrics ID.
+    Stores the manually entered Total Budget (global_budget) into total_budget_aud.
     """
     try:
         payload = json.loads(request.body.decode("utf-8") or "{}")
@@ -336,7 +324,7 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     if not m:
         m = Metrics(user=_resolve_app_user(request))
 
-    # Save Decimal fields safely
+    # --- Decimal fields ---
     decimal_fields = [
         "gifa_m2",
         "external_wall_area_m2",
@@ -349,9 +337,10 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     ]
     for field in decimal_fields:
         if hasattr(m, field):
+            # Use 0 default so non-null DecimalFields won't explode
             setattr(m, field, _to_dec(payload.get(field), default=Decimal("0")))
 
-    # Save Integer fields
+    # --- Integer fields ---
     if hasattr(m, "num_apartments"):
         m.num_apartments = _to_int(payload.get("num_apartments"))
     if hasattr(m, "num_keys"):
@@ -359,30 +348,30 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
     if hasattr(m, "num_wcs"):
         m.num_wcs = _to_int(payload.get("num_wcs"))
 
-    # Save Boolean and string fields
+    # --- Boolean & string fields ---
     if hasattr(m, "basement_present"):
         bp = payload.get("basement_present")
         m.basement_present = str(bp).lower() in ("1", "true", "yes", "on")
     if hasattr(m, "building_type"):
         m.building_type = payload.get("building_type") or getattr(m, "building_type", None)
 
-    # Save total budget safely
+    # --- Total budget logic (default 0 for invalid/missing) ---
     if hasattr(m, "total_budget_aud"):
         global_budget = payload.get("global_budget")
         m.total_budget_aud = _to_dec(global_budget, default=Decimal("0"))
 
-    # Ensure ownership
+    # --- Ensure user ownership ---
     if not m.user:
         m.user = _resolve_app_user(request)
 
-    # Save metrics and handle errors
+    # Save with diagnostics (to avoid 500s)
     try:
         m.save()
     except Exception as e:
         logger.exception("Failed to save Metrics")
         return JsonResponse({"ok": False, "error": f"{e.__class__.__name__}: {e}"}, status=400)
 
-    # Update session with current Metrics
+    # Persist session
     request.session["metrics_id"] = m.id
     request.session.modified = True
 
@@ -395,23 +384,18 @@ def save_metrics(request: HttpRequest) -> JsonResponse:
 
 @login_required(login_url='login')
 def carbon_view(request):
-    """
-    Render the carbon page with all interventions grouped by theme/class.
-    Converts DB interventions to JSON for front-end use.
-    """
     interventions = Interventions.objects.all()
     interventions_dict = {}
 
-    # Reverse lookup for class aliases
     CLASS_ALIASES_REVERSE = {}
     for key, aliases in CLASS_ALIASES.items():
         for a in aliases:
             CLASS_ALIASES_REVERSE[a.lower()] = key
 
-    # Group interventions by theme/class
     for i in interventions:
         db_theme = (i.theme or "other").lower()
         cls_key = CLASS_ALIASES_REVERSE.get(db_theme, "other")
+
         interventions_dict.setdefault(cls_key, []).append(
             {
                 "id": i.id,
@@ -422,7 +406,6 @@ def carbon_view(request):
             }
         )
 
-    # Define display classes for front-end
     classes = [
         {"key": "carbon", "label": "Carbon", "target": 80},
         {"key": "health", "label": "Health & Wellbeing", "target": 60},
@@ -443,9 +426,6 @@ def carbon_view(request):
 
 @login_required(login_url='login')
 def get_intervention_effects(request):
-    """
-    Given a source intervention name, return adjusted effects on target interventions.
-    """
     source_name = request.GET.get("source")
     if not source_name:
         return JsonResponse({"error": "No source provided"}, status=400)
@@ -479,11 +459,6 @@ def get_intervention_effects(request):
 
 @login_required(login_url='login')
 def calculator(request: HttpRequest):
-    """
-    Render calculator view or process calculator POST requests.
-    GET -> render class targets
-    POST -> delegate to _process_calculator_post
-    """
     if request.method == "GET":
         class_targets = list(ClassTargets.objects.values("class_name", "target_rating"))
         return render(request, "calculator.html", {"class_targets": class_targets})
@@ -493,10 +468,6 @@ def calculator(request: HttpRequest):
 def intervention_effects(
     metric, interventions, selected_ids: Optional[List[int]] = None
 ):
-    """
-    Calculate adjusted intervention ratings based on dependencies, stage, and selection.
-    Returns interventions grouped by class/theme.
-    """
     grouped_interventions = {}
     max_stage = 0
 
@@ -508,12 +479,12 @@ def intervention_effects(
                 max_stage = max(max_stage, int(stage_val))
 
     for i in interventions:
-        # Skip interventions below max stage if selection exists
+        # Stage filter: skip interventions below max_stage if selection exists
         stage_val = getattr(i, "stage", 0) or 0
         if selected_ids and stage_val < max_stage:
             continue
 
-        # Dependency checks
+        # Dependency check: skip if metric thresholds not met
         include = True
         deps = InterventionDependencies.objects.filter(intervention_id=i.id)
         for dep in deps:
@@ -532,7 +503,7 @@ def intervention_effects(
         if not include:
             continue
 
-        # Base rating adjustment
+        # Base rating logic
         adjusted_rating = float(i.intervention_rating or 0)
         if selected_ids and i.id in selected_ids:
             adjusted_rating *= 1.1  # +10% rating for selected interventions
@@ -554,38 +525,24 @@ def intervention_effects(
     return grouped_interventions
 
 
-
 def _process_calculator_post(request: HttpRequest) -> HttpResponse:
-    """
-    Handle POST requests for the calculator page.
-    Reads selected interventions from form data or JSON body,
-    applies stage filtering, calculates adjusted ratings,
-    and renders the results template.
-    """
-    # Get the current project metrics for this user/session
+    # Use the current/edited project instead of "latest for this user"
     metric = _get_current_metric(request)
 
-    # Attempt to read selected intervention IDs from form POST
+    # read selected ids from form/json
     try:
         selected_ids = request.POST.getlist("selected_ids") or []
     except Exception:
         selected_ids = []
-
-    # If not found in form, try parsing JSON body
     if not selected_ids:
         try:
             payload = json.loads(request.body.decode("utf-8") or "{}")
             selected_ids = payload.get("selected_ids") or []
         except Exception:
             selected_ids = []
-
-    # Ensure all IDs are integers
     selected_ids = [int(x) for x in selected_ids if str(x).strip().isdigit()]
 
-    # Get all interventions from DB
     interventions_qs = list(Interventions.objects.all())
-
-    # If user selected interventions, filter by max stage
     if selected_ids:
         max_stage = max(
             [
@@ -594,15 +551,12 @@ def _process_calculator_post(request: HttpRequest) -> HttpResponse:
                 if i.id in selected_ids
             ]
         )
-        # Only include interventions at or above the max stage
         interventions_qs = [
             i for i in interventions_qs if (getattr(i, "stage", 0) or 0) >= max_stage
         ]
 
-    # Calculate grouped interventions with adjusted ratings
     grouped = intervention_effects(metric, interventions_qs, selected_ids)
 
-    # Render the results page
     return render(
         request,
         "calculator_results.html",
@@ -619,34 +573,30 @@ def _process_calculator_post(request: HttpRequest) -> HttpResponse:
                 {"key": "biodiversity", "label": "Biodiversity", "target": 20},
             ],
             "cap_high": 300000,
-            # Include current project ID for frontend API calls
+            # Pass active project id so frontend can call list/save APIs
             "metrics_id": metric.id,
         },
     )
 
 
 # =========================
-# Intervention Selection APIs
+# NEW: Intervention Selection APIs
 # =========================
 
 @require_GET
 @login_required(login_url='login')
 def intervention_selection_list_api(request, metrics_id: int):
     """
-    Return all interventions with a boolean 'selected' flag
-    for the specified Metrics project.
+    Return all interventions with a boolean 'selected' for the given Metrics project.
     """
-    # Get the Metrics project or 404
     project = get_object_or_404(Metrics, pk=metrics_id)
 
-    # Get all currently selected intervention IDs for this project
     selected_ids = set(
         InterventionSelection.objects
         .filter(project=project)
         .values_list("intervention_id", flat=True)
     )
 
-    # Build response list with selection status
     items = []
     for i in Interventions.objects.all().order_by("theme", "name"):
         items.append({
@@ -666,13 +616,11 @@ def intervention_selection_list_api(request, metrics_id: int):
 @login_required(login_url='login')
 def intervention_selection_save_api(request, metrics_id: int):
     """
-    Save the selected interventions for a Metrics project.
-    The DB will exactly match the provided list of selected_ids.
-    Expects a JSON body: {"selected_ids": [1,2,3,...]}
+    Mirror-save: after the user submits selected_ids, DB will exactly match that list.
+    Body: {"selected_ids": [1,2,3,...]}
     """
     project = get_object_or_404(Metrics, pk=metrics_id)
 
-    # Parse JSON payload
     try:
         payload = json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
@@ -683,40 +631,36 @@ def intervention_selection_save_api(request, metrics_id: int):
         return HttpResponseBadRequest("selected_ids must be a list")
 
     try:
-        # Ensure all IDs are integers
         selected_ids = {int(x) for x in selected_ids if str(x).isdigit()}
     except Exception:
         return HttpResponseBadRequest("selected_ids must contain integers")
 
-    # Existing selected interventions in DB
     existing_ids = set(
         InterventionSelection.objects
         .filter(project=project)
         .values_list("intervention_id", flat=True)
     )
 
-    # Determine additions and deletions
     to_add = selected_ids - existing_ids
     to_del = existing_ids - selected_ids
 
     app_user = _resolve_app_user(request)
 
-    # Apply DB changes atomically
     with transaction.atomic():
         if to_del:
             InterventionSelection.objects.filter(project=project, intervention_id__in=to_del).delete()
         if to_add:
-            rows = [
-                InterventionSelection(
-                    project=project,
-                    intervention_id=iid,
-                    selected_by=app_user,  # Record the app user who selected
+            rows = []
+            for iid in to_add:
+                rows.append(
+                    InterventionSelection(
+                        project=project,
+                        intervention_id=iid,
+                        selected_by=app_user,   # <-- AppUser, not request.user
+                    )
                 )
-                for iid in to_add
-            ]
             InterventionSelection.objects.bulk_create(rows, ignore_conflicts=True)
 
-    # Return updated selection info
     return JsonResponse({
         "ok": True,
         "added": sorted(to_add),
@@ -727,16 +671,17 @@ def intervention_selection_save_api(request, metrics_id: int):
 
 
 # =========================
-# Project List / Detail Views
+# Project List / Detail
 # =========================
 
 @login_required(login_url='login')
 def projects_view(request: HttpRequest):
     """
-    Display all projects in Metrics table.
-    Supports optional search filtering by name, type, or location.
+    Show ALL projects in the Metrics table.
+    Use the search box to filter by name / type / location.
     """
     q = (request.GET.get("q") or "").strip()
+
     qs = Metrics.objects.all().order_by("-updated_at", "-created_at")
 
     if q:
@@ -752,19 +697,18 @@ def projects_view(request: HttpRequest):
 @login_required(login_url='login')
 def project_detail_view(request, pk: int):
     """
-    View or edit a project's details.
-    GET with ?edit=1 enables editable mode.
-    POST saves submitted changes.
+    View or edit a project's full details. Anyone logged in can edit.
+    Use ?edit=1 to toggle editable mode (GET). POST saves changes.
     """
     p = get_object_or_404(Metrics, id=pk)
 
     if request.method == "POST":
-        # Update string fields
+        # strings
         p.project_name = (request.POST.get("project_name") or p.project_name or "").strip()
         p.location = (request.POST.get("location") or p.location or "").strip()
         p.building_type = (request.POST.get("building_type") or p.building_type or "").strip()
 
-        # Update decimal fields
+        # decimals
         for f in [
             "gifa_m2",
             "external_wall_area_m2",
@@ -774,11 +718,12 @@ def project_detail_view(request, pk: int):
             "roof_percent_gifa",
             "basement_size_m2",
             "basement_percent_gifa",
+            
         ]:
             if hasattr(p, f):
                 setattr(p, f, _to_dec(request.POST.get(f), default=Decimal("0")))
 
-        # Update integer and boolean fields
+        # ints + bool
         p.num_apartments = _to_int(request.POST.get("num_apartments"))
         p.num_keys = _to_int(request.POST.get("num_keys"))
         p.num_wcs = _to_int(request.POST.get("num_wcs"))
@@ -786,18 +731,16 @@ def project_detail_view(request, pk: int):
 
         p.save()
 
-        # Store as current project in session
+        # keep this project “active” for interventions page
         request.session["metrics_id"] = p.id
         request.session.modified = True
 
-        # Redirect to interventions page if requested
         if request.POST.get("next") == "interventions":
             return redirect("carbon")
 
-        # Redirect back to detail page in edit mode with saved flag
         return redirect(f"{reverse('project_detail', args=[p.id])}?edit=1&saved=1")
 
-    # GET request: display project details
+    # GET
     can_edit = request.GET.get("edit") == "1"
     request.session["metrics_id"] = p.id
     request.session.modified = True
@@ -805,13 +748,10 @@ def project_detail_view(request, pk: int):
 
 
 # =========================
-# Authentication + User Settings
+# Authentication + Settings
 # =========================
 
 def login_view(request: HttpRequest):
-    """
-    Render login page and handle login submissions.
-    """
     if request.user.is_authenticated:
         return redirect("home")
     if request.method == "POST":
@@ -828,9 +768,6 @@ def login_view(request: HttpRequest):
 
 
 def logout_view(request: HttpRequest):
-    """
-    Logout user and redirect to login page.
-    """
     if request.method == "POST":
         logout(request)
         messages.success(request, "Logged out successfully.")
@@ -839,9 +776,6 @@ def logout_view(request: HttpRequest):
 
 
 def register_view(request: HttpRequest):
-    """
-    Handle user registration. Creates user and logs in upon success.
-    """
     if request.method == "POST":
         username = request.POST.get("username")
         email = request.POST.get("email")
@@ -866,24 +800,24 @@ def register_view(request: HttpRequest):
 
 @login_required
 def settings_view(request):
-    """
-    Display and handle user settings page.
-    Includes theme selection, profile info update, and password change.
-    """
     user = request.user
     current_theme = request.session.get('theme', 'light')
 
     if request.method == 'POST':
         try:
-            # Theme change
-            if 'theme_select' in request.POST:
+            # -------------------------
+            # Theme change - UPDATED TO INCLUDE HIGH CONTRAST
+            # -------------------------
+            if 'theme_select' in request.POST:  # This matches your select name
                 new_theme = request.POST.get('theme_select', 'light')
                 request.session['theme'] = new_theme
                 request.session.modified = True
                 messages.success(request, f"Theme changed to {new_theme} mode!")
                 return redirect('settings')
 
+            # -------------------------
             # Profile info update
+            # -------------------------
             if 'update_profile' in request.POST:
                 new_username = request.POST.get('username')
                 new_email = request.POST.get('email')
@@ -891,17 +825,21 @@ def settings_view(request):
                 if not new_username or not new_email:
                     raise ValueError("Username and email cannot be blank.")
 
+                # Check if username/email already exists
                 if User.objects.filter(username=new_username).exclude(id=user.id).exists():
                     raise ValueError("Username already exists.")
                 if User.objects.filter(email=new_email).exclude(id=user.id).exists():
                     raise ValueError("Email already exists.")
 
+                # Save updates
                 user.username = new_username
                 user.email = new_email
                 user.save()
                 messages.success(request, "Profile updated successfully!")
 
+            # -------------------------
             # Password change
+            # -------------------------
             if 'change_password' in request.POST:
                 current_password = request.POST.get('current_password')
                 new_password = request.POST.get('new_password')
@@ -916,6 +854,7 @@ def settings_view(request):
                 if not user.check_password(current_password):
                     raise ValueError("Current password is incorrect.")
 
+                # Set new password and keep user logged in
                 user.set_password(new_password)
                 user.save()
                 from django.contrib.auth import update_session_auth_hash
@@ -923,33 +862,33 @@ def settings_view(request):
                 messages.success(request, "Password changed successfully!")
 
         except ValueError as ve:
+            # Caught logical/user errors
             messages.error(request, f"Error: {ve}")
         except Exception as e:
+            # Catch unexpected errors
             messages.error(request, "Unexpected error occurred. Please try again later.")
+            # Optional: log the error
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Settings update failed: {e}")
 
         return redirect('settings')
 
-    # GET request: render settings page
-    context = {'user': user, 'current_theme': current_theme}
+    # GET request
+    context = {
+        'user': user,
+        'current_theme': current_theme
+    }
     return render(request, 'settings.html', context)
 
 
 @login_required(login_url='login')
 def home(request):
-    """
-    Render home page/dashboard.
-    """
     return render(request, "home.html")
 
 
 @login_required(login_url='login')
 def calculator_results(request):
-    """
-    Render calculator results page for a selected theme/class.
-    """
     cls = request.GET.get("cls", "carbon")
     interventions_qs = Interventions.objects.filter(theme=cls).order_by(
         "-intervention_rating", "cost_level"
@@ -957,17 +896,17 @@ def calculator_results(request):
 
     interventions = []
     for i in interventions_qs:
-        interventions.append({
-            "id": str(i.id),
-            "name": i.name,
-            "theme": i.theme,
-            "description": i.description,
-            "cost_level": float(i.cost_level or 0),
-            "intervention_rating": float(i.intervention_rating or 0),
-            "cost_range": getattr(i, "cost_range", ""),
-        })
-
-    metric = _get_current_metric(request)
+        interventions.append(
+            {
+                "id": str(i.id),
+                "name": i.name,
+                "theme": i.theme,
+                "description": i.description,
+                "cost_level": float(i.cost_level or 0),
+                "intervention_rating": float(i.intervention_rating or 0),
+                "cost_range": getattr(i, "cost_range", ""),
+            }
+        )
 
     return render(
         request,
@@ -984,34 +923,29 @@ def calculator_results(request):
                 {"key": "biodiversity", "label": "Biodiversity", "target": 20},
             ],
             "cap_high": 300000,
+            # also pass metrics_id here for the results view
             "metrics_id": metric.id,
         },
     )
 
 
-
-@login_required(login_url='login') 
+@login_required(login_url='login')
 def dashboard_view(request: HttpRequest):
     # --- Projects / budgets ---
-    # Get the 3 most recently updated or created projects
     latest_projects = Metrics.objects.order_by("-updated_at", "-created_at")[:3]
-    # Count total number of projects
     total_projects = Metrics.objects.count()
 
-    # Calculate average budget across all projects
     avg_budget = (
         Metrics.objects.aggregate(avg_budget=Avg("total_budget_aud"))["avg_budget"]
         or Decimal("0")
     )
 
     # --- Intervention stats ---
-    # Calculate average intervention rating across all interventions
     avg_intervention_rating = (
         Interventions.objects.aggregate(avg_rating=Avg("intervention_rating"))["avg_rating"]
         or 0
     )
 
-    # Find the theme with the highest average intervention rating
     top_theme_data = (
         Interventions.objects.values("theme")
         .annotate(avg_rating=Avg("intervention_rating"))
@@ -1021,11 +955,10 @@ def dashboard_view(request: HttpRequest):
     top_theme = top_theme_data["theme"] if top_theme_data else "N/A"
     top_theme_rating = round(top_theme_data["avg_rating"], 2) if top_theme_data else 0
 
-    # --- Year-over-year projects statistics (last 6 years including current) ---
+    # --- YoY: number of projects created per year (last 6 years incl. current) ---
     now = timezone.now()
     start_year = now.year - 5
 
-    # Count projects per year for the last 6 years
     yoy_raw = (
         Metrics.objects.annotate(y=ExtractYear("created_at"))
         .filter(y__gte=start_year, y__lte=now.year)
@@ -1034,14 +967,10 @@ def dashboard_view(request: HttpRequest):
         .order_by("y")
     )
 
-    # Map year to project count
     yoy_map = {row["y"]: int(row["n"]) for row in yoy_raw}
-    # Create labels for last 6 years
     yoy_labels = [str(y) for y in range(start_year, now.year + 1)]
-    # Get counts corresponding to labels, default to 0 if missing
     yoy_counts = [yoy_map.get(int(lbl), 0) for lbl in yoy_labels]
 
-    # Prepare context for template
     context = {
         "latest_projects": latest_projects,
         "total_projects": total_projects,
@@ -1059,22 +988,19 @@ def dashboard_view(request: HttpRequest):
 
 @login_required(login_url='login')
 def carbon_2_view(request):
-    # Render the Carbon 2 page
     return render(request, "carbon_2.html")
-
 
 @login_required(login_url='login')
 def reports_page(request: HttpRequest):
     """
     Reports overview page - shows all projects that can generate reports
     """
-    # Resolve the current application user
+    # Get all projects for the current user
     user = _resolve_app_user(request)
     if user:
-        # If user exists, get projects associated with user
         projects = Metrics.objects.filter(user=user).order_by("-updated_at", "-created_at")
     else:
-        # If no user, fallback to projects stored in session
+        # Fallback to session projects
         session_ids = request.session.get("my_project_ids", [])
         projects = Metrics.objects.filter(id__in=session_ids).order_by("-updated_at", "-created_at")
     
@@ -1082,13 +1008,11 @@ def reports_page(request: HttpRequest):
         "projects": projects
     })
 
-
 @login_required(login_url='login')
 def generate_report(request: HttpRequest, project_id: int):
     """
-    Generate a report for a specific project based on download type
+    Generate a report for a specific project
     """
-    # Get the project or return 404 if not found
     project = get_object_or_404(Metrics, id=project_id)
     
     # Check if user has access to this project
@@ -1098,7 +1022,6 @@ def generate_report(request: HttpRequest, project_id: int):
         if project.id not in session_ids:
             return redirect("reports")
     
-    # Determine report format
     download_format = request.GET.get('download')
     
     if download_format == 'pdf':
@@ -1108,28 +1031,28 @@ def generate_report(request: HttpRequest, project_id: int):
     else:
         return _generate_html_report(request, project)
 
-
 def _generate_html_report(request: HttpRequest, project: Metrics):
     """
-    Generate HTML report for a project including interventions and summary statistics
+    FINAL VERSION - All template variables covered
     """
-    # Get all intervention selections for this project
+    print("🔍 DEBUG: _generate_html_report STARTED")
+    
+    # Get interventions
     selections = InterventionSelection.objects.filter(project_id=project.id)
     intervention_ids = []
-
-    # Extract intervention IDs from selections
+    
     for s in selections:
         if hasattr(s, 'intervention_id') and s.intervention_id:
             intervention_ids.append(s.intervention_id)
     
-    # Get the interventions to display in the report
     if intervention_ids:
         selected_interventions = list(Interventions.objects.filter(id__in=intervention_ids))
     else:
-        # Fallback to first 5 interventions if none selected
         selected_interventions = list(Interventions.objects.all()[:5])
     
-    # Calculate theme-level statistics for table display
+    print(f"🔍 Found {len(selected_interventions)} interventions")
+    
+    # Calculate theme stats for the table
     theme_stats = {}
     for intervention in selected_interventions:
         theme = intervention.theme or 'Other'
@@ -1144,13 +1067,12 @@ def _generate_html_report(request: HttpRequest, project: Metrics):
                 'interventions': []
             }
         
-        # Accumulate counts, ratings, costs, and list of interventions per theme
         theme_stats[theme]['count'] += 1
         theme_stats[theme]['total_rating'] += rating
         theme_stats[theme]['total_cost'] += cost_level
         theme_stats[theme]['interventions'].append(intervention)
     
-    # Create aggregated table data for template
+    # Create table data
     available_interventions_data = []
     for theme, data in theme_stats.items():
         avg_rating = data['total_rating'] / data['count'] if data['count'] > 0 else 0
@@ -1163,25 +1085,25 @@ def _generate_html_report(request: HttpRequest, project: Metrics):
             'avg_cost': round(avg_cost, 1)
         })
     
-    # Create context including all variable names used in templates
+    # Create context with ALL possible variable names
     context = {
         'project': project,
         
-        # Provide multiple references for the same interventions list for template flexibility
+        # Provide ALL possible variable names for the detailed interventions list
         'selected_interventions': selected_interventions,
         'interventions': selected_interventions,
         'recommended_interventions': selected_interventions,
         'interventions_list': selected_interventions,
         'all_interventions': selected_interventions,
         
-        # Table data for themes
+        # Table data (this is working correctly)
         'available_interventions': available_interventions_data,
         'intervention_stats': available_interventions_data,
         
-        # Theme-level statistics
+        # Theme data
         'theme_impacts': theme_stats,
         
-        # Project summary information
+        # Project summary
         'metrics_summary': {
             'building_type': project.building_type or 'Not specified',
             'location': project.location or 'Not specified', 
@@ -1192,35 +1114,20 @@ def _generate_html_report(request: HttpRequest, project: Metrics):
             'created_date': project.created_at.strftime("%B %d, %Y"),
         },
         
-        # Current report date and total selected interventions
         'report_date': timezone.now().strftime("%B %d, %Y"),
         'total_selected': len(selected_interventions),
     }
     
-    # Render the HTML report template
-    return render(request, "report_template.html", context)
-
-
-def _generate_pdf_report(project: Metrics):
-    """
-    Generate PDF report (placeholder implementation)
-    """
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.pdf"'
+    print(f"🔍 Sending {len(selected_interventions)} interventions with multiple variable names")
+    print("🔍 DEBUG: _generate_html_report COMPLETED")
     
-    # Placeholder PDF content
-    response.write(b'PDF report generation would go here')
-    return response
-
+    return render(request, "report_template.html", context)
 
 def _generate_word_report(project: Metrics):
     """
     Build a .docx report with the same data you show in the HTML report.
     """
     # ---- reuse your existing data builder (same as in _generate_html_report) ----
-    # If you don’t have a helper, copy the aggregation from _generate_html_report here.
-    # Below I inline a small version that matches your current context shape.
-
     # Selected interventions
     selections = InterventionSelection.objects.filter(project_id=project.id)
     ids = [s.intervention_id for s in selections if getattr(s, "intervention_id", None)]
@@ -1243,16 +1150,76 @@ def _generate_word_report(project: Metrics):
     # ---- build the document ----
     doc = Document()
 
+    # Title
     h = doc.add_heading('Environmental Impact Report', level=0)
-    h.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    h.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Project meta
+    # Project meta - centered under title
+    project_meta = doc.add_paragraph()
+    project_meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    project_run = project_meta.add_run(f'{project.project_name}')
+    project_run.bold = True
+    
+    location_para = doc.add_paragraph()
+    location_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    location_para.add_run(f'{project.location} • {project.building_type or "Building Project"}')
+    
+    doc.add_paragraph()  # Spacing
+
+    # Project details section
+    doc.add_heading('Project Information', level=1)
     meta = doc.add_paragraph()
     meta.add_run(f'Project: {project.project_name}').bold = True
     meta.add_run(f'  •  Location: {project.location or "Not specified"}')
     doc.add_paragraph(f'Building Type: {project.building_type or "Not specified"}')
     doc.add_paragraph(f'Total Area: {project.gifa_m2 or 0} m²')
     doc.add_paragraph(f'Total Budget: ${project.total_budget_aud or 0:,.2f}')
+    doc.add_paragraph()
+
+    # INTRODUCTION SECTION
+    doc.add_heading('INTRODUCTION', level=1)
+    
+    intro_para1 = doc.add_paragraph()
+    intro_para1.add_run('This Sustainability Impact Report forms part of the comprehensive environmental assessment for ')
+    intro_para1.add_run(f'{project.project_name}').bold = True
+    intro_para1.add_run(f' located in {project.location or "the specified location"}. ')
+    intro_para1.add_run(f'The {project.building_type or "development"} represents a significant opportunity to implement industry-leading sustainability practices and environmental stewardship.')
+    
+    doc.add_paragraph('Our assessment has focused on several key areas critical to the project\'s long-term environmental performance:')
+    
+    # Key areas list
+    key_areas = [
+        "Carbon emissions reduction strategies",
+        "Water efficiency and management", 
+        "Energy performance optimization",
+        "Material selection and lifecycle analysis",
+        "Indoor environmental quality",
+        "Waste management and circularity",
+        "Biodiversity enhancement",
+        "Community and social value"
+    ]
+    
+    for area in key_areas:
+        para = doc.add_paragraph(area, style='List Bullet')
+    
+    # Project scale paragraph
+    scale_para = doc.add_paragraph()
+    scale_para.add_run('With a total development area of ')
+    scale_para.add_run(f'{project.gifa_m2 or 0:,.0f} m²')
+    if project.total_budget_aud:
+        scale_para.add_run(f' and an estimated project budget of ${project.total_budget_aud or 0:,.0f}')
+    scale_para.add_run(', this project has the scale and significance to demonstrate leadership in sustainable development practices.')
+    
+    doc.add_paragraph('The following sections detail our findings, recommendations, and implementation roadmap designed to maximize environmental benefits while ensuring economic viability and operational excellence throughout the project lifecycle.')
+    
+    doc.add_paragraph()  # Spacing
+
+    # Project Overview (simple version without table)
+    doc.add_heading('Project Overview', level=1)
+    doc.add_paragraph(f'Built Area: {project.gifa_m2 or 0:,.0f} m²')
+    doc.add_paragraph(f'Project Budget: ${project.total_budget_aud or 0:,.0f}')
+    doc.add_paragraph(f'Residential Units: {project.num_apartments or 0:,}')
+    doc.add_paragraph(f'Sustainability Measures: {len(selected)}')
     doc.add_paragraph()
 
     # Sustainability Action Plan (theme table)
@@ -1291,6 +1258,12 @@ def _generate_word_report(project: Metrics):
             doc.add_paragraph()
     else:
         doc.add_paragraph('No specific recommendations selected.')
+
+    # Footer
+    doc.add_paragraph()
+    doc.add_paragraph('Generated by CarbonBalance Sustainability Platform')
+    doc.add_paragraph('COSTPLAN GROUP • Kent TN24 OSY')
+    doc.add_paragraph('Contact: london@cpsqs.com • Phone: +44 (0) 1233 333532')
 
     # ---- return as download ----
     buffer = BytesIO()
