@@ -3,11 +3,14 @@
 import json
 import logging
 import re
+from io import BytesIO
 from datetime import timedelta
+from django.template.loader import get_template
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Any, List
-
 from django.contrib import messages
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -1212,12 +1215,91 @@ def _generate_pdf_report(project: Metrics):
 
 def _generate_word_report(project: Metrics):
     """
-    Generate Word document report (placeholder implementation)
+    Build a .docx report with the same data you show in the HTML report.
     """
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.docx"'
-    
-    # Placeholder Word content
-    response.write(b'Word report generation would go here')
-    return response
+    # ---- reuse your existing data builder (same as in _generate_html_report) ----
+    # If you don’t have a helper, copy the aggregation from _generate_html_report here.
+    # Below I inline a small version that matches your current context shape.
 
+    # Selected interventions
+    selections = InterventionSelection.objects.filter(project_id=project.id)
+    ids = [s.intervention_id for s in selections if getattr(s, "intervention_id", None)]
+    if ids:
+        selected = list(Interventions.objects.filter(id__in=ids))
+    else:
+        selected = list(Interventions.objects.all()[:5])
+
+    # Theme stats
+    theme_stats = {}
+    for iv in selected:
+        theme = iv.theme or "Other"
+        rating = float(iv.intervention_rating or 0)
+        cost   = float(iv.cost_level or 0)
+        bucket = theme_stats.setdefault(theme, {"count":0, "total_rating":0, "total_cost":0})
+        bucket["count"] += 1
+        bucket["total_rating"] += rating
+        bucket["total_cost"] += cost
+
+    # ---- build the document ----
+    doc = Document()
+
+    h = doc.add_heading('Environmental Impact Report', level=0)
+    h.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    # Project meta
+    meta = doc.add_paragraph()
+    meta.add_run(f'Project: {project.project_name}').bold = True
+    meta.add_run(f'  •  Location: {project.location or "Not specified"}')
+    doc.add_paragraph(f'Building Type: {project.building_type or "Not specified"}')
+    doc.add_paragraph(f'Total Area: {project.gifa_m2 or 0} m²')
+    doc.add_paragraph(f'Total Budget: ${project.total_budget_aud or 0:,.2f}')
+    doc.add_paragraph()
+
+    # Sustainability Action Plan (theme table)
+    doc.add_heading('Sustainability Action Plan', level=1)
+    table = doc.add_table(rows=1, cols=4)
+    hdr = table.rows[0].cells
+    hdr[0].text = 'Focus Area'
+    hdr[1].text = 'Actions'
+    hdr[2].text = 'Avg Impact'
+    hdr[3].text = 'Avg Investment'
+
+    for theme, agg in theme_stats.items():
+        count = max(1, agg["count"])
+        avg_rating = round(agg["total_rating"] / count, 1)
+        avg_cost   = round(agg["total_cost"] / count, 1)
+        row = table.add_row().cells
+        row[0].text = str(theme)
+        row[1].text = f'{agg["count"]} measures'
+        row[2].text = f'{avg_rating}/10'
+        row[3].text = f'Level {avg_cost}'
+
+    doc.add_paragraph()
+
+    # Recommended Implementation Plan
+    doc.add_heading('Recommended Implementation Plan', level=1)
+    if selected:
+        for iv in selected:
+            doc.add_heading(iv.name, level=2)
+            if getattr(iv, "description", None):
+                doc.add_paragraph(str(iv.description))
+            meta = doc.add_paragraph()
+            meta.add_run('Effectiveness: ').bold = True
+            meta.add_run(f'{getattr(iv, "intervention_rating", 0)}/10   ')
+            meta.add_run('Implementation Cost: ').bold = True
+            meta.add_run(f'Level {getattr(iv, "cost_level", 0)}/5')
+            doc.add_paragraph()
+    else:
+        doc.add_paragraph('No specific recommendations selected.')
+
+    # ---- return as download ----
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.docx"'
+    return response
