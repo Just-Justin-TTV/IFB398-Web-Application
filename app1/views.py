@@ -1123,6 +1123,16 @@ def _generate_html_report(request: HttpRequest, project: Metrics):
     
     return render(request, "report_template.html", context)
 
+def _generate_pdf_report(project: Metrics):
+    """
+    Generate PDF report (placeholder - you'll need to implement PDF generation)
+    """
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.pdf"'
+    
+    # Placeholder - using weasyprint
+    response.write(b'PDF report generation would go here')
+    return response
 def _generate_word_report(project: Metrics):
     """
     Build a .docx report with the same data you show in the HTML report.
@@ -1152,22 +1162,9 @@ def _generate_word_report(project: Metrics):
 
     # Title
     h = doc.add_heading('Environmental Impact Report', level=0)
-    h.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    h.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-    # Project meta - centered under title
-    project_meta = doc.add_paragraph()
-    project_meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    project_run = project_meta.add_run(f'{project.project_name}')
-    project_run.bold = True
-    
-    location_para = doc.add_paragraph()
-    location_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    location_para.add_run(f'{project.location} • {project.building_type or "Building Project"}')
-    
-    doc.add_paragraph()  # Spacing
-
-    # Project details section
-    doc.add_heading('Project Information', level=1)
+    # Project meta
     meta = doc.add_paragraph()
     meta.add_run(f'Project: {project.project_name}').bold = True
     meta.add_run(f'  •  Location: {project.location or "Not specified"}')
@@ -1214,12 +1211,20 @@ def _generate_word_report(project: Metrics):
     
     doc.add_paragraph()  # Spacing
 
-    # Project Overview (simple version without table)
+    # Project Overview
     doc.add_heading('Project Overview', level=1)
-    doc.add_paragraph(f'Built Area: {project.gifa_m2 or 0:,.0f} m²')
-    doc.add_paragraph(f'Project Budget: ${project.total_budget_aud or 0:,.0f}')
-    doc.add_paragraph(f'Residential Units: {project.num_apartments or 0:,}')
-    doc.add_paragraph(f'Sustainability Measures: {len(selected)}')
+    overview_table = doc.add_table(rows=4, cols=2)
+    overview_data = [
+        ('Built Area', f'{project.gifa_m2 or 0:,.0f} m²'),
+        ('Project Budget', f'${project.total_budget_aud or 0:,.0f}'),
+        ('Residential Units', f'{project.num_apartments or 0:,}'),
+        ('Sustainability Measures', f'{len(selected)}')
+    ]
+    
+    for i, (label, value) in enumerate(overview_data):
+        overview_table.rows[i].cells[0].text = label
+        overview_table.rows[i].cells[1].text = value
+
     doc.add_paragraph()
 
     # Sustainability Action Plan (theme table)
