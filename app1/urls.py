@@ -45,4 +45,6 @@ urlpatterns = [
 
     # Report generation (duplicate path for reports, allows direct access)
     path('reports/generate/<int:project_id>/', views.generate_report, name='generate_report'),
+
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
 ]

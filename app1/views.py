@@ -6,7 +6,7 @@ import re
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Any, List
-
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -33,7 +33,8 @@ from .models import (
     Interventions,
     Metrics,
     User as AppUser,
-    InterventionSelection,  # Stores selected interventions per project
+    InterventionSelection,
+    UserProfile,  # Stores selected interventions per project
 )
 
 logger = logging.getLogger(__name__)
@@ -730,12 +731,27 @@ def intervention_selection_save_api(request, metrics_id: int):
 @login_required(login_url='login')
 def projects_view(request: HttpRequest):
     """
-    Display all projects in Metrics table.
+    Display projects based on user role.
+    - Admins: see all projects
+    - Regular users: see only projects they created
     Supports optional search filtering by name, type, or location.
     """
     q = (request.GET.get("q") or "").strip()
-    qs = Metrics.objects.all().order_by("-updated_at", "-created_at")
 
+    # Determine if the current user is an admin
+    user_profile = getattr(request.user, "userprofile", None)
+    is_admin_user = user_profile and user_profile.user_type == "admin"
+
+    if is_admin_user:
+        # Admins can see all projects
+        qs = Metrics.objects.all().order_by("-updated_at", "-created_at")
+    else:
+        # Regular users see only their own projects
+        qs = Metrics.objects.filter(user=_resolve_app_user(request)).order_by(
+            "-updated_at", "-created_at"
+        )
+
+    # Apply optional search filters
     if q:
         qs = qs.filter(
             Q(project_name__icontains=q)
@@ -835,30 +851,37 @@ def logout_view(request: HttpRequest):
     return redirect("home")
 
 
-def register_view(request: HttpRequest):
-    """
-    Handle user registration. Creates user and logs in upon success.
-    """
-    if request.method == "POST":
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        password1 = request.POST.get("password1")
-        password2 = request.POST.get("password2")
+def register_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
 
-        if not all([username, email, password1, password2]):
-            messages.error(request, "All fields are required.")
-        elif password1 != password2:
-            messages.error(request, "Passwords do not match.")
-        elif User.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists.")
-        elif User.objects.filter(email=email).exists():
-            messages.error(request, "Email already exists.")
-        else:
-            user = User.objects.create_user(username=username, email=email, password=password1)
-            login(request, user)
-            messages.success(request, "Registration successful!")
-            return redirect("home")
-    return render(request, "register.html")
+        if password1 != password2:
+            messages.error(request, "Passwords do not match")
+            return redirect('register')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already taken")
+            return redirect('register')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already in use")
+            return redirect('register')
+
+        # Create the user
+        user = User.objects.create_user(username=username, email=email, password=password1)
+
+        # Create linked profile (default user type)
+        UserProfile.objects.create(user=user, user_type='user')
+
+        # Login and redirect
+        login(request, user)
+        messages.success(request, "Registration successful!")
+        return redirect('dashboard')
+
+    return render(request, 'register.html')
 
 
 @login_required
@@ -1220,4 +1243,42 @@ def _generate_word_report(project: Metrics):
     # Placeholder Word content
     response.write(b'Word report generation would go here')
     return response
+
+def is_admin(user):
+    """Check if logged-in user is an admin"""
+    try:
+        return user.userprofile.user_type == 'admin'
+    except UserProfile.DoesNotExist:
+        return False
+
+@login_required(login_url='login')
+@user_passes_test(is_admin, login_url='dashboard')
+def admin_dashboard(request):
+    """
+    Allows admin users to view all registered users
+    and promote/demote them between 'user' and 'admin' roles.
+    """
+    users = User.objects.all().order_by('username')
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        action = request.POST.get('action')
+
+        if user_id and action:
+            try:
+                target_user = User.objects.get(id=user_id)
+                profile, _ = UserProfile.objects.get_or_create(user=target_user)
+
+                if action == 'make_admin':
+                    profile.user_type = 'admin'
+                    messages.success(request, f"{target_user.username} is now an admin.")
+                elif action == 'make_user':
+                    profile.user_type = 'user'
+                    messages.success(request, f"{target_user.username} is now a regular user.")
+                profile.save()
+            except User.DoesNotExist:
+                messages.error(request, "User not found.")
+        return redirect('admin_dashboard')
+
+    return render(request, 'admin_dashboard.html', {'users': users})
 

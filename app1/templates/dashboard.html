@@ -56,14 +56,30 @@
         </a>
 
         <!-- Reports link -->
-        <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="{% url 'reports' %}" 
+          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'reports' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">description</span> Reports
         </a>
 
-        <!-- Settings link -->
-        <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <a href="{%url 'settings' %}" 
+          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
           <span class="material-icons text-[18px]">settings</span> Settings
-        </a>                          
+        </a>
+
+        {% if request.user.userprofile.user_type == 'admin' %}
+        <a href="{% url 'admin_dashboard' %}" 
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'admin-dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">supervisor_account</span> Manage Users
+        </a>
+{% endif %}
+        <!-- Home Button at Bottom -->
+        <div class="absolute bottom-6 left-0 w-64 px-3">
+          <a href="{% url 'home' %}" 
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+            <span class="material-icons text-[18px] text-gray-700">home</span>
+            Home
+          </a>
+        </div>
     </aside>
     <!-- ============ End Sidebar ============ -->
 
