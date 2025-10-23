@@ -679,21 +679,12 @@ def intervention_selection_save_api(request, metrics_id: int):
 @login_required(login_url='login')
 def projects_view(request: HttpRequest):
     """
-<<<<<<< HEAD
-    Show ALL projects in the Metrics table.
-    Use the search box to filter by name / type / location.
-    """
-    q = (request.GET.get("q") or "").strip()
-
-    qs = Metrics.objects.all().order_by("-updated_at", "-created_at")
-=======
     Display projects based on user role.
     - Admins: see all projects
     - Regular users: see only projects they created
     Supports optional search filtering by name, type, or location.
     """
     q = (request.GET.get("q") or "").strip()
->>>>>>> User-access-control
 
     # Determine if the current user is an admin
     user_profile = getattr(request.user, "userprofile", None)
@@ -800,21 +791,12 @@ def logout_view(request: HttpRequest):
     return redirect("home")
 
 
-<<<<<<< HEAD
-def register_view(request: HttpRequest):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        password1 = request.POST.get("password1")
-        password2 = request.POST.get("password2")
-=======
 def register_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
->>>>>>> User-access-control
 
         if password1 != password2:
             messages.error(request, "Passwords do not match")
@@ -1190,7 +1172,6 @@ def _generate_word_report(project: Metrics):
     else:
         selected = list(Interventions.objects.all()[:5])
 
-<<<<<<< HEAD
     # Theme stats
     theme_stats = {}
     for iv in selected:
@@ -1326,7 +1307,7 @@ def _generate_word_report(project: Metrics):
     )
     response['Content-Disposition'] = f'attachment; filename="project_{project.id}_report.docx"'
     return response
-=======
+
 def is_admin(user):
     """Check if logged-in user is an admin"""
     try:
@@ -1364,5 +1345,3 @@ def admin_dashboard(request):
         return redirect('admin_dashboard')
 
     return render(request, 'admin_dashboard.html', {'users': users})
-
->>>>>>> User-access-control
