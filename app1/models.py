@@ -1,6 +1,7 @@
 from django.db import models 
 from django.contrib.auth.models import User
 
+
 class ClassTargets(models.Model):
     """
     Represents target ratings for each class.
@@ -52,7 +53,7 @@ class InterventionDependencies(models.Model):
         managed = False  # Table is managed externally, Django will not create/alter
 
 
-class User(models.Model):
+class AppUser(models.Model):
     """
     Custom user model storing basic authentication information.
     """
@@ -92,7 +93,7 @@ class Metrics(models.Model):
     id = models.AutoField(primary_key=True)
 
     # Optional user/project linkage
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="metrics")
+    user = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name="metrics")
     project_code = models.CharField(max_length=120, null=True, blank=True)  # Free-form link to a project
 
     # High-level building info
@@ -164,7 +165,7 @@ class InterventionSelection(models.Model):
     """
     project = models.ForeignKey("Metrics", on_delete=models.CASCADE, related_name="intervention_selections")
     intervention = models.ForeignKey("Interventions", on_delete=models.CASCADE, related_name="selections")
-    selected_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    selected_by = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -173,3 +174,15 @@ class InterventionSelection(models.Model):
 
     def __str__(self):
         return f"{self.project_id} → {self.intervention_id}"
+    
+class UserProfile(models.Model):
+    USER_TYPES = [
+        ('admin', 'Admin'),
+        ('user', 'User'),
+    ]
+
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
+    user_type = models.CharField(max_length=10, choices=USER_TYPES, default='user')
+
+    def __str__(self):
+        return f"{self.user.username} ({self.user_type})"

@@ -23,32 +23,60 @@
 
 <div class="flex min-h-screen">
 
-  <!-- Sidebar -->
-  <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
-    <div class="px-5 py-6 border-b">
-      <div class="flex items-center gap-3">
-        <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
-        <div>
-          <p class="text-xs text-gray-500">Welcome</p>
-          <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+      <!-- ============ Sidebar ============ -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <!-- User avatar and greeting -->
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.session.user_name|default:"" }}</p>
+          </div>
         </div>
       </div>
-    </div>
-    <nav class="px-3 py-4 space-y-1">
-      <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-        <span class="material-icons text-[18px]">dashboard</span> Dashboard
-      </a>
-      <a href="{% url 'projects' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-        <span class="material-icons text-[18px]">folder</span> Projects
-      </a>
-      <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-        <span class="material-icons text-[18px]">description</span> Reports
-      </a>
-      <a href="{% url 'settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand text-white shadow">
-        <span class="material-icons text-[18px]">settings</span> Settings
-      </a>
-    </nav>
-  </aside>
+
+      <!-- Sidebar navigation links -->
+      <nav class="px-3 py-4 space-y-1">
+        <!-- Dashboard link, highlighted if current page -->
+        <a href="{% url 'dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">dashboard</span> Dashboard
+        </a>
+        
+        <!-- Projects link, highlighted if current page -->
+        <a href="{% url 'projects' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">folder</span> Projects
+        </a>
+
+        <!-- Reports link -->
+        <a href="{% url 'reports' %}" 
+          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'reports' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">description</span> Reports
+        </a>
+
+        <a href="{%url 'settings' %}" 
+          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+
+        {% if request.user.userprofile.user_type == 'admin' %}
+        <a href="{% url 'admin_dashboard' %}" 
+          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'admin-dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">supervisor_account</span> Manage Users
+        </a>
+{% endif %}
+        <!-- Home Button at Bottom -->
+        <div class="absolute bottom-6 left-0 w-64 px-3">
+          <a href="{% url 'home' %}" 
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+            <span class="material-icons text-[18px] text-gray-700">home</span>
+            Home
+          </a>
+        </div>
+    </aside>
+    <!-- ============ End Sidebar ============ -->
 
   <!-- Main content -->
   <main class="flex-1">

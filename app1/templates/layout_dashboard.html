@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}Dashboard{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind configuration extension for brand colors and border radius
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT:"#0ea5e9", 600:"#0891b2", 700:"#0e7490" } },
+          borderRadius: { "2xl": "1rem" }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 shrink-0 bg-white border-r shadow-sm">
+      <div class="px-5 py-6 border-b">
+        <div class="flex items-center gap-3">
+          <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <p class="text-xs text-gray-500">Welcome</p>
+            <p class="text-sm font-semibold">{{ request.user.username }}</p>
+          </div>
+        </div>
+      </div>
+
+        <nav class="px-3 py-4 space-y-1">
+        <!-- Dashboard -->
+        <a href="{% url 'dashboard' %}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path and 'admin-dashboard' not in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <span class="material-icons text-[18px] {% if 'dashboard' in request.path and 'admin-dashboard' not in request.path %}text-white{% else %}text-gray-700{% endif %}">dashboard</span>
+            Dashboard
+        </a>
+
+        <!-- Projects -->
+        <a href="{% url 'projects' %}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <span class="material-icons text-[18px] {% if 'projects' in request.path %}text-white{% else %}text-gray-700{% endif %}">folder</span>
+            Projects
+        </a>
+
+        <!-- Reports -->
+        <a href="{%url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'reports' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <span class="material-icons text-[18px] {% if 'reports' in request.path %}text-white{% else %}text-gray-700{% endif %}">description</span>
+            Reports
+        </a>
+
+        <!-- Settings -->
+        <a href="{%url 'settings' %}" 
+          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+          <span class="material-icons text-[18px]">settings</span> Settings
+        </a>
+
+        <!-- Admin Dashboard -->
+        {% if request.user.userprofile.user_type == 'admin' %}
+        <a href="{% url 'admin_dashboard' %}" 
+             class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'admin-dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <span class="material-icons text-[18px]">supervisor_account</span> Manage Users
+        </a>
+        {% endif %}
+        </nav>
+        <!-- Home Button at Bottom -->
+        <div class="absolute bottom-6 left-0 w-64 px-3">
+          <a href="{% url 'home' %}" 
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+            <span class="material-icons text-[18px] text-gray-700">home</span>
+            Home
+          </a>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1">
+      {% block main %}
+      {% endblock %}
+    </main>
+  </div>
+</body>
+</html>
