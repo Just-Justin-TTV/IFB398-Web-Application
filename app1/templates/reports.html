@@ -141,18 +141,26 @@
                 <div class="min-w-0">
                   <h3 class="text-lg font-bold text-slate-900 leading-tight line-clamp-2">{{ project.project_name }}</h3>
                   <div class="text-sm text-slate-500 mt-1">{{ project.location }}</div>
+                  
+                  {% if request.user.userprofile.user_type == 'admin' %}
+                  <div class="text-xs text-gray-500 mt-1">
+                    <span class="font-semibold">Created by:</span> {{ project.user.username|default:"—" }}
+                  </div>
+                  {% endif %}
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">{{ project.project_type|default:"Project" }}</span>
               </div>
+
               <div class="text-sm text-slate-500 mb-6">
                 Created: <span class="font-medium text-slate-700">{{ project.created_at|date:"M j, Y" }}</span>
               </div>
+
               <button onclick="viewReport({{ project.id }})" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 shadow-sm">
                 <span class="material-icons text-base">visibility</span> View Analysis Report
               </button>
             </div>
           </div>
-          {% empty %}
+        {% empty %}
           <div class="col-span-full">
             <div class="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center">
               <span class="material-icons text-4xl text-slate-400 mb-2">insert_drive_file</span>
@@ -163,7 +171,7 @@
               </a>
             </div>
           </div>
-          {% endfor %}
+        {% endfor %}
         </div>
 
         <!-- Info panel -->

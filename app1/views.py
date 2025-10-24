@@ -1019,20 +1019,26 @@ def carbon_2_view(request):
 @login_required(login_url='login')
 def reports_page(request: HttpRequest):
     """
-    Reports overview page - shows all projects that can generate reports
+    Reports overview page:
+    - Admins: see ALL projects (and thus all reports)
+    - Regular users: see only their own projects
     """
-    # Get all projects for the current user
     user = _resolve_app_user(request)
-    if user:
+    user_profile = getattr(request.user, "userprofile", None)
+    is_admin = user_profile and user_profile.user_type == "admin"
+
+    # Admin → show all projects
+    if is_admin:
+        projects = Metrics.objects.all().order_by("-updated_at", "-created_at")
+    # Regular user → show only own
+    elif user:
         projects = Metrics.objects.filter(user=user).order_by("-updated_at", "-created_at")
+    # Guest / anonymous session fallback
     else:
-        # Fallback to session projects
         session_ids = request.session.get("my_project_ids", [])
         projects = Metrics.objects.filter(id__in=session_ids).order_by("-updated_at", "-created_at")
-    
-    return render(request, "reports.html", {
-        "projects": projects
-    })
+
+    return render(request, "reports.html", {"projects": projects})
 
 @login_required(login_url='login')
 def generate_report(request: HttpRequest, project_id: int):
