@@ -1,4 +1,4 @@
-{% load static %}{% load humanize %} 
+{% load static %}{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,42 +6,30 @@
 <title>Carbon Calculator · Interventions</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Tailwind CSS for utility-first styling -->
+<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Google Material Icons -->
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <style>
-/* ---------- Styling for intervention rows ---------- */
-
-/* Highlight selected row */
+/* ---------- Styling ---------- */
 .intervention-row.selected { border-left: 4px solid #0ea5e9; background-color: #e0f7ff; }
 
-/* Disabled or duplicate rows */
 .intervention-row.stage-disabled,
 .intervention-row.duplicate-blocked { opacity:.5; pointer-events:none; user-select:none; cursor:not-allowed; }
 
-/* Badge styling */
 .stage-disabled-badge,.duplicate-badge { font-size:10px; padding:.125rem .5rem; border-radius:9999px; }
 .stage-disabled-badge { background:#e5e7eb; color:#374151; margin-left:.5rem; }
 .duplicate-badge { background:#fee2e2; color:#b91c1c; }
 
-/* Table headers */
 .theme-header > div { font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
 .category-header > div { font-weight:600; }
 
-/* Description row styling */
 .description-row { font-size:.875rem; color:#4b5563; }
-
-/* Rotate toggle icon */
 .material-icons.rot-180 { transform: rotate(180deg); }
 
-/* Name cell formatting */
 .name-cell { align-items:flex-start; }
 .name-title { display:block; white-space:normal; word-break:break-word; text-align:left; }
 
-/* Stage chip styling (added via JS) */
 .stage-chip{
   display:inline-flex; align-items:center; gap:.25rem;
   padding:.125rem .5rem; border-radius:9999px;
@@ -50,26 +38,22 @@
 }
 .stage-chip .material-icons{ font-size:14px; line-height:1; }
 
-/* Updated rating cell styling */
 .updated-rating { background:#f0fdf4; }
 .updated-rating .updated-big { font-weight:700; }
 
-/* Rightmost select checkbox column */
 .select-cell { position:relative; }
 
-/* Cost tracker pill + over-budget warning */
+/* cost pill */
 .cost-pill { border-radius:9999px; }
-#budgetWarn { display:none; }
-#budgetWarn.show { display:inline-flex; }
+#budgetWarn.hidden { display:none; }
 </style>
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-900">
 <div class="flex min-h-screen">
 
-  <!-- Sidebar navigation -->
+  <!-- Sidebar -->
   <aside class="w-64 bg-white border-r shadow-sm">
-    <!-- User info header -->
     <div class="px-5 py-6 border-b flex items-center gap-3">
       <img src="{% static 'images/img4.jpg' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover">
       <div>
@@ -78,53 +62,39 @@
       </div>
     </div>
 
-    <!-- Navigation links -->
-    <!-- Sidebar navigation links -->
-      <nav class="px-3 py-4 space-y-1">
-        <!-- Dashboard link, highlighted if current page -->
-        <a href="{% url 'dashboard' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">dashboard</span> Dashboard
-        </a>
-        
-        <!-- Projects link, highlighted if current page -->
-        <a href="{% url 'projects' %}"
-           class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">folder</span> Projects
-        </a>
+    <nav class="px-3 py-4 space-y-1">
+      <a href="{% url 'dashboard' %}"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <span class="material-icons text-[18px]">dashboard</span> Dashboard
+      </a>
+      <a href="{% url 'projects' %}"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'projects' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <span class="material-icons text-[18px]">folder</span> Projects
+      </a>
+      <a href="{% url 'reports' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
+        <span class="material-icons text-[18px]">description</span> Reports
+      </a>
+      <a href="{%url 'settings' %}"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <span class="material-icons text-[18px]">settings</span> Settings
+      </a>
+      {% if request.user.userprofile.user_type == 'admin' %}
+      <a href="{% url 'admin_dashboard' %}"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'admin-dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+        <span class="material-icons text-[18px]">supervisor_account</span> Manage Users
+      </a>
+      {% endif %}
+    </nav>
 
-        <!-- Reports link -->
-        <a href="{% url 'reports' %}" 
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-          <span class="material-icons text-[18px]">description</span> Reports
-        </a>
-
-        <a href="{%url 'settings' %}" 
-          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'settings' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">settings</span> Settings
-        </a>
-
-        {% if request.user.userprofile.user_type == 'admin' %}
-        <a href="{% url 'admin_dashboard' %}" 
-          class="flex items-center gap-3 px-3 py-2 rounded-lg {% if 'admin-dashboard' in request.path %}bg-brand text-white shadow{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-          <span class="material-icons text-[18px]">supervisor_account</span> Manage Users
-        </a>
-{% endif %}
-      </nav>
-
-      <!-- Home Button at Bottom -->
-      <div class="absolute bottom-6 left-0 w-64 px-3">
-        <a href="{% url 'home' %}" 
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
-          <span class="material-icons text-[18px] text-gray-700">home</span>
-          Home
-        </a>
-      </div>
+    <div class="absolute bottom-6 left-0 w-64 px-3">
+      <a href="{% url 'home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+        <span class="material-icons text-[18px] text-gray-700">home</span> Home
+      </a>
+    </div>
   </aside>
 
-  <!-- Main content -->
+  <!-- Main -->
   <main class="flex-1">
-    <!-- Page header -->
     <header class="bg-white border-b">
       <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <div>
@@ -137,10 +107,9 @@
       </div>
     </header>
 
-    <!-- Controls + interventions table -->
     <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
 
-      <!-- Top controls: Class select, reset, sort, search -->
+      <!-- Controls -->
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-3">
           <label class="text-sm text-gray-700">Select Class</label>
@@ -158,35 +127,95 @@
             <option value="theme">Original order</option>
           </select>
         </div>
-
-        <!-- Search box -->
-        <div class="relative w-full sm:w-96">
+        <!-- Search box (restored) -->
+        <div class="relative w-full sm:w-96" id="searchContainer">
           <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
-          <input id="searchBox" type="text" placeholder="Search interventions…"
-                 class="w-full rounded-full border pl-9 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                 autocomplete="off" />
-          <button id="clearSearch" class="hidden material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[18px]">close</button>
+          <input
+            id="searchBox"
+            type="text"
+            placeholder="Search interventions…"
+            class="w-full rounded-full border pl-9 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            autocomplete="off"
+          />
+          <button
+            id="clearSearch"
+            type="button"
+            class="hidden material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[18px]"
+            aria-label="Clear search"
+            title="Clear"
+          >close</button>
         </div>
-
-        <!-- Cost tracker pill -->
+        <!-- Cost tracker pill (single source of truth via data-value) -->
         <div class="flex items-center gap-2 rounded-full bg-white border px-3 py-2 text-sm shadow-sm cost-pill">
           <span class="text-gray-500">Cost Tracker:</span>
-          <span id="costTracker" class="font-semibold">$0</span>
+          <span id="costTracker" class="font-semibold" data-value="0">$0</span>
+
           <span class="text-gray-400">·</span>
           <span class="text-gray-500">Budget:</span>
-          <span id="budgetDisplay" class="font-semibold">$0</span>
-          <span id="budgetWarn" class="ml-2 items-center gap-1 rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-[11px]">
-            <span class="material-icons text-[14px]">warning</span> Over budget
+          <span id="budgetDisplay" class="font-semibold" data-value="0">$0</span>
+
+          <span id="budgetWarn" class="ml-2 hidden items-center gap-1 rounded-full px-2 py-0.5 text-[11px]">
+            <span class="material-icons text-[14px]">warning</span>
+            <span id="budgetWarnText">Over budget</span>
           </span>
         </div>
       </div>
 
-      <!-- Main grid: interventions table + sidebar summary -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- ===== Cost tracker helpers (global) ===== -->
+      <script>
+        const fmtMoney = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
+        const num = (x) => {
+          if (typeof x === 'number') return x;
+          if (!x) return 0;
+          const s = String(x).replace(/[^0-9.\-]/g,'');
+          const v = Number(s);
+          return Number.isFinite(v) ? v : 0;
+        };
+        function getRaw(id){
+          const el = document.getElementById(id);
+          return num(el?.dataset.value ?? 0);
+        }
+        function setRaw(id, value){
+          const el = document.getElementById(id);
+          const v = num(value);
+          el.dataset.value = String(v);
+          el.textContent = fmtMoney.format(v);
+        }
+        function updateBudgetBadge(){
+          const total  = getRaw('costTracker');
+          const budget = getRaw('budgetDisplay');
+          const badge  = document.getElementById('budgetWarn');
+          const text   = document.getElementById('budgetWarnText');
 
-        <!-- Interventions Table -->
+          if (!budget || budget <= 0){
+            badge.classList.add('hidden');
+            return;
+          }
+          const over = total > budget + 1e-6;
+          const diff = Math.abs(budget - total);
+
+          badge.classList.remove('hidden','bg-red-100','text-red-700','bg-green-100','text-green-700');
+          if (over){
+            badge.classList.add('bg-red-100','text-red-700');
+            text.textContent = `Over budget by ${fmtMoney.format(diff)}`;
+          } else {
+            badge.classList.add('bg-green-100','text-green-700');
+            text.textContent = `Within budget · ${fmtMoney.format(diff)} left`;
+          }
+        }
+        // public API
+        window.updateCostTracker = ({ total=null, budget=null }={})=>{
+          if (total  !== null) setRaw('costTracker', total);
+          if (budget !== null) setRaw('budgetDisplay', budget);
+          updateBudgetBadge();
+        };
+        document.addEventListener('DOMContentLoaded', updateBudgetBadge);
+      </script>
+
+      <!-- Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Table -->
         <section class="lg:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
-          <!-- Table header row -->
           <div class="grid grid-cols-12 items-center bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <div class="col-span-6 px-4 py-3 text-left">Intervention</div>
             <div class="col-span-2 px-4 py-3 text-center">Cost</div>
@@ -194,7 +223,6 @@
             <div class="col-span-1 px-4 py-3 text-center">Select</div>
           </div>
 
-          <!-- Table body populated by Django template loop -->
           <div id="rows">
             {% for theme, items in interventions.items %}
               <div class="grid grid-cols-12 theme-header" data-theme="{{ theme|escape }}">
@@ -202,7 +230,6 @@
               </div>
 
               {% for item in items %}
-              <!-- Individual intervention row -->
               <div class="grid grid-cols-12 items-center border-t relative hover:bg-gray-50 intervention-row"
                    data-id="{{ item.id|escape }}"
                    data-name="{{ item.name|striptags|escape }}"
@@ -215,7 +242,6 @@
                    data-description="{{ item.description|default:''|striptags|escape }}"
                    data-dependencies='{{ item.dependencies|default:"[]"|safe }}'>
 
-                <!-- Name cell with toggle button -->
                 <div class="col-span-6 px-4 py-3 flex name-cell gap-3">
                   <button class="toggle-desc flex items-start gap-2 text-gray-600 hover:text-gray-800" type="button" aria-label="Toggle description">
                     <span class="material-icons text-base">expand_more</span>
@@ -223,25 +249,21 @@
                   </button>
                 </div>
 
-                <!-- Cost cell -->
                 <div class="col-span-2 px-4 py-3 text-center">
                   {{ item.cost_range|default:item.cost_level }}
                 </div>
 
-                <!-- Rating cell -->
                 <div class="col-span-3 px-4 py-3 text-center updated-rating">
                   <div class="updated-big text-lg">{{ item.intervention_rating|default:0 }}</div>
                   <div class="text-[11px] text-gray-500">(orig: {{ item.intervention_rating|default:0 }})</div>
                   <div class="effect-notes text-xs text-gray-600 mt-1"></div>
                 </div>
 
-                <!-- Select checkbox -->
                 <div class="col-span-1 px-4 py-3 text-center select-cell">
                   <input type="checkbox" class="select-intervention accent-blue-500" data-id="{{ item.id|escape }}">
                 </div>
               </div>
 
-              <!-- Description row (initially hidden) -->
               <div class="col-span-12 px-6 py-3 bg-gray-50 text-sm text-gray-700 description-row hidden">
                 {{ item.description|default:"No description available." }}
               </div>
@@ -250,7 +272,7 @@
           </div>
         </section>
 
-        <!-- Sidebar summary -->
+        <!-- Sidebar -->
         <aside class="space-y-6">
           <div class="bg-white border rounded-2xl shadow-sm">
             <div class="px-4 py-3 border-b"><h3 class="font-semibold">Progress</h3></div>
@@ -267,18 +289,17 @@
 
 <script>
 (async () => {
-  // Shortcut for querySelector / querySelectorAll
   const qs  = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
-  const ROWS = qs('#rows');  // Container for all table rows
-  const RAW = [];            // Raw data representation of interventions
+  const ROWS = qs('#rows');
+  const RAW = [];
 
   /* ---------- Budget from previous session ---------- */
   const GLOBAL_BUDGET = Number(sessionStorage.getItem('global_budget') || 0);
-  const fmtMoney = n => '$' + (Number(n)||0).toLocaleString();
-  qs('#budgetDisplay').textContent = fmtMoney(GLOBAL_BUDGET);
+  // initialize the pill with the budget (raw + pretty)
+  updateCostTracker({ budget: GLOBAL_BUDGET });
 
-  /* ---------- Build RAW data structure from DOM ---------- */
+  /* ---------- Build RAW from DOM ---------- */
   qsa('.intervention-row').forEach(el => {
     RAW.push({
       id: el.dataset.id,
@@ -299,7 +320,7 @@
 
   const state = { selected: new Set(), query: '', activeClass: 'all', sort: 'impact' };
 
-  /* ---------- Cost range parsing functions ---------- */
+  /* ---------- Cost range parsing ---------- */
   function parseCostRange(txt, fallbackLevel) {
     if (!txt) {
       const L = Number(fallbackLevel||0);
@@ -341,7 +362,6 @@
     return null;
   }
 
-  // Add stage badges to intervention rows
   function ensureStageChips(scope = document) {
     scope.querySelectorAll('.intervention-row').forEach(row => {
       const nameCell = row.querySelector('.name-cell');
@@ -365,12 +385,10 @@
     });
   }
 
-  // Convert name to a normalized family string
   function familyFromName(name) {
     return name?.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || '';
   }
 
-  /* ---------- Duplicate selection handling ---------- */
   function updateDuplicateBlocking() {
     const selectedNames = Array.from(state.selected).map(id => RAW.find(r=>r.id===id)?.name);
     qsa('.intervention-row').forEach(el => {
@@ -393,7 +411,6 @@
     });
   }
 
-  /* ---------- Rating recalculation with effects ---------- */
   async function recalcRatings() {
     RAW.forEach(r => { r.currentRating = r.rating; r.activeNotes = []; });
 
@@ -429,7 +446,6 @@
     updateDuplicateBlocking();
   }
 
-  // Render updated ratings in table
   function renderRatings() {
     RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
@@ -441,7 +457,7 @@
     });
   }
 
-  /* ---------- Totals and budget warning ---------- */
+  /* ---------- Totals + Budget (single path) ---------- */
   function updateStats() {
     qs('#selCount').textContent = state.selected.size;
 
@@ -455,15 +471,16 @@
       sumMax += max || 0;
     }
 
-    qs('#totalCost').textContent = fmtMoney(sumMid);
-    qs('#costTracker').textContent = fmtMoney(sumMid);
+    qs('#totalCost').textContent = fmtMoney.format(sumMid);
+    // <- unify: update the pill using the shared helper
+    updateCostTracker({ total: sumMid, budget: GLOBAL_BUDGET });
 
-    // Show over-budget warning if max cost exceeds global budget
-    const warn = GLOBAL_BUDGET > 0 && sumMax > GLOBAL_BUDGET;
-    qs('#budgetWarn').classList.toggle('show', warn);
+    // (If you prefer: warn by MAX vs budget; otherwise mid is used above)
+    // const overByMax = GLOBAL_BUDGET > 0 && sumMax > GLOBAL_BUDGET;
+    // You can decide whether to use sumMax in the badge instead; if so, change updateCostTracker total to sumMax.
   }
 
-  /* ---------- Filtering and sorting ---------- */
+  /* ---------- Filtering/sorting ---------- */
   function filterRows() {
     RAW.forEach(r => {
       const row = qs(`.intervention-row[data-id="${r.id}"]`);
@@ -490,7 +507,6 @@
       case 'theme':  items.sort((a,b)=> a.originalIndex - b.originalIndex); break;
     }
 
-    // Remove old headers and append rows in sorted order
     qsa('.theme-header').forEach(th => th.style.display = 'none');
     qsa('.category-header').forEach(ch => ch.remove());
 
@@ -525,7 +541,7 @@
     updateDuplicateBlocking();
   }
 
-  /* ---------- Stage-based constraints ---------- */
+  /* ---------- Stage constraints ---------- */
   function applyStageConstraints() {
     const maxSel = {};
     RAW.forEach(r => {
@@ -558,10 +574,17 @@
     });
   }
 
-  /* ---------- Control event listeners ---------- */
+  /* ---------- Controls ---------- */
   qs('#classSelect').addEventListener('change', e => { state.activeClass = e.target.value; filterRows(); });
-  qs('#searchBox').addEventListener('input', e => { state.query = e.target.value; filterRows(); qs('#clearSearch').classList.toggle('hidden', !state.query); });
-  qs('#clearSearch').addEventListener('click', e => { state.query=''; qs('#searchBox').value=''; qs('#clearSearch').classList.add('hidden'); filterRows(); });
+  qs('#searchBox')?.addEventListener('input', e => {
+    state.query = e.target.value || '';
+    qs('#clearSearch')?.classList.toggle('hidden', !state.query);
+    filterRows();
+  });
+  qs('#clearSearch')?.addEventListener('click', e => {
+    state.query=''; const sb = qs('#searchBox'); if (sb) sb.value='';
+    qs('#clearSearch')?.classList.add('hidden'); filterRows();
+  });
   qs('#orderSelect').addEventListener('change', e => { state.sort = e.target.value; renderSorted(); });
   qs('#resetBtn').addEventListener('click', async () => {
     state.selected.clear();
@@ -570,7 +593,7 @@
     renderSorted();
   });
 
-  // Checkbox selection handler
+  // Checkbox select
   qsa('.select-intervention').forEach(cb => cb.addEventListener('change', async () => {
     if(cb.checked) {
       const r = RAW.find(x => x.id===cb.dataset.id);
@@ -583,7 +606,7 @@
     await recalcRatings();
   }));
 
-  // Description toggle button
+  // Toggle description
   qsa('.toggle-desc').forEach(btn => btn.addEventListener('click', e => {
     const row = btn.closest('.intervention-row');
     const desc = row?.nextElementSibling;
@@ -598,16 +621,14 @@
 })();
 </script>
 
-<!-- CSRF token fallback for AJAX -->
+<!-- CSRF fallback for AJAX -->
 <form id="csrfForm" style="display:none">{% csrf_token %}</form>
 
 <script>
-// ===== API URLs for intervention list and save =====
 const METRICS_ID = {{ metrics_id|default:"null" }};
 const LIST_URL = METRICS_ID ? "{% url 'intervention_selection_list_api' 0 %}".replace('/0/', `/${METRICS_ID}/`) : null;
 const SAVE_URL = METRICS_ID ? "{% url 'intervention_selection_save_api' 0 %}".replace('/0/', `/${METRICS_ID}/`) : null;
 
-// ===== CSRF helpers =====
 function getCookie(name){
   const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
   return m ? decodeURIComponent(m.pop()) : '';
@@ -616,10 +637,8 @@ function getCsrfToken(){
   return getCookie('csrftoken') || (document.querySelector('#csrfForm [name=csrfmiddlewaretoken]')?.value || '');
 }
 
-// ===== Selected IDs state =====
 const selected = new Set();
 
-// Preload saved selections from server
 async function preloadSelections(){
   if (!LIST_URL) return;
   const res = await fetch(LIST_URL, { credentials: 'same-origin' });
@@ -639,7 +658,6 @@ async function preloadSelections(){
   });
 }
 
-// Save current selection set to server
 async function saveSelections(){
   if (!SAVE_URL) { alert('No active project to save against.'); return; }
   const ids = Array.from(selected).map(Number);
@@ -656,11 +674,7 @@ async function saveSelections(){
     alert(`Save failed: ${data.error || res.status}`);
   }
 }
-
-// Hook Save button
 document.getElementById('saveBtn')?.addEventListener('click', saveSelections);
-
-// Kick off preloading after DOM ready
 document.addEventListener('DOMContentLoaded', preloadSelections);
 </script>
 
